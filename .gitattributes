@@ -1,0 +1,6 @@
+# A registry is data compared by bytes. Pin the endings; mark the artifacts binary.
+* text=auto eol=lf
+*.tgz binary
+*.tar.gz binary
+*.zip binary
+*.unitypackage binary

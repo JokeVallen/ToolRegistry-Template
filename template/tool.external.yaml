@@ -1,0 +1,72 @@
+# payloads/<id>/tool.yaml
+#
+# ToolRegistry tool metadata, formatVersion 3 -- METADATA-ONLY form.
+#
+# Use this when the payload lives in another repository and must not be copied into
+# this one. Nothing is stored here: the manifest records where the code is, and the
+# import tool reports it as "caller resolved" rather than downloading it. The registry
+# stays small while still being the place that says the tool exists.
+#
+# Trade-off worth knowing: an external payload cannot be hash-verified by this
+# registry, because the bytes are not here. Pin `ref` to a tag or a commit SHA - a
+# branch head would make two installs of the same version differ, which breaks the
+# receipt model.
+#
+# Schema: schema/tool.schema.json      Rules: docs/SPEC.zh-CN.md
+# Validate: node ../ToolImport/apps/cli/bin/utool.js validate . --write-index
+#
+# FIELD NOTES
+#
+#   id            primary key: directory name, dependency reference, index key. It is
+#                 permanent - renaming it breaks every consumer's dependency edge.
+#   latest        MUST name one of the entries in `versions`.
+#   versions      every published release. This form usually holds one, but a tool may
+#                 publish several if its upstream tags do.
+#   requirements  floors for each engine the release supports. minEngineVersion is
+#                 mandatory; other keys are defined by that engine's adapter.
+#   artifact.type must be `external` here. path / size / sha256 are FORBIDDEN for an
+#                 external artifact, because there are no bytes in this repository to
+#                 describe.
+#   artifact.url  the upstream location. `source` says what kind it is.
+#   artifact.ref  a tag or commit SHA. Never a branch.
+#   subdirectory  when only part of the upstream repository is the package.
+#   upmPackageName  set this when the upstream is a real UPM package, so the importer
+#                 can defer to the engine's own package resolution.
+#
+
+kind: tool
+formatVersion: '3'
+id: my-external-tool
+displayName: My External Tool
+type: framework
+description: >-
+  One paragraph on what the tool does and why it is not stored here. Shown verbatim in the import
+  tool, so keep it factual.
+license: MIT
+author: DevCat
+homepage: https://github.com/JokeVallen/ToolRegistry
+# Where the documentation lives, if that is not the homepage. Must carry a scheme
+# (https://...), because the import tool renders it as a clickable link.
+# documentation: https://jokevallen.github.io/ToolRegistry/docs/
+tags:
+  - external
+provides:
+  - my-external-tool.api
+dependencies: []
+
+latest: '2.3.1'
+
+versions:
+  - version: '2.3.1'
+    releasedAt: '2026-01-01'
+    targets:
+      unity:
+        requirements:
+          minEngineVersion: '2020.3'
+          minRuntimeVersion: '4.6'
+        artifact:
+          type: external
+          source: git
+          url: https://github.com/example/my-external-tool.git
+          ref: v2.3.1
+          subdirectory: packages/MyTool

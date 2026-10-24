@@ -1,0 +1,41 @@
+# payloads/example-hello/tool.yaml
+#
+# The example tool. Copy this directory, change the id and the contents, and you have your first
+# tool: nothing else in the registry needs to know it exists.
+#
+# Schema: schema/tool.schema.json
+# Validate: node tools/registry.mjs validate
+
+kind: tool
+formatVersion: '3'
+id: example-hello
+displayName: Example Hello
+type: tool-library
+description: >-
+  One file, one function. It exists so a fresh registry has something real to validate, plan and install before its owner writes a tool of their own.
+license: MIT
+author: ToolRegistry
+tags:
+  - example
+provides:
+  - script.example.hello
+injects: []
+dependencies: []
+latest: 1.0.0
+versions:
+  - version: 1.0.0
+    targets:
+      godot:
+        requirements:
+          minEngineVersion: '4.2'
+        artifact:
+          type: archive
+          format: tgz
+          path: payloads/example-hello/artifacts/example-hello-1.0.0.tgz
+          size: 309
+          sha256: 65cd0c28f4a53758ab03cad32881f94ede77c37a35c84cf2b41efcf080192678
+          unpack: auto
+          contentRoot: addons/example_hello
+          files:
+            - Hello.gd
+    releasedAt: '2026-10-24'

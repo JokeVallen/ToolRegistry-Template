@@ -1,0 +1,308 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/JokeVallen/ToolRegistry/schema/tool.schema.json",
+  "title": "ToolRegistry tool manifest",
+  "description": "Metadata every importable unit in this registry must carry. The file is named tool.yaml (YAML contents) and lives at payloads/<id>/tool.yaml.\n\nThe document is split in two on purpose. Everything down to `dependencies` is ENGINE-NEUTRAL: identity, capabilities, dependency edges and the list of published versions mean the same thing whatever consumes the payload. Everything inside a version's `targets` is ENGINE-SPECIFIC: version floors, container format and install layout differ per engine, and that vocabulary belongs to the engine's adapter. It must not be empty; the validator reports an empty map as E-TARGETS-MISSING, because a release with no target installs nothing.\n\nOne manifest describes ALL published versions of one tool, so a consumer can pick one. `latest` names the version offered by default.",
+  "type": "object",
+  "required": [
+    "kind", "formatVersion", "id", "displayName", "type", "description",
+    "latest", "versions"
+  ],
+  "properties": {
+    "kind": {
+      "const": "tool",
+      "description": "Document discriminator. Every registry document carries one so a reader knows which shape to expect before parsing further: tool, index or receipt."
+    },
+    "formatVersion": {
+      "const": "3",
+      "description": "Format revision, as a string. Bumped only for breaking changes; a reader must reject a revision it does not implement. Version 2 described exactly one version at the document root, so it had no `versions` array and no `latest`."
+    },
+
+    "id": { "$ref": "#/definitions/toolId" },
+    "displayName": { "$ref": "#/definitions/displayName" },
+    "type": { "$ref": "#/definitions/toolType" },
+    "description": { "$ref": "#/definitions/description" },
+    "tags": { "$ref": "#/definitions/tags" },
+    "author": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "license": { "$ref": "#/definitions/license" },
+    "licenseUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Where the licence text lives, for a project that ships its own LICENSE file or whose licence has no SPDX page. Optional: an SPDX identifier already resolves to spdx.org, so this exists to point somewhere ELSE, and a front end uses it in preference to the identifier's default page."
+    },
+    "homepage": { "type": "string", "format": "uri" },
+    "documentation": {
+      "type": "string",
+      "format": "uri",
+      "description": "Where the tool's documentation lives, when that is not the homepage. A repository root and a docs site are different places, so homepage cannot stand in for both: a user who wants to read the API reference has no way to find it from a clone URL. Optional, and a URI with a scheme - 'example.com/docs' is rejected because it is not clickable."
+    },
+    "releaseNotes": {
+      "type": "string",
+      "format": "uri",
+      "description": "Where the maintainer publishes release notes. A link, not the text: release notes are maintained after publication, so a copy inside a registry goes stale exactly when it matters, and a user choosing between versions needs the maintainer's own page. A URI with a scheme, for the same reason as documentation."
+    },
+
+    "provides": { "$ref": "#/definitions/capabilityList" },
+    "injects": { "$ref": "#/definitions/capabilityList" },
+
+    "dependencies": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/dependency" },
+      "uniqueItems": true,
+      "description": "Declared by id only - never by path or URL. This is what keeps every tool relocatable inside the registry."
+    },
+
+    "latest": {
+      "$ref": "#/definitions/strictVersion",
+      "description": "The version an importer offers by default. MUST match one entry in `versions`, so the default can never point at something that is not published."
+    },
+
+    "versions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/versionEntry" },
+      "description": "Every published version; newest first is conventional but not required. A consumer MAY install any entry, and a resolver picks the highest that satisfies the constraints it was given."
+    },
+
+    "releasedAt": { "type": "string", "format": "date" },
+    "deprecated": {
+      "type": "boolean",
+      "default": false,
+      "description": "The tool as a whole is retired. Per-version retirement is `versions[].deprecated`."
+    }
+  },
+  "additionalProperties": false,
+
+  "definitions": {
+    "toolId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "minLength": 3,
+      "maxLength": 64,
+      "description": "Lowercase kebab-case. This is the primary key: directory name, dependency reference, index key, artifact file name stem and the first segment of every capability it provides. Because Windows paths are case-insensitive, lowercase-only also prevents two tools whose ids differ only by case from colliding."
+    },
+    "engineId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "minLength": 2,
+      "maxLength": 32,
+      "description": "Engine family name. The core does not enumerate these: an engine without an adapter is still valid data, it simply cannot be planned until an adapter claims it.",
+      "examples": ["unity", "godot", "unreal", "defold"]
+    },
+    "capability": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*(\\.[a-z0-9]+(-[a-z0-9]+)*)+$",
+      "maxLength": 96,
+      "description": "A namespaced capability name. Two segments minimum, so a capability always states its namespace rather than being a bare word.",
+      "examples": ["script.language.csharp", "unity.window.selection-history", "godot.addon.selection-history"]
+    },
+    "capabilityList": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/capability" },
+      "uniqueItems": true,
+      "maxItems": 32,
+      "description": "provides names capabilities this tool offers. injects names capabilities it needs from somewhere else. Unlike dependencies, which pins a specific tool, injects is satisfied by ANY installed tool that provides the capability - that is what makes a provider replaceable without editing its consumers."
+    },
+    "displayName": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "description": { "type": "string", "minLength": 10, "maxLength": 600 },
+    "toolType": {
+      "enum": ["editor-tool", "tool-library", "framework", "asset-pack", "template"],
+      "description": "Coarse ENGINE-NEUTRAL classification. Deliberately excludes engine-specific kinds such as shader packs: a shader model is engine-specific, so that belongs in a version's target or a tag."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+      "uniqueItems": true,
+      "maxItems": 12
+    },
+    "license": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9.\\-+]+$",
+      "description": "SPDX identifier, e.g. MIT."
+    },
+    "strictVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.\\-]+)?$",
+      "description": "Semver-lite: numeric major.minor.patch with an optional prerelease suffix.",
+      "examples": ["1.0.0", "2.3.1", "1.0.0-rc.1"]
+    },
+    "constraint": {
+      "type": "string",
+      "pattern": "^(\\^|~|>=|<=|>|<|=)?\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.\\-]+)?$",
+      "description": "^1.2.3 allows >=1.2.3 <2.0.0; ~1.2.3 allows >=1.2.3 <1.3.0; >= n has no upper bound; a bare version means exactly that version.",
+      "examples": ["^1.1.0", "~2.0.0", ">=1.0.0", "1.4.2"]
+    },
+    "dependency": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/definitions/toolId" },
+        "version": { "$ref": "#/definitions/constraint" },
+        "reason": { "type": "string", "maxLength": 200 },
+        "optional": {
+          "type": "boolean",
+          "default": false,
+          "description": "An optional dependency is used when the user already selected it, and never pulled in on its own."
+        },
+        "engines": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/engineId" },
+          "uniqueItems": true,
+          "description": "Restricts the dependency to some engines, for a helper that is only needed on one target."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "versionEntry": {
+      "type": "object",
+      "required": ["version", "targets"],
+      "properties": {
+        "version": { "$ref": "#/definitions/strictVersion" },
+        "targets": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/definitions/engineId" },
+          "additionalProperties": { "$ref": "#/definitions/target" },
+          "description": "Engine-keyed map for THIS version. A tool that works in more than one engine declares one target per engine instead of being duplicated. The core defines only this container; the meaning of a target's requirement keys and its artifact format belongs to that engine's adapter."
+        },
+        "releasedAt": { "type": "string", "format": "date" },
+        "deprecated": {
+          "type": "boolean",
+          "default": false,
+          "description": "This version is retired. Kept published so existing receipts stay resolvable, but an importer SHOULD prefer a newer one."
+        },
+        "yanked": {
+          "type": "boolean",
+          "default": false,
+          "description": "This version is withdrawn: it MUST NOT be selected automatically. Unlike `deprecated` this is a hard stop, for a release that is broken or unsafe. It stays listed because a receipt may still reference it."
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 400,
+          "description": "One or two sentences on what this version changed, shown when a user picks a version."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "target": {
+      "type": "object",
+      "required": ["requirements", "artifact"],
+      "properties": {
+        "requirements": {
+          "type": "object",
+          "required": ["minEngineVersion"],
+          "propertyNames": { "pattern": "^[a-zA-Z][a-zA-Z0-9]*$" },
+          "additionalProperties": {
+            "type": ["string", "number", "boolean"],
+            "description": "Flat scalar. Requirement keys are defined by the engine adapter; the core defines only minEngineVersion, which every adapter must be able to compare."
+          },
+          "description": "Host floors for this engine. minEngineVersion is mandatory - a tool that cannot state its floor is not admitted, because 'field absent' and 'forgot to fill it in' are indistinguishable in data. Everything else is adapter-defined: minRuntimeVersion for Unity's .NET API level, minApiVersion for Godot, and so on."
+        },
+        "artifact": { "$ref": "#/definitions/artifact" }
+      },
+      "additionalProperties": false
+    },
+
+    "artifact": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": ["archive", "package", "file", "external"],
+          "description": "archive: a general container the core itself can open (zip, tgz, tar.zst). package: an engine-specific container only that engine's adapter can open (unitypackage and friends). file: a single-file payload with no container at all (a dll, one shader, a licence file). external: no artifact is stored here at all; the payload lives in another repository and the core records where."
+        },
+        "format": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(\\.[a-z0-9]+)*$",
+          "description": "Container format. Required unless type is external. For type archive the core accepts zip, tgz, tar.gz and tar.zst. For type package the value is whatever the engine adapter registers, so unitypackage is a Unity concept rather than a core one. For type file this mirrors the extension: dll, pdb, so, dylib, txt.",
+          "examples": ["zip", "tgz", "tar.gz", "tar.zst", "unitypackage", "dll"]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^payloads/[a-z0-9-]+/artifacts/[A-Za-z0-9_.-]+$",
+          "description": "Repository-relative path, required unless type is external. Always inside the tool's own payload directory, so deleting a tool deletes one directory and nothing else. The file name must be <id>-<version>[-<engine>].<ext>. This pattern is intentionally loose; the exact naming rule is enforced by the validator, which can see the id, version and engine."
+        },
+        "size": { "type": "integer", "minimum": 1, "description": "Exact byte length. Required unless type is external." },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Digest of the artifact file itself, lower-case hex. Verified before import. Required unless type is external."
+        },
+        "source": {
+          "enum": ["git", "http", "npm"],
+          "description": "For type external: which kind of remote holds the payload."
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^(https://|git@|ssh://)",
+          "description": "For type external."
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "For type external. Pin a tag or a commit SHA; a branch head makes two installs of the same version diverge, which breaks the receipt model."
+        },
+        "subdirectory": {
+          "type": "string",
+          "description": "For an unpacked archive: take only entries under this prefix and strip it. For type external: the sub-path inside the remote repository that holds the package. Lets one archive or repository serve several layouts."
+        },
+        "upmPackageName": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(\\.[a-z0-9\\-]+)+$",
+          "description": "For type external that is a UPM package: lets the importer detect collisions and defer to the engine's own package resolution."
+        },
+        "unpack": {
+          "enum": ["none", "auto"],
+          "default": "auto",
+          "description": "auto: open the container and take its entries. none: place the artifact as-is, for a container that engine's own importer must see. none requires targetPath."
+        },
+        "targetPath": {
+          "type": "string",
+          "description": "Required for type file, and for any artifact with unpack: none: where the file lands in the project, relative to the project root. An unpacked artifact uses contentRoot rather than this."
+        },
+        "contentRoot": {
+          "type": "string",
+          "description": "For an unpacked archive: the directory under the project root that entries are extracted into.",
+          "examples": ["Assets", "addons", "res://addons"]
+        },
+        "files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Human-readable inventory of what the artifact installs, shown in the import tool before anything is written."
+        },
+        "editorOnly": {
+          "type": "boolean",
+          "default": false,
+          "description": "The payload is excluded from player builds."
+        },
+        "restartRequired": { "type": "boolean", "default": false }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "external" } }, "required": ["type"] },
+          "then": {
+            "required": ["source", "url", "ref"],
+            "not": { "anyOf": [{ "required": ["path"] }, { "required": ["sha256"] }, { "required": ["size"] }] }
+          },
+          "else": { "required": ["format", "path", "size", "sha256"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "file" } }, "required": ["type"] },
+          "then": { "required": ["targetPath"], "properties": { "unpack": { "const": "none" } } }
+        },
+        {
+          "if": {
+            "required": ["unpack"],
+            "properties": {
+              "type": { "enum": ["archive", "package", "file"] },
+              "unpack": { "const": "none" }
+            }
+          },
+          "then": { "required": ["targetPath"] }
+        }
+      ]
+    }
+  }
+}

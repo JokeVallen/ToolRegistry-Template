@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ToolRegistry 元信息校验 · manifest validator</title>
+<!--
+  GENERATED FILE - do not edit.
+  Rebuild with: node tools/build-validate-html.mjs
+
+  Self-contained: open it by double-clicking, drop a tool.yaml on it, or paste one in.
+  Nothing is uploaded and there is no network access at all.
+-->
+<style>
+  :root {
+    --bg: #1b1d21; --panel: #24272c; --line: #34383f; --fg: #e6e8ea;
+    --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #6aa9e2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px; background: var(--bg); color: var(--fg);
+    font: 14px/1.6 "Segoe UI", system-ui, sans-serif;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { color: var(--dim); margin-bottom: 18px; }
+  #drop {
+    border: 2px dashed var(--line); border-radius: 8px; padding: 28px;
+    text-align: center; color: var(--dim); background: var(--panel);
+  }
+  #drop.hot { border-color: var(--accent); color: var(--fg); }
+  #choose { margin-top: 16px; }
+  textarea {
+    width: 100%; min-height: 260px; margin-top: 14px; padding: 12px;
+    background: var(--panel); color: var(--fg); border: 1px solid var(--line);
+    border-radius: 8px; font: 13px/1.5 Consolas, "Cascadia Mono", monospace;
+    resize: vertical;
+  }
+  button {
+    margin-top: 10px; padding: 8px 18px; border-radius: 6px; cursor: pointer;
+    background: var(--accent); color: #10131a; border: 0; font-weight: 600;
+  }
+  button.secondary { background: transparent; color: var(--dim); border: 1px solid var(--line); }
+  #out { margin-top: 20px; }
+  .banner { padding: 12px 16px; border-radius: 8px; font-weight: 600; margin-bottom: 12px; }
+  .banner.ok { background: rgba(78,194,106,.14); color: var(--ok); }
+  .banner.bad { background: rgba(226,86,74,.14); color: var(--bad); }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li {
+    padding: 9px 12px; margin-bottom: 6px; background: var(--panel);
+    border-left: 3px solid var(--bad); border-radius: 4px;
+    font-family: Consolas, "Cascadia Mono", monospace; font-size: 13px;
+  }
+  li code { color: var(--accent); }
+  .hint { color: var(--dim); font-size: 12px; margin-top: 6px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<h1>ToolRegistry 元信息校验 · manifest validator</h1>
+<div class="sub">
+  把 <code>tool.yaml</code> 拖进来，或粘贴到下面的框里。全部在本地完成，不上传、不联网。<br>
+  Drop a <code>tool.yaml</code> here, or paste one below. Everything runs locally.
+</div>
+
+<div id="drop">
+  拖入 <code>tool.yaml</code> · drop a <code>tool.yaml</code> here
+  <button type="button" id="choose" class="secondary">选择文件 · choose a file</button>
+  <input type="file" id="file" accept=".yaml,.yml" class="hidden">
+</div>
+
+<textarea id="input" spellcheck="false" placeholder="kind: tool
+formatVersion: '3'
+id: my-tool
+..."></textarea>
+
+<button id="check">校验 · Validate</button>
+<button id="clear" class="secondary">清空 · Clear</button>
+<div class="hint">
+  只检查元信息本身是否合法。制品哈希、依赖求解与安装由 <code>utool validate</code> 负责——那需要整个注册库。
+  <br>Checks the manifest's shape only. Artifact hashes, dependency resolution and installation are
+  <code>utool validate</code>'s job, because they need the whole registry.
+</div>
+
+<div id="out"></div>
+
+<script>
+// ---- minimal-yaml.js (this repository) ----
+/**
+ * A deliberately small YAML reader for manifest files.
+ *
+ * Why this exists: the standalone HTML validator must be one file with no dependencies and
+ * no build step, and the `yaml` package cannot be embedded that way - it is forty-odd
+ * modules whose top-level names collide when flattened (visit, schema, int and fifteen
+ * others are declared in more than one file). Two attempts at flattening produced a page
+ * that built successfully and then threw at load.
+ *
+ * So the page carries its own reader, supporting exactly the constructs a ToolRegistry
+ * manifest is allowed to use. That constraint is the point rather than a limitation: the
+ * format is deliberately narrow, and a reader that accepts more than the format allows
+ * would be the wrong tool for validating it.
+ *
+ * Supported
+ *   * block mappings and block sequences, nested by indentation
+ *   * flow mappings and flow sequences: { a: 1, b: [x, y] }
+ *   * plain scalars, single- and double-quoted scalars
+ *   * block scalars: | literal and > folded, with - / + chomping
+ *   * comments, blank lines, and a mandatory single document
+ *
+ * Refused, by name, because silently misreading them would be worse:
+ *   * anchors and aliases (&a / *a)
+ *   * tags (!!str, !Custom)
+ *   * multiple documents (---)
+ *   * explicit keys (? key)
+ *   * multi-line flow collections
+ *
+ * Not a general YAML implementation, and does not pretend to be one.
+ */
+
+/**
+ * @param {string} text
+ * @returns {{doc: any}|{error: {code: string, message: string}[]}}
+ */
+function parseYaml(text) {
+  const source = text.replace(/^\uFEFF/, '');
+
+  if (source.trim() === '') {
+    return { error: [{ code: 'E-UTOOL-EMPTY', message: 'the document is empty' }] };
+  }
+
+  const lines = source.split(/\r\n|\r|\n/);
+
+  // `---` either opens the single document (legal, when it is the first thing) or SEPARATES
+  // two documents (illegal here). Counting markers alone missed the second case, because
+  // `a: 1\n---\nb: 2` has exactly one marker and yet is plainly two documents.
+  const markerLines = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    // Only a marker that is not indented starts a document.
+    if (/^---\s*(#.*)?$/.test(lines[i])) markerLines.push(i);
+    if (/^\.\.\.\s*(#.*)?$/.test(lines[i])) markerLines.push(i);
+  }
+  const opensDocument = markerLines.length > 0 && /^\s*$/.test(lines.slice(0, markerLines[0]).join(''));
+  const separated = opensDocument ? markerLines.length - 1 : markerLines.length;
+
+  if (separated > 0) {
+    return {
+      error: [{
+        code: 'E-UTOOL-YAML',
+        message: 'expected exactly one YAML document, found 2 or more',
+      }],
+    };
+  }
+
+  const tokens = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const raw = lines[index];
+
+    if (/^---\s*(#.*)?$/.test(raw) || /^\.\.\.\s*(#.*)?$/.test(raw)) continue;
+
+    const withoutComment = stripComment(raw);
+    if (withoutComment.trim() === '') continue;
+
+    // Checked on the raw leading whitespace: after trimming, a leading tab is
+    // indistinguishable from indentation and tab-indented input would be accepted.
+    const leading = withoutComment.match(/^[ \t]*/)[0];
+    if (leading.includes('\t')) {
+      return { error: [problem(index, 'tabs may not be used for indentation')] };
+    }
+    const indent = leading.length;
+
+    const text = withoutComment.trim();
+
+    // A block scalar's body is NOT tokenised. It is raw text whose blank lines are content
+    // and whose indentation is relative to the parent, so it must be read from the source
+    // rather than filtered into the token stream - doing the latter produced
+    // "unexpected indentation" on every manifest with a folded description.
+    //
+    // The indicator appears as a VALUE (`description: >-`) or as a whole sequence item
+    // (`- >-`), so both forms are recognised here rather than in the parser.
+    if (isBlockScalarValue(text)) {
+      const body = [];
+      let cursor = index + 1;
+      while (cursor < lines.length) {
+        const bodyLine = lines[cursor];
+        if (bodyLine.trim() === '') {
+          body.push('');
+          cursor += 1;
+          continue;
+        }
+        const bodyIndent = bodyLine.length - bodyLine.trimStart().length;
+        if (bodyIndent <= indent) break;
+        body.push(bodyLine.slice(Math.min(bodyIndent, indent + 2)));
+        cursor += 1;
+      }
+      // Trailing blank lines belong to the chomping decision, not to the content.
+      while (body.length > 0 && body[body.length - 1] === '') body.pop();
+
+      tokens.push({
+        line: index,
+        indent,
+        text,
+        block: { indicator: blockIndicatorOf(text), chomp: chompOf(text), body },
+      });
+      index = cursor - 1;
+      continue;
+    }
+
+    tokens.push({ line: index, indent, text, raw: withoutComment });
+  }
+
+  if (tokens.length === 0) {
+    return { error: [{ code: 'E-UTOOL-EMPTY', message: 'the document is empty' }] };
+  }
+
+  const unsupported = findUnsupported(source);
+  if (unsupported) return { error: [unsupported] };
+
+  const state = { tokens, at: 0, lines };
+  try {
+    const doc = parseBlock(state, tokens[0].indent);
+    if (state.at < tokens.length) {
+      const token = tokens[state.at];
+      return {
+        error: [problem(token.line, `unexpected content at indentation ${token.indent}`)],
+      };
+    }
+    if (doc === undefined) {
+      return { error: [{ code: 'E-UTOOL-EMPTY', message: 'the document is empty' }] };
+    }
+    if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
+      return {
+        error: [{
+          code: 'E-UTOOL-ROOT',
+          message: 'the document root must be a mapping',
+        }],
+      };
+    }
+    return { doc };
+  } catch (cause) {
+    return { error: [{ code: 'E-UTOOL-YAML', message: cause.message }] };
+  }
+}
+
+// ------------------------------------------------------------------ scanning
+
+/** Remove a trailing comment, respecting quotes. */
+function stripComment(line) {
+  let quote = null;
+  for (let i = 0; i < line.length; i += 1) {
+    const c = line[i];
+    if (quote) {
+      if (c === '\\' && quote === '"') i += 1;
+      else if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      continue;
+    }
+    // A `#` starts a comment only at the start of the line or after whitespace.
+    if (c === '#' && (i === 0 || /\s/.test(line[i - 1]))) return line.slice(0, i);
+  }
+  return line;
+}
+
+/** Refuse constructs this reader does not implement, rather than misreading them. */
+function findUnsupported(source) {
+  // Patterns must not require a preceding newline: the construct can be on the first line,
+  // and testing against "\n" + source missed exactly that case.
+  const checks = [
+    [/&\w+/, 'anchors (&name) are not supported'],
+    [/\*\w+/, 'aliases (*name) are not supported'],
+    [/(^|[:\s])!\S/m, 'tags (!tag) are not supported'],
+    [/^\s*\?\s/m, 'explicit keys (? key) are not supported'],
+  ];
+  for (const [pattern, message] of checks) {
+    if (pattern.test(source)) {
+      return { code: 'E-UTOOL-YAML', message };
+    }
+  }
+  return null;
+}
+
+
+function problem(line, message) {
+  return { code: 'E-UTOOL-YAML', message: `line ${line + 1}: ${message}` };
+}
+
+// ------------------------------------------------------------------ parsing
+
+/** Parse everything at one indentation level: a mapping or a sequence. */
+function parseBlock(state, indent) {
+  const first = state.tokens[state.at];
+  if (!first || first.indent < indent) return undefined;
+
+  return first.text.startsWith('- ') || first.text === '-'
+    ? parseSequence(state, indent)
+    : parseMapping(state, indent);
+}
+
+/**
+ * Continue a plain scalar across the following, more-indented lines.
+ *
+ * YAML folds them into spaces. This is legal and the generated index.yaml relies on it for
+ * long descriptions, so without it a wrapped description reads as unexpected indentation.
+ */
+function continuePlainScalar(state, value, parentIndent) {
+  let out = value;
+  while (state.at < state.tokens.length) {
+    const next = state.tokens[state.at];
+    if (next.indent <= parentIndent || next.block) break;
+    if (splitKey(next.text)) break;
+    if (next.text.startsWith('- ') || next.text === '-') break;
+    out += ` ${next.text}`;
+    state.at += 1;
+  }
+  return out;
+}
+
+function parseMapping(state, indent) {
+  const out = {};
+  while (state.at < state.tokens.length) {
+    const token = state.tokens[state.at];
+    if (token.indent < indent) break;
+    if (token.indent > indent) {
+      throw new Error(`line ${token.line + 1}: unexpected indentation`);
+    }
+    if (token.text.startsWith('- ') || token.text === '-') {
+      throw new Error(`line ${token.line + 1}: a sequence item where a mapping key was expected`);
+    }
+
+    const split = splitKey(token.text);
+    if (!split) {
+      throw new Error(`line ${token.line + 1}: expected 'key: value'`);
+    }
+    const { key, rest } = split;
+    state.at += 1;
+
+    // A block scalar carries its own indicator in this token (`description: >-`), so the
+    // body has to be taken from the token we are already holding rather than from the next
+    // one - which is why this precedes the `rest !== ''` case below.
+    if (token.block) {
+      out[key] = readBlockScalar(token);
+      continue;
+    }
+
+    if (rest !== '') {
+      // A plain scalar may continue on following lines that are indented further. YAML
+      // folds those into spaces, which is legal and which the generated index.yaml uses for
+      // long descriptions:
+      //     description: first part
+      //       second part
+      // Without this the continuation lines look like unexpected indentation.
+      let value = rest;
+      while (state.at < state.tokens.length) {
+        const continuation = state.tokens[state.at];
+        if (continuation.indent <= indent || continuation.block) break;
+        if (splitKey(continuation.text)) break;
+        value += ` ${continuation.text}`;
+        state.at += 1;
+      }
+      out[key] = parseScalarOrFlow(value, token.line);
+      continue;
+    }
+
+    // No value on this line. What follows is either a nested block, a block scalar, or a
+    // sibling key - and a SEQUENCE may sit at the key's own indentation, which is legal
+    // YAML and what the generated index.yaml uses:
+    //     tools:
+    //     - id: first
+    const next = state.tokens[state.at];
+    if (next && next.indent > indent) {
+      // A DEEPER line is a nested block, and it carries its own key - `b: |` is a mapping
+      // entry for `b`, not this key's scalar. This used to test `next.block` FIRST and hand
+      // the folded text to the OUTER key, so
+      //     a:
+      //       b: >-
+      //         text
+      // parsed as { a: "text" }: `b` disappeared. Nothing caught it until a manifest ended
+      // with a block scalar, because that is when the misread value is visible.
+      out[key] = parseBlock(state, next.indent);
+    } else if (next && next.block) {
+      // Only reachable for a block scalar that belongs to THIS key without a key of its own,
+      // which the tokeniser produces for `- |` items; parseSequence handles those.
+      out[key] = readBlockScalar(next);
+      state.at += 1;
+    } else if (next && next.indent === indent && (next.text.startsWith('- ') || next.text === '-')) {
+      out[key] = parseSequence(state, indent);
+    } else {
+      out[key] = null;
+    }
+  }
+  return out;
+}
+
+/**
+ * Materialise a block scalar token.
+ *
+ * `|` keeps newlines; `>` folds a single newline into a space and keeps blank lines as
+ * newlines. Chomping: `-` strips the trailing newline, default clips to exactly one, `+`
+ * keeps them all.
+ */
+function readBlockScalar(token) {
+  const { indicator, chomp, body } = token.block;
+  let value = indicator === '|' ? body.join('\n') : foldLines(body);
+
+  if (chomp === '-') return value.replace(/\n+$/, '');
+  if (chomp === '+') return `${value}\n`;
+  return `${value.replace(/\n+$/, '')}\n`;
+}
+
+/**
+ * Is this line's value a block scalar indicator?
+ *
+ * Matches both `description: >-` and a bare `>-` as a sequence item, and nothing else - a
+ * value like `a: |x` is not an indicator and must fall through to the scalar parser.
+ */
+function isBlockScalarValue(text) {
+  return /:\s*[|>][+-]?\d*$/.test(text) || /^[|>][+-]?\d*$/.test(text);
+}
+
+/** The `|` or `>` that opens the scalar. */
+function blockIndicatorOf(text) {
+  return text.match(/[|>]/)[0];
+}
+
+function chompOf(text) {
+  if (text.includes('-')) return '-';
+  if (text.includes('+')) return '+';
+  return 'clip';
+}
+
+/**
+ * Fold a block scalar's lines the way `>` does: a single newline becomes a space, and a
+ * blank line becomes a newline.
+ */
+function foldLines(lines) {
+  let out = '';
+  for (const line of lines) {
+    if (line.trim() === '') {
+      out += '\n';
+      continue;
+    }
+    out += (out !== '' && !out.endsWith('\n') ? ' ' : '') + line;
+  }
+  return out;
+}
+
+function parseSequence(state, indent) {
+  const out = [];
+  while (state.at < state.tokens.length) {
+    const token = state.tokens[state.at];
+    if (token.indent < indent) break;
+    if (token.indent > indent) {
+      throw new Error(`line ${token.line + 1}: unexpected indentation`);
+    }
+    if (!(token.text.startsWith('- ') || token.text === '-')) break;
+
+    state.at += 1;
+    const rest = token.text === '-' ? '' : token.text.slice(2).trim();
+    const itemIndent = indent + 2;
+
+    if (rest === '') {
+      const next = state.tokens[state.at];
+      if (next && next.block) {
+        out.push(readBlockScalar(next));
+        state.at += 1;
+      } else {
+        out.push(next && next.indent > indent ? parseBlock(state, next.indent) : null);
+      }
+      continue;
+    }
+
+    // `- key: value` starts a mapping whose keys line up under the dash.
+    if (splitKey(rest)) {
+      const inline = parseInlineMapping(state, rest, itemIndent, token.line);
+      out.push(inline);
+      continue;
+    }
+
+    out.push(parseScalarOrFlow(rest, token.line));
+  }
+  return out;
+}
+
+/**
+ * A sequence item that begins a mapping: `- id: x` followed by `  version: y`.
+ *
+ * The first pair is on the dash line; the rest are at the item's indentation, which is the
+ * dash column plus two.
+ */
+function parseInlineMapping(state, firstPair, itemIndent, line) {
+  const { key, rest } = splitKey(firstPair);
+  const out = {};
+
+  // The dash line's own token carries a block-scalar body when the item opens one
+  // (`- notes: >-`). Consulting `rest` alone reads the indicator as the value.
+  const firstToken = state.tokens[state.at - 1];
+  if (firstToken?.block) {
+    out[key] = readBlockScalar(firstToken);
+  } else if (rest !== '') {
+    out[key] = parseScalarOrFlow(continuePlainScalar(state, rest, itemIndent), line);
+  } else {
+    const next = state.tokens[state.at];
+    if (next && next.block) {
+      out[key] = readBlockScalar(next);
+      state.at += 1;
+    } else {
+      out[key] = next && next.indent > itemIndent ? parseBlock(state, next.indent) : null;
+    }
+  }
+
+  // Continue with any further keys at the item's indentation.
+  while (state.at < state.tokens.length) {
+    const token = state.tokens[state.at];
+    if (token.indent !== itemIndent) break;
+    if (token.text.startsWith('- ') || token.text === '-') break;
+
+    const split = splitKey(token.text);
+    if (!split) break;
+    state.at += 1;
+
+    // Same rule as in parseBlock: a `key: >-` line is a block scalar, and the token
+    // already holds the folded body. Checking `rest` first made the indicator itself the
+    // value, so a sequence item's last key read as the literal string ">-".
+    if (token.block) {
+      out[split.key] = readBlockScalar(token);
+      continue;
+    }
+
+    if (split.rest !== '') {
+      out[split.key] = parseScalarOrFlow(
+        continuePlainScalar(state, split.rest, itemIndent), token.line,
+      );
+      continue;
+    }
+    const next = state.tokens[state.at];
+    if (next && next.block) {
+      out[split.key] = readBlockScalar(next);
+      state.at += 1;
+    } else if (next && next.indent > itemIndent) {
+      out[split.key] = parseBlock(state, next.indent);
+    } else if (next && next.indent === itemIndent && (next.text.startsWith('- ') || next.text === '-')) {
+      out[split.key] = parseSequence(state, itemIndent);
+    } else {
+      out[split.key] = null;
+    }
+  }
+
+  return out;
+}
+
+/** Split `key: value`, honouring quoted keys. Returns null when there is no key. */
+function splitKey(text) {
+  if (text.startsWith('"') || text.startsWith("'")) {
+    const quote = text[0];
+    let i = 1;
+    while (i < text.length) {
+      if (quote === '"' && text[i] === '\\') i += 2;
+      else if (text[i] === quote) break;
+      else i += 1;
+    }
+    if (i >= text.length) return null;
+    const key = parseQuoted(text.slice(0, i + 1), 0);
+    const after = text.slice(i + 1).trimStart();
+    if (!after.startsWith(':')) return null;
+    const rest = after.slice(1).trim();
+    return { key: String(key), rest };
+  }
+
+  // A plain key ends at the first `: ` or a trailing `:`.
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] !== ':') continue;
+    const after = text.slice(i + 1);
+    if (after === '' || /^\s/.test(after)) {
+      return { key: text.slice(0, i).trim(), rest: after.trim() };
+    }
+  }
+  return null;
+}
+
+// ------------------------------------------------------------------ scalars
+
+/** A scalar, or a flow collection when the value starts with `{` or `[`. */
+function parseScalarOrFlow(text, line) {
+  const trimmed = text.trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    const [value, consumed] = parseFlow(trimmed, 0);
+    if (trimmed.slice(consumed).trim() !== '') {
+      throw new Error(`line ${line + 1}: unexpected text after a flow collection`);
+    }
+    return value;
+  }
+  return parseScalar(trimmed, line);
+}
+
+function parseScalar(text, line) {
+  if (text.startsWith('"') || text.startsWith("'")) {
+    if (!isClosedQuote(text)) throw new Error(`line ${line + 1}: unterminated quoted scalar`);
+    return parseQuoted(text, line);
+  }
+  return resolvePlain(text);
+}
+
+function isClosedQuote(text) {
+  const quote = text[0];
+  let i = 1;
+  while (i < text.length) {
+    if (quote === '"' && text[i] === '\\') i += 2;
+    else if (text[i] === quote) return i === text.length - 1;
+    else i += 1;
+  }
+  return false;
+}
+
+function parseQuoted(text, line) {
+  const quote = text[0];
+  if (!isClosedQuote(text)) throw new Error(`line ${line + 1}: unterminated quoted scalar`);
+  const body = text.slice(1, -1);
+  if (quote === "'") return body.replace(/''/g, "'");
+
+  return body.replace(/\\(u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2}|.)/g, (whole, escape) => {
+    const simple = { n: '\n', t: '\t', r: '\r', '"': '"', '\\': '\\', '0': '\0', b: '\b', f: '\f' };
+    if (escape[0] === 'u' || escape[0] === 'x') {
+      return String.fromCodePoint(Number.parseInt(escape.slice(1), 16));
+    }
+    return simple[escape] ?? escape;
+  });
+}
+
+/** Plain scalars: null, boolean, number, or string. */
+function resolvePlain(text) {
+  if (text === '' || text === '~' || text === 'null' || text === 'Null' || text === 'NULL') {
+    return null;
+  }
+  if (/^(true|True|TRUE)$/.test(text)) return true;
+  if (/^(false|False|FALSE)$/.test(text)) return false;
+  if (/^[-+]?\d+$/.test(text)) return Number.parseInt(text, 10);
+  if (/^[-+]?(\d+\.\d*|\.\d+|\d+)([eE][-+]?\d+)?$/.test(text)) return Number.parseFloat(text);
+  return text;
+}
+
+/** Flow collections, which may nest. Returns [value, charactersConsumed]. */
+function parseFlow(text, start) {
+  let i = skipSpace(text, start);
+  const open = text[i];
+
+  if (open === '[') {
+    const out = [];
+    i += 1;
+    for (;;) {
+      i = skipSpace(text, i);
+      if (text[i] === ']') return [out, i + 1];
+      const [value, next] = parseFlowValue(text, i);
+      out.push(value);
+      i = skipSpace(text, next);
+      if (text[i] === ',') i += 1;
+      else if (text[i] === ']') return [out, i + 1];
+      else throw new Error(`unexpected '${text[i] ?? 'end of line'}' in a flow sequence`);
+    }
+  }
+
+  if (open === '{') {
+    const out = {};
+    i += 1;
+    for (;;) {
+      i = skipSpace(text, i);
+      if (text[i] === '}') return [out, i + 1];
+      const [key, afterKey] = parseFlowValue(text, i, true);
+      i = skipSpace(text, afterKey);
+      if (text[i] !== ':') throw new Error(`expected ':' in a flow mapping`);
+      i += 1;
+      const [value, afterValue] = parseFlowValue(text, i);
+      out[String(key)] = value;
+      i = skipSpace(text, afterValue);
+      if (text[i] === ',') i += 1;
+      else if (text[i] === '}') return [out, i + 1];
+      else throw new Error(`unexpected '${text[i] ?? 'end of line'}' in a flow mapping`);
+    }
+  }
+
+  throw new Error(`expected a flow collection`);
+}
+
+function parseFlowValue(text, start, asKey = false) {
+  const i = skipSpace(text, start);
+  if (text[i] === '[' || text[i] === '{') return parseFlow(text, i);
+
+  if (text[i] === '"' || text[i] === "'") {
+    const quote = text[i];
+    let j = i + 1;
+    while (j < text.length) {
+      if (quote === '"' && text[j] === '\\') j += 2;
+      else if (text[j] === quote) break;
+      else j += 1;
+    }
+    if (j >= text.length) throw new Error('unterminated quoted scalar');
+    return [parseQuoted(text.slice(i, j + 1), 0), j + 1];
+  }
+
+  // A plain flow scalar ends at a terminator.
+  let j = i;
+  while (j < text.length && !',]}'.includes(text[j])) {
+    if (text[j] === ':' && (asKey || /\s/.test(text[j + 1] ?? ''))) break;
+    j += 1;
+  }
+  const raw = text.slice(i, j).trim();
+  return [resolvePlain(raw), j];
+}
+
+function skipSpace(text, i) {
+  while (i < text.length && /\s/.test(text[i])) i += 1;
+  return i;
+}
+
+
+// ---- format.js (from ToolImport/packages/utool-core/src) ----
+/**
+ * Closed vocabulary of the .yaml format, formatVersion 2.
+ *
+ * The manifest is split in two halves and this file mirrors that split:
+ *
+ *   ENGINE-NEUTRAL  identity, capabilities, dependency edges. These mean the same
+ *                   thing whatever consumes the payload.
+ *   ENGINE-SPECIFIC requirements and artifacts, which live under `targets` and
+ *                   whose vocabulary belongs to that engine's adapter.
+ *
+ * Nothing engine-specific is enumerated here. `unitypackage` in particular is NOT
+ * a core format: it is registered by the Unity adapter like any other engine
+ * container. The core knows only general archives plus the artifact *kinds*.
+ */
+
+const FORMAT_VERSION = '3';
+
+/** Document discriminators. A reader must reject a `kind` it does not know. */
+const KIND = Object.freeze({
+  TOOL: 'tool',
+  INDEX: 'index',
+  RECEIPT: 'receipt',
+});
+
+const KNOWN_KINDS = Object.freeze([KIND.TOOL, KIND.INDEX, KIND.RECEIPT]);
+
+/** Fixed file names. A payload is identified by its manifest file name. */
+const FILE_NAMES = Object.freeze({
+  MANIFEST: 'tool.yaml',
+  /** Accepted alias: the contents are YAML, so a tool.yaml manifest is not a lie. */
+  MANIFEST_ALIAS: 'tool.yaml',
+  INDEX: 'index.yaml',
+  INDEX_ALIAS: 'index.yaml',
+  receiptFor: (toolId) => `${toolId}.yaml`,
+});
+
+/** Entries a payload directory is allowed to contain, and nothing else. */
+const ALLOWED_PAYLOAD_ENTRIES = Object.freeze([
+  FILE_NAMES.MANIFEST,
+  FILE_NAMES.MANIFEST_ALIAS,
+  'README.md',
+  'artifacts',
+]);
+
+/** Engine-neutral tool kinds. Engine-specific kinds (shader packs) are not here. */
+const TOOL_TYPES = Object.freeze([
+  'editor-tool',
+  'tool-library',
+  'framework',
+  'asset-pack',
+  'template',
+]);
+
+/**
+ * Artifact kinds, which the CORE understands:
+ *
+ *   archive   a general container the core itself opens (see CORE_ARCHIVE_FORMATS)
+ *   package   an engine-specific container; only that engine's adapter opens it
+ *   file      a single-file payload with no container at all (dll, shader, txt)
+ *   external  nothing is stored here; the payload lives in another repository
+ */
+const ARTIFACT_TYPE = Object.freeze({
+  ARCHIVE: 'archive',
+  PACKAGE: 'package',
+  FILE: 'file',
+  EXTERNAL: 'external',
+});
+
+const KNOWN_ARTIFACT_TYPES = Object.freeze(Object.values(ARTIFACT_TYPE));
+
+/**
+ * General archive formats the core opens with node:zlib alone.
+ *
+ * Deliberately excludes xz/lzma: Node has no built-in lzma codec, and adding a
+ * dependency for a format that is rare in package distribution is not worth it.
+ * An engine that needs it can register it through its adapter.
+ */
+const CORE_ARCHIVE_FORMATS = Object.freeze(['zip', 'tgz', 'tar.gz', 'tar.zst']);
+
+/**
+ * Leading bytes that identify each core archive format.
+ *
+ * Plain arrays of numbers rather than Buffers, because this module is embedded verbatim into the
+ * standalone browser validator in ToolRegistry, where `Buffer` does not exist. A top-level
+ * `Buffer.from(...)` there throws on load, which kills the entire page script before a single event
+ * handler is attached - the file picker and the drop zone both go dead, with nothing on screen to
+ * say why. Keeping the core free of Node-only globals is what stops that class of failure.
+ */
+const ARCHIVE_MAGIC = Object.freeze({
+  'zip': Object.freeze([0x50, 0x4b, 0x03, 0x04]),
+  'tgz': Object.freeze([0x1f, 0x8b]),
+  'tar.gz': Object.freeze([0x1f, 0x8b]),
+  'tar.zst': Object.freeze([0x28, 0xb5, 0x2f, 0xfd]),
+});
+
+/** Container format -> file extension used in artifact names. */
+const FORMAT_EXTENSION = Object.freeze({
+  'zip': 'zip',
+  'tgz': 'tgz',
+  'tar.gz': 'tgz',
+  'tar.zst': 'tar.zst',
+});
+
+const UNPACK = Object.freeze({ AUTO: 'auto', NONE: 'none' });
+
+/** Where receipts live inside a consumer project. Library/ is never committed. */
+const RECEIPT_DIR = 'Library/ToolImport/receipts';
+
+/**
+ * Receipt directories written by earlier versions, newest first.
+ *
+ * A receipt is the ONLY record of which files a tool owns, so a project that installed
+ * something before the rename must keep being able to uninstall it. Rather than asking anyone
+ * to move files by hand, `ReceiptStore` migrates the directory on first use.
+ */
+const LEGACY_RECEIPT_DIRS = Object.freeze([
+  'Library/DevCatToolRegistry/receipts',
+]);
+
+const ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const ENGINE_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const CAPABILITY_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+(-[a-z0-9]+)*)+$/;
+const STRICT_VERSION_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.\-]+)?$/;
+const CONSTRAINT_PATTERN = /^(\^|~|>=|<=|>|<|=)?\d+\.\d+\.\d+(?:-[0-9A-Za-z.\-]+)?$/;
+const SHA256_PATTERN = /^[a-f0-9]{64}$/;
+const PACKAGE_NAME_PATTERN = /^[a-z0-9]+(\.[a-z0-9\-]+)+$/;
+
+/** payloads/<id>/artifacts/<file> - the directory part only. */
+const ARTIFACT_PATH_PARTS_PATTERN = /^payloads\/([a-z0-9-]+)\/artifacts\/([^/]+)$/;
+
+/**
+ * The mandated artifact file name: <id>-<version>[-<engine>].<ext>.
+ *
+ * Exported for documentation and for the validator's looser pre-check, but note
+ * that `artifactNameEngine` does NOT use its groups. A regular expression cannot
+ * split this name reliably: the id may end in a digit, so for
+ * `core-editor-utils-1.1.0-unity.unitypackage` the engine group is optional and
+ * the id group can absorb the leading `1`, making the engine come back null. The
+ * deterministic check below is used instead.
+ */
+const ARTIFACT_NAME_PATTERN = new RegExp(
+  '^([a-z0-9-]+)-(\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.\\-]+)?)' +
+    '(?:-([a-z0-9]+(?:-[a-z0-9]+)*))?\\.([a-z0-9]+(?:\\.[a-z0-9]+)*)$',
+);
+
+/**
+ * Split an artifact file name into its parts, deterministically.
+ *
+ * Works from BOTH ends inwards rather than with one regular expression, because a
+ * single regex cannot do this reliably in either direction:
+ *
+ *   - scanning forward, the id may end in a digit, so `core-editor-utils-1.1.0`
+ *     lets the id group absorb the leading `1` and the engine segment disappears
+ *     (it is optional, so the engine comes back null);
+ *   - scanning for the version, a prerelease suffix is greedy and
+ *     `1.1.0-unity` looks exactly like a valid `1.1.0-unity` prerelease.
+ *
+ * So: the extension is everything after the last dot; then a trailing segment is
+ * an engine only when what remains still ends in a version triple. Whatever is
+ * left is the id.
+ *
+ * @param {string} name file name only, no directory
+ * @returns {{ok: boolean, id?: string, version?: string, engine?: string|null, extension?: string, reason?: string}}
+ */
+function splitArtifactName(name) {
+  // Known extensions first, longest first, so a compound one such as `.tar.zst`
+  // is not mistaken for a `.zst` file whose version ends in `.tar`.
+  const known = [...new Set(Object.values(FORMAT_EXTENSION))].sort((a, b) => b.length - a.length);
+  const knownMatch = known.find((extension) => name.endsWith(`.${extension}`));
+
+  const lastDot = name.lastIndexOf('.');
+  if (lastDot <= 0 || lastDot === name.length - 1) {
+    return { ok: false, reason: `no extension in '${name}'` };
+  }
+
+  let stem;
+  let extension;
+  if (knownMatch) {
+    extension = knownMatch;
+    stem = name.slice(0, name.length - knownMatch.length - 1);
+  } else {
+    extension = name.slice(lastDot + 1);
+    stem = name.slice(0, lastDot);
+  }
+
+  // Peel off a trailing segment when the remainder still ends in a version.
+  // `-1.1.0-unity` -> stem `-1.1.0`, engine `unity`;  `-1.1.0` -> stays put.
+  let engine = null;
+  const stemDot = stem.lastIndexOf('.');
+  if (stemDot !== -1) {
+    const tail = stem.slice(stemDot + 1);
+    const dash = tail.indexOf('-');
+    if (dash > 0) {
+      const candidateStem = stem.slice(0, stemDot + 1 + dash);
+      if (VERSION_TRIPLE_AT_END.test(candidateStem)) {
+        engine = tail.slice(dash + 1);
+        stem = candidateStem;
+      }
+    }
+  }
+
+  const versionMatch = VERSION_AT_END.exec(stem);
+  if (!versionMatch) {
+    return { ok: false, reason: `no version triple at the end of '${name}'` };
+  }
+  const version = versionMatch[1];
+  const id = stem.slice(0, stem.length - versionMatch[0].length);
+
+  if (!id) return { ok: false, reason: `no id before the version in '${name}'` };
+  if (engine !== null && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(engine)) {
+    return { ok: false, reason: `engine segment '${engine}' is not lowercase kebab-case` };
+  }
+
+  return { ok: true, id, version, engine, extension };
+}
+
+/** A version triple anchored at the end of a string. */
+const VERSION_AT_END = /-(\d+\.\d+\.\d+(?:-[0-9A-Za-z.\-]+)?)$/;
+
+/** A version triple anchored at the end, without capturing. */
+const VERSION_TRIPLE_AT_END = /-\d+\.\d+\.\d+(?:-[0-9A-Za-z.\-]+)?$/;
+
+/** @returns {string|null} the engine segment of an artifact name, if present */
+function artifactNameEngine(name) {
+  const parts = splitArtifactName(String(name));
+  return parts.ok ? parts.engine : null;
+}
+/**
+ * Is a capability name well formed? Two segments minimum, so a capability always
+ * states its namespace rather than being a bare word.
+ *
+ * @param {string} name
+ * @returns {boolean}
+ */
+function isCapability(name) {
+  return typeof name === 'string' && CAPABILITY_PATTERN.test(name);
+}
+
+/**
+ * Expected artifact file name for one target.
+ *
+ * @param {string} toolId
+ * @param {string} version
+ * @param {string} engine
+ * @param {boolean} multiEngine one manifest with several targets adds the engine
+ *   segment, so two engines' artifacts can share a directory
+ * @param {string} format
+ * @returns {string}
+ */
+function expectedArtifactName(toolId, version, engine, multiEngine, format) {
+  const extension = FORMAT_EXTENSION[format] ?? format;
+  const engineSegment = multiEngine ? `-${engine}` : '';
+  return `${toolId}-${version}${engineSegment}.${extension}`;
+}
+
+
+// ---- schema.js (from ToolImport/packages/utool-core/src) ----
+/**
+ * Minimal JSON Schema (draft-07 subset) evaluator.
+ *
+ * Mirrors schema/tool.schema.json's needs exactly, and deliberately nothing
+ * more. The same subset is implemented in tools/validate_registry.py, so the
+ * Python CI gate and this parser agree on what "valid" means.
+ *
+ * Supported: $ref (local), type, enum, const, properties,
+ * additionalProperties, propertyNames, required, items, minItems, maxItems, uniqueItems,
+ * minLength, maxLength, pattern, format (date, uri), minimum, maximum,
+ * allOf, anyOf, oneOf, not, if/then/else, definitions, $defs.
+ */
+
+
+// `fromFile` is the only platform-dependent part of this module, and it is kept that way
+// on purpose: the validator itself is pure, so the same code validates a manifest in Node
+// and in a browser. That is what lets the standalone HTML checker use these rules instead
+// of reimplementing them. The import above is tolerated in a browser via the shim the
+// HTML page installs; see ToolRegistry/tools/validate.html.
+
+const KNOWN_KEYWORDS = new Set([
+  '$schema', '$id', '$comment', 'title', 'description', 'default', 'examples',
+  'definitions', '$defs', 'type', 'enum', 'const', 'properties',
+  'additionalProperties', 'propertyNames', 'required', 'items', 'minItems', 'maxItems',
+  'uniqueItems', 'minLength', 'maxLength', 'pattern', 'format', 'minimum',
+  'maximum', 'allOf', 'anyOf', 'oneOf', 'not', 'if', 'then', 'else', '$ref',
+]);
+
+/**
+ * @param {unknown} value
+ * @param {string} expected
+ * @returns {boolean}
+ */
+function typeMatches(value, expected) {
+  switch (expected) {
+    case 'object':
+      return value !== null && typeof value === 'object' && !Array.isArray(value);
+    case 'array':
+      return Array.isArray(value);
+    case 'string':
+      return typeof value === 'string';
+    case 'boolean':
+      return typeof value === 'boolean';
+    case 'integer':
+      return typeof value === 'number' && Number.isInteger(value);
+    case 'number':
+      return typeof value === 'number' && Number.isFinite(value);
+    case 'null':
+      return value === null;
+    default:
+      throw new Error(`unsupported schema type: ${expected}`);
+  }
+}
+
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const URI_PATTERN = /^[a-zA-Z][a-zA-Z0-9+.\-]*:\/\/\S+$/;
+
+class SchemaValidator {
+  /**
+   * @param {Record<string, unknown>} schema
+   */
+  constructor(schema) {
+    this.root = schema;
+    this.#assertSupported(schema, '#');
+  }
+
+  /** @param {string} path */
+  static fromFile(path) {
+    let text;
+    try {
+      text = readFileSync(path, 'utf8');
+    } catch (cause) {
+      throw new Error(`cannot read schema ${path}: ${cause.message}`);
+    }
+    return new SchemaValidator(JSON.parse(text));
+  }
+
+  #assertSupported(node, path) {
+    if (Array.isArray(node)) {
+      node.forEach((sub, i) => this.#assertSupported(sub, `${path}/${i}`));
+      return;
+    }
+    if (node === null || typeof node !== 'object') return;
+
+    for (const [key, value] of Object.entries(node)) {
+      if (!KNOWN_KEYWORDS.has(key)) {
+        throw new Error(`schema ${path}: unsupported keyword '${key}'`);
+      }
+      if (key === 'properties' || key === 'definitions' || key === '$defs') {
+        for (const [subKey, sub] of Object.entries(value)) {
+          this.#assertSupported(sub, `${path}/${key}/${subKey}`);
+        }
+      } else if (key === 'allOf' || key === 'anyOf' || key === 'oneOf') {
+        value.forEach((sub, i) => this.#assertSupported(sub, `${path}/${key}/${i}`));
+      } else if (['items', 'not', 'if', 'then', 'else', 'additionalProperties', 'propertyNames'].includes(key)) {
+        if (value !== null && typeof value === 'object') {
+          this.#assertSupported(value, `${path}/${key}`);
+        }
+      }
+    }
+  }
+
+  /** @param {string} ref */
+  #resolve(ref) {
+    if (!ref.startsWith('#/')) {
+      throw new Error(`only local $ref is supported, got '${ref}'`);
+    }
+    return ref
+      .slice(2)
+      .split('/')
+      .reduce((node, part) => node[part.replace(/~1/g, '/').replace(/~0/g, '~')], this.root);
+  }
+
+  /**
+   * Validate a value, returning every problem found.
+   *
+   * @param {unknown} value
+   * @param {Record<string, unknown>} [schema]
+   * @param {string} [path]
+   * @returns {string[]} human-readable problems, empty when valid
+   */
+  errors(value, schema = this.root, path = '$') {
+    const out = [];
+
+    if (schema.$ref !== undefined) {
+      return this.errors(value, this.#resolve(String(schema.$ref)), path);
+    }
+
+    if (schema.type !== undefined) {
+      const types = Array.isArray(schema.type) ? schema.type : [schema.type];
+      if (!types.some((t) => typeMatches(value, t))) {
+        return [`${path}: expected type ${types.join('|')}, got ${describe(value)}`];
+      }
+    }
+
+    if (schema.const !== undefined && value !== schema.const) {
+      out.push(`${path}: must equal ${JSON.stringify(schema.const)}`);
+    }
+
+    if (Array.isArray(schema.enum) && !schema.enum.includes(value)) {
+      out.push(`${path}: must be one of ${JSON.stringify(schema.enum)}, got ${JSON.stringify(value)}`);
+    }
+
+    if (typeof value === 'string') {
+      if (schema.minLength !== undefined && value.length < schema.minLength) {
+        out.push(`${path}: shorter than ${schema.minLength} characters`);
+      }
+      if (schema.maxLength !== undefined && value.length > schema.maxLength) {
+        out.push(`${path}: longer than ${schema.maxLength} characters`);
+      }
+      if (schema.pattern !== undefined && !new RegExp(String(schema.pattern)).test(value)) {
+        out.push(`${path}: ${JSON.stringify(value)} does not match ${schema.pattern}`);
+      }
+      // Only formats this validator understands are enforced; a declared but
+      // unsupported format must not silently become a failure.
+      if (schema.format === 'date' && !DATE_PATTERN.test(value)) {
+        out.push(`${path}: ${JSON.stringify(value)} is not an ISO date (YYYY-MM-DD)`);
+      }
+      if (schema.format === 'uri' && !URI_PATTERN.test(value)) {
+        out.push(`${path}: ${JSON.stringify(value)} is not an absolute URI`);
+      }
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      if (schema.minimum !== undefined && value < schema.minimum) {
+        out.push(`${path}: ${value} is below the minimum ${schema.minimum}`);
+      }
+      if (schema.maximum !== undefined && value > schema.maximum) {
+        out.push(`${path}: ${value} is above the maximum ${schema.maximum}`);
+      }
+    }
+
+    if (Array.isArray(value)) {
+      if (schema.minItems !== undefined && value.length < schema.minItems) {
+        out.push(`${path}: needs at least ${schema.minItems} item(s)`);
+      }
+      if (schema.maxItems !== undefined && value.length > schema.maxItems) {
+        out.push(`${path}: allows at most ${schema.maxItems} item(s)`);
+      }
+      if (schema.uniqueItems === true) {
+        const seen = new Set(value.map((v) => JSON.stringify(v)));
+        if (seen.size !== value.length) out.push(`${path}: entries must be unique`);
+      }
+      if (schema.items !== undefined) {
+        value.forEach((item, i) => out.push(...this.errors(item, schema.items, `${path}[${i}]`)));
+      }
+    }
+
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      for (const key of schema.required ?? []) {
+        if (!Object.prototype.hasOwnProperty.call(value, key)) {
+          out.push(`${path}: missing required property '${key}'`);
+        }
+      }
+      // propertyNames constrains the KEYS rather than the values, which is how the schema
+      // says "every key here is an engine name" without enumerating engines.
+      if (schema.propertyNames !== undefined) {
+        for (const key of Object.keys(value)) {
+          for (const problem of this.errors(key, schema.propertyNames, `${path} key '${key}'`)) {
+            out.push(problem);
+          }
+        }
+      }
+      const props = schema.properties ?? {};
+      for (const [key, sub] of Object.entries(props)) {
+        if (Object.prototype.hasOwnProperty.call(value, key)) {
+          out.push(...this.errors(value[key], sub, `${path}.${key}`));
+        }
+      }
+      const extra = schema.additionalProperties;
+      if (extra === false) {
+        for (const key of Object.keys(value)) {
+          if (!Object.prototype.hasOwnProperty.call(props, key)) {
+            out.push(`${path}: unexpected property '${key}'`);
+          }
+        }
+      } else if (extra !== null && typeof extra === 'object') {
+        for (const [key, sub] of Object.entries(value)) {
+          if (!Object.prototype.hasOwnProperty.call(props, key)) {
+            out.push(...this.errors(sub, extra, `${path}.${key}`));
+          }
+        }
+      }
+    }
+
+    for (const sub of schema.allOf ?? []) out.push(...this.errors(value, sub, path));
+
+    if (Array.isArray(schema.anyOf)) {
+      const hit = schema.anyOf.some((sub) => this.errors(value, sub, path).length === 0);
+      if (!hit) out.push(`${path}: matches none of the allowed forms`);
+    }
+
+    if (Array.isArray(schema.oneOf)) {
+      const hits = schema.oneOf.filter((sub) => this.errors(value, sub, path).length === 0).length;
+      if (hits !== 1) out.push(`${path}: must match exactly one allowed form (matched ${hits})`);
+    }
+
+    if (schema.not !== undefined && this.errors(value, schema.not, path).length === 0) {
+      out.push(`${path}: matches a forbidden form`);
+    }
+
+    if (schema.if !== undefined) {
+      const branch = this.errors(value, schema.if, path).length === 0 ? 'then' : 'else';
+      if (schema[branch] !== undefined) out.push(...this.errors(value, schema[branch], path));
+    }
+
+    return out;
+  }
+
+  /** @returns {boolean} */
+  isValid(value) {
+    return this.errors(value).length === 0;
+  }
+}
+
+function describe(value) {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  return typeof value;
+}
+
+
+// The schema, embedded verbatim so this page cannot disagree with the validator CI runs.
+const SCHEMA = {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/JokeVallen/ToolRegistry/schema/tool.schema.json",
+  "title": "ToolRegistry tool manifest",
+  "description": "Metadata every importable unit in this registry must carry. The file is named tool.yaml (YAML contents) and lives at payloads/<id>/tool.yaml.\n\nThe document is split in two on purpose. Everything down to `dependencies` is ENGINE-NEUTRAL: identity, capabilities, dependency edges and the list of published versions mean the same thing whatever consumes the payload. Everything inside a version's `targets` is ENGINE-SPECIFIC: version floors, container format and install layout differ per engine, and that vocabulary belongs to the engine's adapter. It must not be empty; the validator reports an empty map as E-TARGETS-MISSING, because a release with no target installs nothing.\n\nOne manifest describes ALL published versions of one tool, so a consumer can pick one. `latest` names the version offered by default.",
+  "type": "object",
+  "required": [
+    "kind", "formatVersion", "id", "displayName", "type", "description",
+    "latest", "versions"
+  ],
+  "properties": {
+    "kind": {
+      "const": "tool",
+      "description": "Document discriminator. Every registry document carries one so a reader knows which shape to expect before parsing further: tool, index or receipt."
+    },
+    "formatVersion": {
+      "const": "3",
+      "description": "Format revision, as a string. Bumped only for breaking changes; a reader must reject a revision it does not implement. Version 2 described exactly one version at the document root, so it had no `versions` array and no `latest`."
+    },
+
+    "id": { "$ref": "#/definitions/toolId" },
+    "displayName": { "$ref": "#/definitions/displayName" },
+    "type": { "$ref": "#/definitions/toolType" },
+    "description": { "$ref": "#/definitions/description" },
+    "tags": { "$ref": "#/definitions/tags" },
+    "author": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "license": { "$ref": "#/definitions/license" },
+    "licenseUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Where the licence text lives, for a project that ships its own LICENSE file or whose licence has no SPDX page. Optional: an SPDX identifier already resolves to spdx.org, so this exists to point somewhere ELSE, and a front end uses it in preference to the identifier's default page."
+    },
+    "homepage": { "type": "string", "format": "uri" },
+    "documentation": {
+      "type": "string",
+      "format": "uri",
+      "description": "Where the tool's documentation lives, when that is not the homepage. A repository root and a docs site are different places, so homepage cannot stand in for both: a user who wants to read the API reference has no way to find it from a clone URL. Optional, and a URI with a scheme - 'example.com/docs' is rejected because it is not clickable."
+    },
+    "releaseNotes": {
+      "type": "string",
+      "format": "uri",
+      "description": "Where the maintainer publishes release notes. A link, not the text: release notes are maintained after publication, so a copy inside a registry goes stale exactly when it matters, and a user choosing between versions needs the maintainer's own page. A URI with a scheme, for the same reason as documentation."
+    },
+
+    "provides": { "$ref": "#/definitions/capabilityList" },
+    "injects": { "$ref": "#/definitions/capabilityList" },
+
+    "dependencies": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/dependency" },
+      "uniqueItems": true,
+      "description": "Declared by id only - never by path or URL. This is what keeps every tool relocatable inside the registry."
+    },
+
+    "latest": {
+      "$ref": "#/definitions/strictVersion",
+      "description": "The version an importer offers by default. MUST match one entry in `versions`, so the default can never point at something that is not published."
+    },
+
+    "versions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/versionEntry" },
+      "description": "Every published version; newest first is conventional but not required. A consumer MAY install any entry, and a resolver picks the highest that satisfies the constraints it was given."
+    },
+
+    "releasedAt": { "type": "string", "format": "date" },
+    "deprecated": {
+      "type": "boolean",
+      "default": false,
+      "description": "The tool as a whole is retired. Per-version retirement is `versions[].deprecated`."
+    }
+  },
+  "additionalProperties": false,
+
+  "definitions": {
+    "toolId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "minLength": 3,
+      "maxLength": 64,
+      "description": "Lowercase kebab-case. This is the primary key: directory name, dependency reference, index key, artifact file name stem and the first segment of every capability it provides. Because Windows paths are case-insensitive, lowercase-only also prevents two tools whose ids differ only by case from colliding."
+    },
+    "engineId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "minLength": 2,
+      "maxLength": 32,
+      "description": "Engine family name. The core does not enumerate these: an engine without an adapter is still valid data, it simply cannot be planned until an adapter claims it.",
+      "examples": ["unity", "godot", "unreal", "defold"]
+    },
+    "capability": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*(\\.[a-z0-9]+(-[a-z0-9]+)*)+$",
+      "maxLength": 96,
+      "description": "A namespaced capability name. Two segments minimum, so a capability always states its namespace rather than being a bare word.",
+      "examples": ["script.language.csharp", "unity.window.selection-history", "godot.addon.selection-history"]
+    },
+    "capabilityList": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/capability" },
+      "uniqueItems": true,
+      "maxItems": 32,
+      "description": "provides names capabilities this tool offers. injects names capabilities it needs from somewhere else. Unlike dependencies, which pins a specific tool, injects is satisfied by ANY installed tool that provides the capability - that is what makes a provider replaceable without editing its consumers."
+    },
+    "displayName": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "description": { "type": "string", "minLength": 10, "maxLength": 600 },
+    "toolType": {
+      "enum": ["editor-tool", "tool-library", "framework", "asset-pack", "template"],
+      "description": "Coarse ENGINE-NEUTRAL classification. Deliberately excludes engine-specific kinds such as shader packs: a shader model is engine-specific, so that belongs in a version's target or a tag."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+      "uniqueItems": true,
+      "maxItems": 12
+    },
+    "license": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9.\\-+]+$",
+      "description": "SPDX identifier, e.g. MIT."
+    },
+    "strictVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.\\-]+)?$",
+      "description": "Semver-lite: numeric major.minor.patch with an optional prerelease suffix.",
+      "examples": ["1.0.0", "2.3.1", "1.0.0-rc.1"]
+    },
+    "constraint": {
+      "type": "string",
+      "pattern": "^(\\^|~|>=|<=|>|<|=)?\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.\\-]+)?$",
+      "description": "^1.2.3 allows >=1.2.3 <2.0.0; ~1.2.3 allows >=1.2.3 <1.3.0; >= n has no upper bound; a bare version means exactly that version.",
+      "examples": ["^1.1.0", "~2.0.0", ">=1.0.0", "1.4.2"]
+    },
+    "dependency": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/definitions/toolId" },
+        "version": { "$ref": "#/definitions/constraint" },
+        "reason": { "type": "string", "maxLength": 200 },
+        "optional": {
+          "type": "boolean",
+          "default": false,
+          "description": "An optional dependency is used when the user already selected it, and never pulled in on its own."
+        },
+        "engines": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/engineId" },
+          "uniqueItems": true,
+          "description": "Restricts the dependency to some engines, for a helper that is only needed on one target."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "versionEntry": {
+      "type": "object",
+      "required": ["version", "targets"],
+      "properties": {
+        "version": { "$ref": "#/definitions/strictVersion" },
+        "targets": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/definitions/engineId" },
+          "additionalProperties": { "$ref": "#/definitions/target" },
+          "description": "Engine-keyed map for THIS version. A tool that works in more than one engine declares one target per engine instead of being duplicated. The core defines only this container; the meaning of a target's requirement keys and its artifact format belongs to that engine's adapter."
+        },
+        "releasedAt": { "type": "string", "format": "date" },
+        "deprecated": {
+          "type": "boolean",
+          "default": false,
+          "description": "This version is retired. Kept published so existing receipts stay resolvable, but an importer SHOULD prefer a newer one."
+        },
+        "yanked": {
+          "type": "boolean",
+          "default": false,
+          "description": "This version is withdrawn: it MUST NOT be selected automatically. Unlike `deprecated` this is a hard stop, for a release that is broken or unsafe. It stays listed because a receipt may still reference it."
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 400,
+          "description": "One or two sentences on what this version changed, shown when a user picks a version."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "target": {
+      "type": "object",
+      "required": ["requirements", "artifact"],
+      "properties": {
+        "requirements": {
+          "type": "object",
+          "required": ["minEngineVersion"],
+          "propertyNames": { "pattern": "^[a-zA-Z][a-zA-Z0-9]*$" },
+          "additionalProperties": {
+            "type": ["string", "number", "boolean"],
+            "description": "Flat scalar. Requirement keys are defined by the engine adapter; the core defines only minEngineVersion, which every adapter must be able to compare."
+          },
+          "description": "Host floors for this engine. minEngineVersion is mandatory - a tool that cannot state its floor is not admitted, because 'field absent' and 'forgot to fill it in' are indistinguishable in data. Everything else is adapter-defined: minRuntimeVersion for Unity's .NET API level, minApiVersion for Godot, and so on."
+        },
+        "artifact": { "$ref": "#/definitions/artifact" }
+      },
+      "additionalProperties": false
+    },
+
+    "artifact": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": ["archive", "package", "file", "external"],
+          "description": "archive: a general container the core itself can open (zip, tgz, tar.zst). package: an engine-specific container only that engine's adapter can open (unitypackage and friends). file: a single-file payload with no container at all (a dll, one shader, a licence file). external: no artifact is stored here at all; the payload lives in another repository and the core records where."
+        },
+        "format": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(\\.[a-z0-9]+)*$",
+          "description": "Container format. Required unless type is external. For type archive the core accepts zip, tgz, tar.gz and tar.zst. For type package the value is whatever the engine adapter registers, so unitypackage is a Unity concept rather than a core one. For type file this mirrors the extension: dll, pdb, so, dylib, txt.",
+          "examples": ["zip", "tgz", "tar.gz", "tar.zst", "unitypackage", "dll"]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^payloads/[a-z0-9-]+/artifacts/[A-Za-z0-9_.-]+$",
+          "description": "Repository-relative path, required unless type is external. Always inside the tool's own payload directory, so deleting a tool deletes one directory and nothing else. The file name must be <id>-<version>[-<engine>].<ext>. This pattern is intentionally loose; the exact naming rule is enforced by the validator, which can see the id, version and engine."
+        },
+        "size": { "type": "integer", "minimum": 1, "description": "Exact byte length. Required unless type is external." },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Digest of the artifact file itself, lower-case hex. Verified before import. Required unless type is external."
+        },
+        "source": {
+          "enum": ["git", "http", "npm"],
+          "description": "For type external: which kind of remote holds the payload."
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^(https://|git@|ssh://)",
+          "description": "For type external."
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "For type external. Pin a tag or a commit SHA; a branch head makes two installs of the same version diverge, which breaks the receipt model."
+        },
+        "subdirectory": {
+          "type": "string",
+          "description": "For an unpacked archive: take only entries under this prefix and strip it. For type external: the sub-path inside the remote repository that holds the package. Lets one archive or repository serve several layouts."
+        },
+        "upmPackageName": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(\\.[a-z0-9\\-]+)+$",
+          "description": "For type external that is a UPM package: lets the importer detect collisions and defer to the engine's own package resolution."
+        },
+        "unpack": {
+          "enum": ["none", "auto"],
+          "default": "auto",
+          "description": "auto: open the container and take its entries. none: place the artifact as-is, for a container that engine's own importer must see. none requires targetPath."
+        },
+        "targetPath": {
+          "type": "string",
+          "description": "Required for type file, and for any artifact with unpack: none: where the file lands in the project, relative to the project root. An unpacked artifact uses contentRoot rather than this."
+        },
+        "contentRoot": {
+          "type": "string",
+          "description": "For an unpacked archive: the directory under the project root that entries are extracted into.",
+          "examples": ["Assets", "addons", "res://addons"]
+        },
+        "files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Human-readable inventory of what the artifact installs, shown in the import tool before anything is written."
+        },
+        "editorOnly": {
+          "type": "boolean",
+          "default": false,
+          "description": "The payload is excluded from player builds."
+        },
+        "restartRequired": { "type": "boolean", "default": false }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "external" } }, "required": ["type"] },
+          "then": {
+            "required": ["source", "url", "ref"],
+            "not": { "anyOf": [{ "required": ["path"] }, { "required": ["sha256"] }, { "required": ["size"] }] }
+          },
+          "else": { "required": ["format", "path", "size", "sha256"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "file" } }, "required": ["type"] },
+          "then": { "required": ["targetPath"], "properties": { "unpack": { "const": "none" } } }
+        },
+        {
+          "if": {
+            "required": ["unpack"],
+            "properties": {
+              "type": { "enum": ["archive", "package", "file"] },
+              "unpack": { "const": "none" }
+            }
+          },
+          "then": { "required": ["targetPath"] }
+        }
+      ]
+    }
+  }
+}
+;
+
+// ---------------------------------------------------------------- validation
+
+function validateManifest(doc) {
+  const problems = [];
+
+  if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
+    return [{ code: 'E-UTOOL-ROOT', message: 'the document root must be a mapping' }];
+  }
+
+  let validator;
+  try {
+    validator = new SchemaValidator(SCHEMA);
+  } catch (cause) {
+    return [{ code: 'E-SCHEMA', message: 'the embedded schema is unusable: ' + cause.message }];
+  }
+
+  for (const problem of validator.errors(doc)) {
+    problems.push({ code: 'E-SCHEMA', message: problem });
+  }
+
+  // Cross-value rules: each needs the rest of the document, so a JSON Schema cannot state
+  // them. These mirror what utool-core checks, so a manifest with no complaint here has no
+  // shape complaint there either.
+  const versions = Array.isArray(doc.versions) ? doc.versions : [];
+  const numbers = versions.map((entry) => String(entry && entry.version));
+
+  if (doc.latest !== undefined && numbers.length > 0 && !numbers.includes(String(doc.latest))) {
+    problems.push({
+      code: 'E-LATEST-UNKNOWN',
+      message: 'latest is ' + doc.latest + ', which is not one of the published versions (' +
+        numbers.join(', ') + ')',
+    });
+  }
+
+  if (new Set(numbers).size !== numbers.length) {
+    problems.push({
+      code: 'E-VERSIONS-DUPLICATE',
+      message: 'a version appears more than once in versions: ' + numbers.join(', '),
+    });
+  }
+
+  for (const entry of versions) {
+    if (!entry || typeof entry !== 'object') continue;
+    const where = String(entry.version);
+    if (entry.yanked === true && String(doc.latest) === where) {
+      problems.push({
+        code: 'E-YANKED-LATEST',
+        message: 'latest names ' + where + ', which is yanked; point latest at a release that ' +
+          'is still installable',
+      });
+    }
+
+    const targets = entry.targets || {};
+    const engines = Object.keys(targets);
+
+    for (const engine of engines) {
+      const artifact = (targets[engine] || {}).artifact || {};
+      if (artifact.type === 'external' || typeof artifact.path !== 'string') continue;
+
+      const file = artifact.path.split('/').pop();
+      const expected = expectedArtifactName(
+        doc.id, where, engine, engines.length > 1, String(artifact.format),
+      );
+      if (file !== expected) {
+        problems.push({
+          code: 'E-ARTIFACT-NAME',
+          message: where + '/' + engine + ": artifact must be named '" + expected +
+            "', got '" + file + "'",
+        });
+      }
+      if (artifact.type === 'file' && !artifact.targetPath) {
+        problems.push({
+          code: 'E-ARTIFACT-TARGETPATH',
+          message: where + '/' + engine + ': type file needs targetPath',
+        });
+      }
+    }
+  }
+
+  return problems;
+}
+
+// ---------------------------------------------------------------- interface
+
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('file');
+const input = document.getElementById('input');
+const out = document.getElementById('out');
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"]/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]
+  ));
+}
+
+function render(problems, note) {
+  if (problems === null) {
+    out.innerHTML = '<div class="banner ok">通过 · valid</div>' +
+      (note ? '<div class="hint">' + escapeHtml(note) + '</div>' : '');
+    return;
+  }
+  const items = problems
+    .map((p) => '<li><code>' + escapeHtml(p.code) + '</code> &nbsp;' + escapeHtml(p.message) + '</li>')
+    .join('');
+  out.innerHTML = '<div class="banner bad">' + problems.length +
+    ' 个问题 · problem(s)</div><ul>' + items + '</ul>';
+}
+
+function check() {
+  const text = input.value.trim();
+  if (text === '') {
+    render([{ code: 'E-UTOOL-EMPTY', message: 'nothing to validate' }]);
+    return;
+  }
+
+  const parsed = parseYaml(text);
+  if (parsed.error) return render(parsed.error);
+  if (!parsed.doc || typeof parsed.doc !== 'object' || Array.isArray(parsed.doc)) {
+    return render([{ code: 'E-UTOOL-ROOT', message: 'the document root must be a mapping' }]);
+  }
+
+  const doc = parsed.doc;
+  if (doc.kind !== 'tool') {
+    return render([{
+      code: doc.kind === undefined ? 'E-UTOOL-KIND-MISSING' : 'E-UTOOL-KIND-UNKNOWN',
+      message: doc.kind === undefined
+        ? "no 'kind' discriminator; a tool manifest needs 'kind: tool'"
+        : "kind is '" + doc.kind + "'; this page validates tool manifests",
+    }]);
+  }
+
+  if (String(doc.formatVersion) !== FORMAT_VERSION) {
+    return render([{
+      code: 'E-UTOOL-VERSION-UNSUPPORTED',
+      message: 'formatVersion is ' + JSON.stringify(doc.formatVersion) + ', but this ' +
+        'validator implements "' + FORMAT_VERSION + '"',
+    }]);
+  }
+
+  const problems = validateManifest(doc);
+  const count = (doc.versions || []).length;
+  render(problems.length === 0 ? null : problems,
+    'checked ' + count + ' version(s) against formatVersion ' + FORMAT_VERSION +
+    '. Artifact hashes are verified by utool validate, which needs the whole registry.');
+}
+
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    input.value = String(reader.result).replace(/^\uFEFF/, '');
+    check();
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('check').addEventListener('click', check);
+document.getElementById('clear').addEventListener('click', () => {
+  input.value = '';
+  out.innerHTML = '';
+});
+
+// A button, not the whole panel. A synthetic click on a <div> only reaches a file input when the
+// browser can attribute it to a real user gesture, which is exactly what a drop-zone-wide handler
+// cannot guarantee - the panel looked clickable and did nothing.
+document.getElementById('choose').addEventListener('click', (e) => {
+  e.stopPropagation();
+  fileInput.click();
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) loadFile(fileInput.files[0]);
+});
+
+// Dropping anywhere on the page used to navigate away to the file, which is the browser's default
+// for a dropped file. Suppress it document-wide so a slightly-off drop stays on the page, then let
+// the zone itself handle the real thing.
+for (const event of ['dragover', 'drop']) {
+  document.addEventListener(event, (e) => e.preventDefault());
+}
+
+for (const event of ['dragenter', 'dragover']) {
+  drop.addEventListener(event, (e) => { e.preventDefault(); drop.classList.add('hot'); });
+}
+for (const event of ['dragleave', 'drop']) {
+  drop.addEventListener(event, () => drop.classList.remove('hot'));
+}
+drop.addEventListener('drop', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+
+input.addEventListener('input', () => { if (input.value.trim() !== '') check(); });
+</script>
+</body>
+</html>

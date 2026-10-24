@@ -1,0 +1,10 @@
+{
+  "toolImport": "1.2.1",
+  "repository": "https://github.com/JokeVallen/ToolImport",
+  "release": "https://github.com/JokeVallen/ToolImport/releases/tag/v1.2.1",
+  "archives": {
+    "all": "https://github.com/JokeVallen/ToolImport/releases/download/v1.2.1/toolimport-1.2.1.zip",
+    "unity": "https://github.com/JokeVallen/ToolImport/releases/download/v1.2.1/toolimport-unity-1.2.1.zip",
+    "godot": "https://github.com/JokeVallen/ToolImport/releases/download/v1.2.1/toolimport-godot-1.2.1.zip"
+  }
+}

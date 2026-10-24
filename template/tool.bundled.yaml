@@ -1,0 +1,136 @@
+# payloads/<id>/tool.yaml
+#
+# ToolRegistry tool metadata, formatVersion 3.
+#
+# This template declares ONE version across TWO engines. Delete the half you do not
+# need; the file is only a starting point.
+#
+# The document is split in two:
+#   * everything down to `dependencies` is ENGINE- AND VERSION-NEUTRAL - identity,
+#     capabilities, dependency edges and the version list mean the same thing whatever
+#     consumes the payload;
+#   * everything inside `versions[].targets` is ENGINE-SPECIFIC - floors, container
+#     format and install layout differ per engine, and that vocabulary belongs to the
+#     engine's adapter, not to the schema.
+#
+# Schema: schema/tool.schema.json      Rules: docs/SPEC.zh-CN.md
+# Validate: node ../ToolImport/apps/cli/bin/utool.js validate . --write-index
+#
+# HOW TO FILL THIS IN
+#
+#   1. name the directory exactly `id` below (lowercase kebab-case)
+#   2. build one artifact per engine, and place it under artifacts/
+#        Unity  : Assets > Export Package...            -> .unitypackage
+#        other  : Compress-Archive / tar -czf          -> .zip or .tgz
+#   3. fill every `size` and `sha256` from the real bytes - do not do this by hand:
+#        node ../ToolImport/apps/cli/bin/utool.js digest <file>
+#      which prints the two lines ready to paste.
+#   4. artifact naming: with ONE engine in a version it is <id>-<version>.<ext>;
+#      with SEVERAL it is <id>-<version>-<engine>.<ext>.
+#   5. delete the placeholder `dependencies` entry when there is none.
+#   6. `provides` lists capabilities this tool offers to others; `injects` lists
+#      namespaced capabilities it needs from ANY tool that provides them. Prefer
+#      `injects` over `dependencies` when you do not care which provider it is.
+#   7. validate: node ../ToolImport/apps/cli/bin/utool.js validate . --write-index
+#
+# FIELD NOTES
+#
+#   id            primary key: directory name, dependency reference, index key and the
+#                 first segment of every capability. Lowercase kebab-case, and it is
+#                 permanent - renaming it breaks every consumer's dependency edge.
+#   type          coarse ENGINE-NEUTRAL classification. One of editor-tool,
+#                 tool-library, framework, asset-pack, template. A shader pack is NOT
+#                 a type: that is engine-specific, so use a tag.
+#   description   shown verbatim in the import tool. Keep it factual: what it does and
+#                 which problem it solves.
+#   latest        the version an importer offers unless told otherwise. MUST name one
+#                 of the entries in `versions`.
+#   versions      every published release. A consumer may install any of them, and a
+#                 dependency constraint picks the highest that satisfies it.
+#   targets       engine-keyed map for THIS version. One entry per engine supported by
+#                 this release, so a cross-engine tool is written once.
+#   requirements  floors for that engine. minEngineVersion is mandatory. Other keys are
+#                 defined by the engine's adapter - minRuntimeVersion is Unity's .NET
+#                 API level. An adapter that does not recognise a key reports it
+#                 instead of enforcing it, so adding one is not a breaking change.
+#   artifact      exactly one per target. type is archive | package | file | external.
+#                 For `file`, targetPath is mandatory and unpack must be none.
+#
+# VERSION ENTRY NOTES
+#
+#   deprecated    this release is superseded. Kept published so existing receipts stay
+#                 resolvable; an importer prefers a newer one.
+#   yanked        this release is withdrawn and MUST NOT be selected automatically.
+#                 Use it for something broken or unsafe - unlike `deprecated` it is a
+#                 hard stop. It stays listed because a receipt may reference it.
+#
+
+kind: tool
+formatVersion: '3'
+id: my-tool
+displayName: My Tool
+type: editor-tool
+description: >-
+  One paragraph on what the tool does and which problem it solves. Shown verbatim in the import tool,
+  so keep it factual and concrete.
+license: MIT
+# Where the licence text lives, when spdx.org is not it - a project that ships its own
+# LICENSE file, or a licence with no SPDX page. Optional: `license` is an identifier and
+# already resolves to its spdx.org page, so set this only to point somewhere else.
+# licenseUrl: https://github.com/JokeVallen/ToolRegistry/blob/main/LICENSE
+author: DevCat
+homepage: https://github.com/JokeVallen/ToolRegistry
+# Where the documentation lives, if that is not the homepage. Must carry a scheme
+# (https://...), because the import tool renders it as a clickable link.
+# documentation: https://jokevallen.github.io/ToolRegistry/docs/
+# Where you publish release notes. A LINK, not the text: the import tool shows a
+# "Release notes" button, because notes are edited after publication and a copy
+# inside the registry goes stale exactly when someone is deciding whether to upgrade.
+# releaseNotes: https://github.com/JokeVallen/ToolRegistry/releases
+tags:
+  - editor
+  - workflow
+provides:
+  - my-tool.window.main
+injects:
+  - script.api.argument-guards
+dependencies:
+  - id: core-editor-utils
+    version: ^1.1.0
+    reason: Why this dependency is needed. Delete this block when there is none.
+
+latest: '1.0.0'
+
+versions:
+  - version: '1.0.0'
+    releasedAt: '2026-01-01'
+    notes: What changed in this release. One or two sentences; shown when choosing.
+    targets:
+      unity:
+        requirements:
+          minEngineVersion: '2020.3'
+          minRuntimeVersion: '4.6'
+        artifact:
+          type: package
+          format: unitypackage
+          path: payloads/my-tool/artifacts/my-tool-1.0.0-unity.unitypackage
+          size: 1
+          sha256: '0000000000000000000000000000000000000000000000000000000000000000'
+          unpack: auto
+          editorOnly: true
+          files:
+            - Assets/MyTool/MyToolWindow.cs
+      godot:
+        requirements:
+          minEngineVersion: '4.2'
+        artifact:
+          type: archive
+          format: tgz
+          path: payloads/my-tool/artifacts/my-tool-1.0.0-godot.tgz
+          size: 1
+          sha256: '0000000000000000000000000000000000000000000000000000000000000000'
+          unpack: auto
+          contentRoot: addons/my_tool
+          files:
+            - plugin.cfg
+            - MyToolPlugin.cs

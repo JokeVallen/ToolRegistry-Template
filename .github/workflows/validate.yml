@@ -1,0 +1,35 @@
+name: validate
+
+# A registry is data, and data has exactly one property that matters: it still validates.
+# This runs the same validator the import tool runs, pinned to the release this template was
+# written for, so a fork cannot quietly drift into a format the front ends do not read.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch the matching ToolImport
+        run: git clone --depth 1 --branch v1.2.1 https://github.com/JokeVallen/ToolImport.git .toolimport
+
+      - name: Install its one dependency
+        run: npm install --prefix .toolimport
+
+      - name: Validate this registry
+        run: node tools/registry.mjs validate
+        env:
+          UTOOL_CORE: .toolimport/packages/utool-core/src/index.js
+
+      - name: Check the catalog is current
+        run: node tools/registry.mjs check-index
+        env:
+          UTOOL_CORE: .toolimport/packages/utool-core/src/index.js

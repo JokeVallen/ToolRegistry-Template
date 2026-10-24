@@ -1,0 +1,30 @@
+# index.yaml -- generated catalog of every tool in this registry.
+#
+# Do not hand-edit. Regenerate with:
+#     utool validate --write-index
+#     python tools/validate_registry.py . --write-index
+#
+# Entries here are summaries so the import tool can list everything in one
+# request. The authoritative record for any tool is its own
+# payloads/<id>/tool.yaml, which is what gets read before an install.
+
+kind: index
+formatVersion: "3"
+repository: https://github.com/JokeVallen/ToolRegistry-Template.git
+tools:
+  - id: example-hello
+    displayName: Example Hello
+    type: tool-library
+    description: One file, one function. It exists so a fresh registry has something real to validate, plan and install before its owner writes a tool of their own.
+    latest: 1.0.0
+    versions:
+      - 1.0.0
+    engines:
+      - godot
+    provides:
+      - script.example.hello
+    injects: []
+    dependencies: []
+    tags:
+      - example
+    manifestPath: payloads/example-hello/tool.yaml

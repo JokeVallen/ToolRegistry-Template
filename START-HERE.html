@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>从这里开始 · Registry 起步包</title>
+<!--
+  GENERATED FILE - do not edit.
+  Rebuild with: node tools/build-registry-template.mjs
+  Pinned import tool: 1.2.1
+-->
+<style>
+  :root {
+    --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
+    --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
+    --link: #9dbdd4; --link-hover: #c6dbe9;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.75 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  .layout { display: flex; align-items: flex-start; max-width: 1220px; margin: 0 auto; }
+  nav {
+    position: sticky; top: 0; flex: 0 0 264px; max-height: 100vh; overflow: auto;
+    padding: 24px 14px 28px 20px; border-right: 1px solid var(--line);
+  }
+  nav .brand { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+  .progress { height: 5px; background: var(--panel-2); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+  .progress > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+  .progress-text { font-size: 12px; color: var(--dim); margin-bottom: 18px; }
+  .track-title { font-size: 12px; color: var(--dim); margin: 16px 0 6px; letter-spacing: .03em; }
+  nav a.step {
+    display: flex; gap: 8px; align-items: baseline; padding: 5px 8px; border-radius: 5px;
+    color: var(--dim); text-decoration: none; font-size: 13.5px;
+  }
+  nav a.step:hover { background: var(--panel); color: var(--fg); }
+  nav a.step.active { background: var(--panel); color: var(--fg); }
+  nav a.step .dot {
+    flex: 0 0 auto; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--line);
+    font-size: 10px; line-height: 15px; text-align: center; color: var(--dim);
+  }
+  nav a.step.done .dot { background: var(--ok); border-color: var(--ok); color: #10240f; }
+  nav a.step.done .dot::after { content: '✓'; }
+  nav a.step.done .dot span { display: none; }
+  #reset {
+    margin-top: 18px; width: 100%; background: none; border: 1px solid var(--line); color: var(--dim);
+    border-radius: 5px; padding: 6px; cursor: pointer; font-size: 12.5px;
+  }
+  #reset:hover { border-color: var(--bad); color: var(--bad); }
+
+  main { flex: 1 1 auto; min-width: 0; padding: 28px 32px 90px; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .sub { color: var(--dim); margin: 0 0 22px; }
+
+  .chooser { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin: 0 0 22px; }
+  .route {
+    text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px 14px; color: var(--fg); cursor: pointer; font: inherit;
+  }
+  .route:hover { border-color: var(--accent); }
+  .route.active { border-color: var(--accent); background: #232a33; }
+  .route b { display: block; font-size: 14.5px; margin-bottom: 2px; }
+  .route span { color: var(--dim); font-size: 12.5px; }
+
+  /* the one place paths are typed: every command below reads from it */
+  .paths { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 22px; }
+  .paths summary { cursor: pointer; color: var(--dim); font-size: 13px; }
+  .paths summary b { color: var(--fg); font-weight: 600; }
+  .paths .rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin-top: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--dim); margin-bottom: 3px; }
+  .field input, .field select {
+    width: 100%; background: var(--bg); color: var(--fg); border: 1px solid var(--line);
+    border-radius: 5px; padding: 6px 8px; font: inherit; font-size: 13px;
+  }
+  .field input:focus, .field select:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+  .field .hint { font-size: 11.5px; color: var(--dim); margin-top: 2px; }
+  .fieldrow { display: flex; gap: 6px; }
+  .fieldrow input { flex: 1 1 auto; min-width: 0; }
+  .paste {
+    background: var(--panel-2); color: var(--dim); border: 1px solid var(--line); border-radius: 5px;
+    padding: 0 10px; cursor: pointer; font: inherit; font-size: 12.5px; white-space: nowrap;
+  }
+  .paste:hover { color: var(--fg); border-color: var(--accent); }
+  .paste.ok { color: var(--ok); border-color: rgba(78,194,106,.5); }
+
+  /* Offline tool: pick an artifact, get the two numbers the manifest needs. No network, no Node. */
+  .digest { margin: 18px 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 14px 16px; }
+  .digest h4 { margin: 0 0 4px; }
+  .digest .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 10px 0; }
+  .digest input[type=file] { color: var(--dim); font-size: 13px; }
+  .digest .kv { display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; margin: 10px 0; font-size: 13px; }
+  .digest .kv[hidden] { display: none; }
+  .digest .kv dt { color: var(--dim); }
+  .digest .kv dd { margin: 0; font-family: "Cascadia Mono", Consolas, monospace; font-size: 12.5px; word-break: break-all; }
+  .digest textarea {
+    width: 100%; min-height: 120px; background: var(--bg); color: var(--fg); border: 1px solid var(--line);
+    border-radius: 5px; padding: 8px 10px; font: 12.5px/1.55 "Cascadia Mono", Consolas, monospace; resize: vertical;
+  }
+  .digest .actions { display: flex; gap: 8px; margin-top: 8px; }
+  .digest button {
+    background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 5px;
+    padding: 5px 12px; cursor: pointer; font: inherit; font-size: 13px;
+  }
+  .digest button:hover { border-color: var(--accent); }
+  .digest .empty { color: var(--dim); font-size: 13px; }
+
+  section.step { display: none; }
+  section.step.active { display: block; }
+  .stephead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .badge { font-size: 12px; color: var(--accent); border: 1px solid rgba(127,166,196,.4);
+           background: rgba(127,166,196,.08); border-radius: 20px; padding: 1px 9px; white-space: nowrap; }
+  section.step h2 { font-size: 21px; margin: 0 0 12px; }
+  .en { margin: 0 0 14px; padding: 9px 12px; border-left: 3px solid var(--accent);
+        background: rgba(127,166,196,.07); color: var(--dim); font-size: 13px; border-radius: 0 5px 5px 0; }
+  .goal { margin: 12px 0; padding: 9px 12px; border-radius: 5px; font-size: 13.5px;
+          background: rgba(78,194,106,.08); border: 1px solid rgba(78,194,106,.3); color: #cfe9d2; }
+  h4 { font-size: 14px; margin: 18px 0 6px; }
+  p, li { color: #d6d9dd; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+  code { font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px; font-variant-ligatures: none;
+         background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+  pre { background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+        padding: 11px 14px; overflow: auto; position: relative; margin: 0; }
+  pre code { background: none; border: 0; padding: 0; font-size: 13px; line-height: 1.6; white-space: pre; }
+  .cmd { margin: 10px 0; }
+  .cmd .label { font-size: 12px; color: var(--dim); margin-bottom: 4px; }
+  .copy { position: absolute; top: 7px; right: 7px; font-size: 12px; color: var(--dim);
+          background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px;
+          padding: 2px 8px; cursor: pointer; }
+  .copy:hover { color: var(--fg); border-color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin: 8px 0 4px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 12px 14px; }
+  .card p { margin: 0; color: var(--dim); font-size: 13.5px; }
+  .note { margin: 12px 0; padding: 10px 12px; border-radius: 5px; font-size: 13.5px;
+          background: rgba(216,166,87,.10); border: 1px solid rgba(216,166,87,.35); color: #e8d6b6; }
+  .hint { color: var(--dim); font-size: 13px; }
+  .pin { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between;
+         background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 12px 14px; margin: 10px 0 14px; }
+  .pin .label { display: block; color: var(--dim); font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase; }
+  .pin strong { font-size: 17px; }
+  .pin .links { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pin .links a { background: var(--panel-2); border: 1px solid var(--line); border-radius: 5px;
+                  padding: 6px 10px; color: var(--link); text-decoration: none; font-size: 13px; }
+  .pin .links a:hover { border-color: var(--link-hover); color: var(--link-hover); }
+
+  .verify { margin: 16px 0; border: 1px dashed var(--line); border-radius: 7px; padding: 12px 14px; background: #1f2227; }
+  .verify h4 { margin: 0 0 6px; }
+  .verify textarea {
+    width: 100%; min-height: 62px; background: var(--bg); color: var(--fg); border: 1px solid var(--line);
+    border-radius: 5px; padding: 7px 9px; font: 12.5px/1.5 "Cascadia Mono", Consolas, monospace; resize: vertical;
+  }
+  .verify button {
+    margin-top: 8px; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line);
+    border-radius: 5px; padding: 5px 12px; cursor: pointer; font: inherit; font-size: 13px;
+  }
+  .verify button:hover { border-color: var(--accent); }
+  .verify .result { margin-top: 8px; font-size: 13px; }
+  .verify .result.ok { color: var(--ok); }
+  .verify .result.bad { color: var(--bad); }
+
+  .tabs { display: flex; gap: 6px; margin: 12px 0 10px; }
+  .tab { background: var(--panel-2); color: var(--dim); border: 1px solid var(--line);
+         border-radius: 5px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 13px; }
+  .tab.active { color: var(--fg); border-color: var(--accent); }
+  .tabpanel { display: none; }
+  .tabpanel.active { display: block; }
+
+  details.faq { margin: 8px 0; border-top: 1px solid var(--line); padding-top: 8px; }
+  details.faq summary { cursor: pointer; color: var(--accent); font-size: 13.5px; }
+  details.faq p { margin: 6px 0 0; color: var(--dim); font-size: 13.5px; }
+
+  /* Body links: a desaturated steel blue. The brighter accent used for chrome is fine on a
+     small badge and glares on a paragraph of text set in a dark theme. */
+  main a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(157,189,212,.4); text-underline-offset: 2px; }
+  main a:hover { color: var(--link-hover); text-decoration-color: var(--link-hover); }
+
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--panel); font-weight: 600; }
+
+  .stepnav { display: flex; gap: 10px; align-items: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .stepnav button {
+    background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 6px;
+    padding: 8px 16px; cursor: pointer; font: inherit; font-size: 14px;
+  }
+  .stepnav button.next { background: #2c4a68; border-color: #3c6b96; }
+  .stepnav button:hover { border-color: var(--accent); }
+  .stepnav button:disabled { opacity: .4; cursor: default; }
+  .stepnav .pos { color: var(--dim); font-size: 12.5px; margin-left: auto; }
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li { padding-left: 26px; position: relative; }
+  .checklist li::before { content: '✓'; position: absolute; left: 0; color: var(--ok); }
+
+  .footer { margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--dim); font-size: 12.5px; }
+  @media (max-width: 860px) {
+    .layout { display: block; }
+    nav { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--line); }
+    main { padding: 20px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav>
+    <div class="brand">Registry 起步包</div>
+    <div class="progress"><i></i></div>
+    <div class="progress-text"></div>
+    <div class="track-title">我第一次接触这套东西</div>
+      <a class="step" href="#s-quickstart-env" data-track="quickstart" data-step="env"><span class="dot"><span></span></span><span>先确认这台机器能跑</span></a>
+      <a class="step" href="#s-quickstart-download" data-track="quickstart" data-step="download"><span class="dot"><span></span></span><span>下载配对的导入工具</span></a>
+      <a class="step" href="#s-quickstart-registry" data-track="quickstart" data-step="registry"><span class="dot"><span></span></span><span>拿到一份 Registry</span></a>
+      <a class="step" href="#s-quickstart-validate" data-track="quickstart" data-step="validate"><span class="dot"><span></span></span><span>校验这份注册库</span></a>
+      <a class="step" href="#s-quickstart-install" data-track="quickstart" data-step="install"><span class="dot"><span></span></span><span>把第一个工具装进工程</span></a>
+      <a class="step" href="#s-quickstart-editor" data-track="quickstart" data-step="editor"><span class="dot"><span></span></span><span>在编辑器里打开它</span></a>
+      <a class="step" href="#s-quickstart-done" data-track="quickstart" data-step="done"><span class="dot"><span></span></span><span>到这里你就跑通了</span></a>
+    <div class="track-title">我要开始维护它</div>
+      <a class="step" href="#s-maintain-add-tool" data-track="maintain" data-step="add-tool"><span class="dot"><span></span></span><span>加一个工具</span></a>
+      <a class="step" href="#s-maintain-index" data-track="maintain" data-step="index"><span class="dot"><span></span></span><span>校验与目录</span></a>
+      <a class="step" href="#s-maintain-remote" data-track="maintain" data-step="remote"><span class="dot"><span></span></span><span>建你自己的远程仓库</span></a>
+      <a class="step" href="#s-maintain-update" data-track="maintain" data-step="update"><span class="dot"><span></span></span><span>更新 Registry</span></a>
+      <a class="step" href="#s-maintain-update-tool" data-track="maintain" data-step="update-tool"><span class="dot"><span></span></span><span>更新导入工具</span></a>
+    <div class="track-title">我只想读懂它</div>
+      <a class="step" href="#s-reference-concepts" data-track="reference" data-step="concepts"><span class="dot"><span></span></span><span>三个角色与一条边界</span></a>
+      <a class="step" href="#s-reference-docs" data-track="reference" data-step="docs"><span class="dot"><span></span></span><span>文档索引</span></a>
+      <a class="step" href="#s-reference-problems" data-track="reference" data-step="problems"><span class="dot"><span></span></span><span>排错：最常见的四件事</span></a>
+    <button id="reset" type="button">重置进度</button>
+  </nav>
+  <main>
+    <h1>从这里开始</h1>
+    <p class="sub">选一条路线，跟着点。整页离线可读，不联网也能看完。</p>
+    <div class="chooser">
+    <button class="route" data-track="quickstart"><b>我第一次接触这套东西</b><span>跟着走，大约 15 分钟，最后你会有一个能装工具的工程</span></button>
+    <button class="route" data-track="maintain"><b>我要开始维护它</b><span>第一次跑通之后，日常就是这些动作</span></button>
+    <button class="route" data-track="reference"><b>我只想读懂它</b><span>概念、文档、排错，不用跟着点</span></button>
+    </div>
+    <details class="paths" open>
+      <summary>我的路径 <b>（填一次，下面所有命令自动代入）</b></summary>
+      <div class="rows">
+        <div class="field"><label for="p-toolimport">ToolImport 路径（解压后的目录）</label>
+          <div class="fieldrow"><input id="p-toolimport" data-path="toolimport" placeholder="例如 C:\Tools\ToolImport" autocomplete="off" spellcheck="false"><button type="button" class="paste" data-paste="toolimport" title="从剪贴板粘贴（资源管理器里 Shift+右键 → 复制文件地址）">粘贴</button></div></div>
+        <div class="field"><label for="p-registry">Registry 路径</label>
+          <div class="fieldrow"><input id="p-registry" data-path="registry" placeholder="例如 D:\GameDev\my-registry" autocomplete="off" spellcheck="false"><button type="button" class="paste" data-paste="registry" title="从剪贴板粘贴（资源管理器里 Shift+右键 → 复制文件地址）">粘贴</button></div></div>
+        <div class="field"><label for="p-project">工程路径</label>
+          <div class="fieldrow"><input id="p-project" data-path="project" placeholder="例如 D:\MyGame" autocomplete="off" spellcheck="false"><button type="button" class="paste" data-paste="project" title="从剪贴板粘贴（资源管理器里 Shift+右键 → 复制文件地址）">粘贴</button></div></div>
+        <div class="field"><label for="p-engine">引擎</label><select id="p-engine" data-path="engine"><option value="unity">Unity</option><option value="godot">Godot</option></select></div>
+        <div class="field"><label for="p-tool">工具 id</label><input id="p-tool" data-path="tool" placeholder="example-hello" autocomplete="off"></div>
+      </div>
+      <p class="hint">浏览器不会把文件夹的绝对路径交给网页，所以这里只能输入或粘贴。最快的办法：资源管理器里
+      <strong>Shift + 右键</strong> 目录 →「复制文件地址」，回来点「粘贴」。</p>
+    </details>
+    <section class="step" id="s-quickstart-env" data-track="quickstart" data-step="env">
+    <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">1 / 7</span></div>
+    <h2>先确认这台机器能跑</h2>
+    <p class="en">Two programs have to exist before anything else works: Node.js 20.11 or newer, and git. The import tool is a Node program even when you open it from an editor window, so an editor without Node cannot install anything.</p>
+    <div class="goal"><strong>这一步的目标：</strong>确认 Node.js ≥ 20.11 与 git 都在 PATH 上。</div>
+    
+<p>这套工具的后端是一个 Node 程序。<strong>即使你只在 Unity / Godot 的窗口里点按钮，窗口也是去调它</strong>——
+所以没有 Node 就没有安装能力。</p>
+<ol>
+  <li>打开终端（PowerShell 即可）。</li>
+  <li>依次运行下面两条命令，看版本号。</li>
+</ol>
+    <div class="cmd">
+        <div class="label">Node 版本</div>
+        <pre><code data-cmd="node -v">node -v</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">git 版本</div>
+        <pre><code data-cmd="git --version">git --version</code></pre>
+      </div>
+    
+    <div class="verify" data-kind="node" data-expect="">
+    <h4>怎么算这一步成功</h4>
+    <p class="hint">把 node -v 的输出粘贴到这里</p>
+    <textarea placeholder="粘贴命令输出"></textarea>
+    <button type="button">检查</button>
+    <div class="result"></div>
+  </div>
+    <details class="faq"><summary>提示 node 不是内部或外部命令</summary><p>还没装，或者装了没勾选加入 PATH。装 <a href="https://nodejs.org/">Node.js LTS</a>（20.11 以上），装完<strong>重开终端</strong>再试。</p></details>
+      <details class="faq"><summary>版本是 18.x 可以吗</summary><p>不行。CLI 用了 20.11 起才稳定的能力，低于这个版本会在启动时直接报错，而不是降级运行。</p></details>
+      <details class="faq"><summary>我只用 Godot，没有 Unity，需要 Unity 吗</summary><p>不需要。两个前端各自独立，装哪个取决于你用什么引擎。</p></details>
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">下一步 →</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <section class="step" id="s-quickstart-download" data-track="quickstart" data-step="download">
+    <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">2 / 7</span></div>
+    <h2>下载配对的导入工具</h2>
+    <p class="en">Registry and import tool are two repositories and they are versioned separately. This page is pinned to one import tool release; using an older one can silently ignore fields it does not know.</p>
+    <div class="goal"><strong>这一步的目标：</strong>拿到 ToolImport，并确认它能启动。</div>
+    
+<div class="pin">
+  <div><span class="label">本注册库配对的版本</span><strong>ToolImport 1.2.1</strong></div>
+  <div class="links">
+    <a href="https://github.com/JokeVallen/ToolImport/releases/tag/v1.2.1">发布页</a>
+    <a href="https://github.com/JokeVallen/ToolImport/releases/download/v1.2.1/toolimport-1.2.1.zip">整仓库 zip</a>
+    <a href="https://github.com/JokeVallen/ToolImport/releases/download/v1.2.1/toolimport-unity-1.2.1.zip">Unity 前端</a>
+    <a href="https://github.com/JokeVallen/ToolImport/releases/download/v1.2.1/toolimport-godot-1.2.1.zip">Godot 前端</a>
+  </div>
+</div>
+<p><strong>为什么强调“配对”</strong>：这份注册库的字段是按这个版本写的。用更旧的导入工具，遇到不认识的字段时
+它不会报错，只会当你没写过——那种沉默比报错难查得多。</p>
+<h4>装法（三分钟）</h4>
+<ol>
+  <li>下载 <code>toolimport-1.2.1.zip</code>（整仓库那个，前端两个包只是 <code>Editor/</code>
+  与 <code>addons/</code>，单独下载不包含 CLI）。</li>
+  <li>解压到一个固定位置，例如 <code>C:\Tools\ToolImport</code>。路径里尽量不要有空格。</li>
+  <li>在解压后的目录里装唯一的一个依赖。</li>
+</ol>
+    <div class="cmd">
+        <div class="label">在解压目录里执行</div>
+        <pre><code data-cmd="npm install">npm install</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">确认 CLI 能启动</div>
+        <pre><code data-cmd="node apps/cli/bin/utool.js --help">node apps/cli/bin/utool.js --help</code></pre>
+      </div>
+    
+    <div class="verify" data-kind="contains" data-expect="utool">
+    <h4>怎么算这一步成功</h4>
+    <p class="hint">把上一条命令的输出粘贴到这里（应含 utool）</p>
+    <textarea placeholder="粘贴命令输出"></textarea>
+    <button type="button">检查</button>
+    <div class="result"></div>
+  </div>
+    <details class="faq"><summary>一定要下载整仓库那一包吗</summary><p>要。另外两个包只有前端脚本，CLI 在 <code>apps/</code> 与 <code>packages/</code> 里。整仓库包解压后两个前端也都在。</p></details>
+      <details class="faq"><summary>公司网络下载不了 GitHub</summary><p>把 zip 拷进内网再解压即可。之后只有“拉取新版本”需要网络，日常安装完全离线。</p></details>
+      <details class="faq"><summary>以后更新会不会丢设置</summary><p>不会。设置按用户存在系统里，不在那个目录里。</p></details>
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">下一步 →</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <section class="step" id="s-quickstart-registry" data-track="quickstart" data-step="registry">
+    <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">3 / 7</span></div>
+    <h2>拿到一份 Registry</h2>
+    <p class="en">A registry is a directory of payload manifests and sealed artifacts. Either clone the starter template or point at a registry you already have; everything after this step reads whatever you put in the box below.</p>
+    <div class="goal"><strong>这一步的目标：</strong>本地有一份（或指向一份）注册库目录。</div>
+    
+<p>两种情况，选一个：</p>
+<h4>A. 我没有注册库，用模板起步</h4>
+<ol>
+  <li>克隆模板仓库（也可以直接下载 zip 解压）。</li>
+  <li>放在一个你愿意长期保留的位置，最好与 ToolImport <strong>并列</strong>——两个仓库同级时，后面所有命令都不用再指定路径。</li>
+</ol>
+<h4>B. 我已经有注册库</h4>
+<p>把它的本地路径填进下面的框。填了之后，本页后续所有命令都会自动代入这个路径，不再出现 <code>&lt;registry&gt;</code>。</p>
+    <div class="cmd">
+        <div class="label">A：克隆模板（放到 ToolImport 旁边）</div>
+        <pre><code data-cmd="git clone https://github.com/JokeVallen/ToolRegistry-Template.git my-registry">git clone https://github.com/JokeVallen/ToolRegistry-Template.git my-registry</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">看一下目录结构（应该看到 payloads/ 与 schema/）</div>
+        <pre><code data-cmd="dir {registry}">dir {registry}</code></pre>
+      </div>
+    
+    
+    <details class="faq"><summary>模板仓库和我自己的仓库是什么关系</summary><p>模板只是起点。克隆之后它就是你的，把 <code>origin</code> 改成你自己的远程仓库即可，见“日常维护 → 建自己的远程仓库”。</p></details>
+      <details class="faq"><summary>可以同时用多个注册库吗</summary><p>可以。命令里的 <code>--registry</code> 指主库，<code>--mirror</code> 可以再给一个同构的库（只在主库完全连不上时才用）。</p></details>
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">下一步 →</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <section class="step" id="s-quickstart-validate" data-track="quickstart" data-step="validate">
+    <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">4 / 7</span></div>
+    <h2>校验这份注册库</h2>
+    <p class="en">One command proves the registry is internally consistent: schema, manifests, artifact digests and the generated catalog. It writes nothing.</p>
+    <div class="goal"><strong>这一步的目标：</strong>看到 PASSED。</div>
+    
+<p>在注册库目录里运行校验。<strong>它不写任何文件</strong>，失败也只是打印原因。</p>
+<p>期望看到最后一行类似 <code>PASSED - 4 check(s), 0 errors</code>。</p>
+    <div class="cmd">
+        <div class="label">在 Registry 目录里执行</div>
+        <pre><code data-cmd="node tools/registry.mjs validate">node tools/registry.mjs validate</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">若报 cannot find the utool-core validator（PowerShell）</div>
+        <pre><code data-cmd="$env:UTOOL_CORE = &quot;C:\Tools\ToolImport\packages\utool-core\src\index.js&quot;">$env:UTOOL_CORE = &quot;C:\Tools\ToolImport\packages\utool-core\src\index.js&quot;</code></pre>
+      </div>
+    
+    <div class="verify" data-kind="contains" data-expect="passed">
+    <h4>怎么算这一步成功</h4>
+    <p class="hint">把校验输出粘贴到这里（应含 PASSED）</p>
+    <textarea placeholder="粘贴命令输出"></textarea>
+    <button type="button">检查</button>
+    <div class="result"></div>
+  </div>
+    <details class="faq"><summary>报 index.yaml 过期</summary><p>有人改了 payload 没重新生成目录。运行 <code>node tools/registry.mjs write-index</code>。<strong>不要手改 index.yaml</strong>——它永远由命令生成。</p></details>
+      <details class="faq"><summary>报摘要不符（sha256 mismatch）</summary><p>制品字节被改动过。恢复原文件，或重新打包并更新 <code>tool.yaml</code> 里的 <code>size</code>/<code>sha256</code>；用 <code>utool digest &lt;文件&gt;</code> 拿这两个值。</p></details>
+      <details class="faq"><summary>两个仓库不在同级目录会怎样</summary><p>校验器会找不到。把两个目录放成兄弟，或者像上面那样设 <code>UTOOL_CORE</code> 指过去。</p></details>
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">下一步 →</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <section class="step" id="s-quickstart-install" data-track="quickstart" data-step="install">
+    <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">5 / 7</span></div>
+    <h2>把第一个工具装进工程</h2>
+    <p class="en">Plan first: it names every destination and writes nothing. Install writes only after the artifact digest matches. The receipt under Library/ToolImport/receipts is what makes uninstall exact.</p>
+    <div class="goal"><strong>这一步的目标：</strong>工程里出现工具文件，并留下回执。</div>
+    
+<p>先在页面顶部的「我的路径」里填好 Registry 与工程路径，下面的命令会立刻变成<strong>可以直接复制执行</strong>的样子。</p>
+<p class="hint">Godot 工程要注意：CLI 默认目标是 Unity，Godot 要多加 <code>--engine godot --host-godot 4.2</code>。
+页面会根据你选的引擎自动加上。</p>
+<h4>先看计划，再决定装</h4>
+<p><code>plan</code> 会列出：装哪个版本、从哪个制品来、落到工程的哪个路径。<strong>它不写盘。</strong></p>
+    <div class="cmd">
+        <div class="label">只规划，不写任何文件</div>
+        <pre><code data-cmd="node apps/cli/bin/utool.js plan {tool} --registry {registry} --project {project}{engineArgs}">node apps/cli/bin/utool.js plan {tool} --registry {registry} --project {project}{engineArgs}</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">确认无误后安装</div>
+        <pre><code data-cmd="node apps/cli/bin/utool.js install {tool} --registry {registry} --project {project}{engineArgs}">node apps/cli/bin/utool.js install {tool} --registry {registry} --project {project}{engineArgs}</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">看看工程里装了什么</div>
+        <pre><code data-cmd="node apps/cli/bin/utool.js status --project {project}">node apps/cli/bin/utool.js status --project {project}</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">不想要了就按回执卸载</div>
+        <pre><code data-cmd="node apps/cli/bin/utool.js uninstall {tool} --project {project}">node apps/cli/bin/utool.js uninstall {tool} --project {project}</code></pre>
+      </div>
+    
+    <div class="verify" data-kind="contains" data-expect="installed">
+    <h4>怎么算这一步成功</h4>
+    <p class="hint">把 install 的输出粘贴到这里（应含 installed）</p>
+    <textarea placeholder="粘贴命令输出"></textarea>
+    <button type="button">检查</button>
+    <div class="result"></div>
+  </div>
+    <details class="faq"><summary>计划里写 nothing to do</summary><p>多半是引擎没对上。Godot 工程必须带 <code>--engine godot --host-godot 4.2</code>；Unity 工程用默认即可。</p></details>
+      <details class="faq"><summary>装到哪里由谁决定</summary><p>由 <code>tool.yaml</code> 里的落点决定（<code>contentRoot</code> / <code>targetPath</code>），你可以在命令里用 <code>--into</code> 改工具自己占用的那个目录。</p></details>
+      <details class="faq"><summary>回执在哪，能提交吗</summary><p>在 <code>Library/ToolImport/receipts/</code>。<code>Library/</code> 不进版本库——装了什么本来就是本机状态。</p></details>
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">下一步 →</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <section class="step" id="s-quickstart-editor" data-track="quickstart" data-step="editor">
+    <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">6 / 7</span></div>
+    <h2>在编辑器里打开它</h2>
+    <p class="en">Both front ends are thin: they call the same CLI and render the result. Pick your engine below; the window shows its own version in the corner, which is how you confirm the pairing.</p>
+    <div class="goal"><strong>这一步的目标：</strong>编辑器里出现窗口，并显示与命令行一致的内容。</div>
+    
+<p>选你的引擎：</p>
+<div class="tabs" data-tabs="editor">
+  <button class="tab active" data-tab="unity">Unity</button>
+  <button class="tab" data-tab="godot">Godot</button>
+</div>
+<div class="tabpanel active" data-panel="unity">
+  <ol>
+    <li>把 <code>toolimport-unity-1.2.1.zip</code>（或 ToolImport 里的
+    <code>frontends/unity-editor/Editor</code>）解到工程的 <code>Assets/ToolImport/Editor</code>。</li>
+    <li>回到 Unity，等它编译完（右下角转圈结束）。</li>
+    <li>菜单 <strong>Window → ToolRegistry → Import Tool</strong>。</li>
+    <li>窗口右下角应显示 <code>Tool Import 1.2.1</code>——版本对上了，配置就是自动找到的。</li>
+  </ol>
+</div>
+<div class="tabpanel" data-panel="godot">
+  <ol>
+    <li>把 <code>toolimport-godot-1.2.1.zip</code>（或 <code>frontends/godot-editor/addons/tool_import</code>）
+    解到工程的 <code>res://addons/tool_import/</code>。</li>
+    <li><strong>项目 → 项目设置 → 插件</strong>，启用 <code>Tool Import</code>。</li>
+    <li>菜单 <strong>项目 → 工具 → Tool Import</strong>。</li>
+    <li>窗口右下角应显示 <code>Tool Import 1.2.1</code>。</li>
+  </ol>
+</div>
+<p>窗口里做的事和命令行完全一样：<strong>Verify and plan</strong> 读计划，<strong>Install</strong> 才写盘。
+窗口自己不判版本、不算落点——所以两边结果一定一致。</p>
+    
+    
+    
+    <details class="faq"><summary>菜单里没有这一项</summary><p>Godot：插件没启用。Unity：脚本还没编译完，或被 <code>Assets/</code> 之外的目录挡住了。</p></details>
+      <details class="faq"><summary>窗口说找不到 CLI</summary><p>打开窗口里的 <strong>Settings</strong>，把 CLI 与 Node 路径指过去；两个仓库同级时会自动找到，不用配。</p></details>
+      <details class="faq"><summary>右下角版本号对不上</summary><p>你解压的是另一个版本的前端。换成与本页一致的 1.2.1。</p></details>
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">下一步 →</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <section class="step" id="s-quickstart-done" data-track="quickstart" data-step="done">
+    <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">7 / 7</span></div>
+    <h2>到这里你就跑通了</h2>
+    <p class="en">You now have: a validating registry, an import tool that installs into a project, and an editor window that does the same thing. What remains is your own tools and your own repository.</p>
+    <div class="goal"><strong>这一步的目标：</strong>确认三件事都成立，然后选一个方向继续。</div>
+    
+<ul class="checklist">
+  <li>一份通过校验的注册库：<code>node tools/registry.mjs validate</code> 是 PASSED。</li>
+  <li>一个装过工具的工程：<code>utool status</code> 列得出东西，<code>Library/ToolImport/receipts/</code> 里有回执。</li>
+  <li>一个能打开的编辑器窗口，版本号与本页一致。</li>
+</ul>
+<p>接下来通常是这两件之一：</p>
+<ul>
+  <li><strong>把自己的代码变成工具</strong> → 切到「日常维护」的第一步。</li>
+  <li><strong>把注册库放到自己的远程仓库</strong> → 切到「日常维护」的第三步。</li>
+</ul>
+<p>如果只是想读懂这套东西为什么这么设计，切到「参考」。</p>
+    
+    
+    
+    
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">完成 ✓</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <section class="step" id="s-maintain-add-tool" data-track="maintain" data-step="add-tool">
+    <div class="stephead"><span class="badge">我要开始维护它</span><span class="badge">1 / 5</span></div>
+    <h2>加一个工具</h2>
+    <p class="en">Six actions per tool: build the artifact, place it, describe it, regenerate the catalog, validate, commit. The manifest and its artifact change together or not at all.</p>
+    <div class="goal"><strong>这一步的目标：</strong>payloads/ 下多一个能通过校验的工具。</div>
+    
+<p>最省事的起点是复制示例：</p>
+<pre><code>cp -r payloads/example-hello payloads/my-tool</code></pre>
+<ol class="steps">
+  <li><strong>打制品</strong>。Godot 的 addon 用仓库自带的确定性打包脚本；Unity 的 <code>.unitypackage</code>
+  在编辑器里导出即可。<strong>不要用 <code>tar -czf</code></strong>：它把时间写进头里，同一份源码每次摘要都不同。</li>
+  <li><strong>量出 size 与 sha256</strong>。别手算。</li>
+  <li><strong>写 tool.yaml</strong>。改 <code>id</code>、<code>displayName</code>、<code>description</code>、
+  <code>versions[].targets.&lt;engine&gt;</code>。引擎键只有 <code>unity</code> 与 <code>godot</code>。</li>
+  <li><strong>填落点</strong>。<code>contentRoot</code>（归档解到哪）或 <code>targetPath</code>（单文件落到哪），
+  二选一，取决于制品形态。</li>
+  <li><strong>重新生成目录</strong>：<code>write-index</code>。</li>
+  <li><strong>校验并提交</strong>：<code>tool.yaml</code>、制品、<code>index.yaml</code> 必须同一次提交。</li>
+</ol>
+    <div class="cmd">
+        <div class="label">打一个 Godot addon 制品</div>
+        <pre><code data-cmd="node tools/build-godot-addon.mjs &lt;源目录&gt; payloads/my-tool/artifacts/my-tool-1.0.0.tgz">node tools/build-godot-addon.mjs &lt;源目录&gt; payloads/my-tool/artifacts/my-tool-1.0.0.tgz</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">量出 size 与 sha256（直接粘进 tool.yaml）</div>
+        <pre><code data-cmd="node {toolimport}/apps/cli/bin/utool.js digest payloads/my-tool/artifacts/my-tool-1.0.0.tgz">node {toolimport}/apps/cli/bin/utool.js digest payloads/my-tool/artifacts/my-tool-1.0.0.tgz</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">重新生成目录并校验</div>
+        <pre><code data-cmd="node tools/registry.mjs write-index">node tools/registry.mjs write-index</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">提交</div>
+        <pre><code data-cmd="git add payloads index.yaml">git add payloads index.yaml</code></pre>
+      </div>
+    <div class="digest" id="digest">
+      <h4>制品摘要计算器 <span class="hint">离线运行，文件不会离开这台机器</span></h4>
+      <p class="hint">选一个制品文件，它给出 <code>size</code> 与 <code>sha256</code>，拼成可以直接粘进
+      <code>tool.yaml</code> 的片段。数值与 <code>utool digest</code> 一致。</p>
+      <div class="row"><input type="file" id="digest-file"></div>
+      <dl class="kv" hidden>
+        <dt>文件</dt><dd data-out="name"></dd>
+        <dt>字节数</dt><dd data-out="size"></dd>
+        <dt>sha256</dt><dd data-out="sha"></dd>
+        <dt>推断</dt><dd data-out="kind"></dd>
+      </dl>
+      <textarea data-out="yaml" placeholder="选一个文件后，这里会出现可以粘进 tool.yaml 的片段" readonly></textarea>
+      <div class="actions"><button type="button" data-digest-copy>复制片段</button><span class="hint" data-out="note"></span></div>
+    </div>
+    
+    <details class="faq"><summary>不想写 YAML</summary><p>双击 <code>tools/editor.html</code>：按表填，把制品拖进去自动算 size / sha256，生成的内容与 CLI 用同一个校验器。</p></details>
+      <details class="faq"><summary>一个工具能同时给 Unity 和 Godot 吗</summary><p>能。<code>versions[].targets</code> 下同时写 <code>unity</code> 与 <code>godot</code> 即可，各自有自己的制品与落点。</p></details>
+      <details class="faq"><summary>发出去的版本能改吗</summary><p>不能。要改就发新版本；确实要撤回用 <code>yanked: true</code>，字节仍然保留。</p></details>
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">下一步 →</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <section class="step" id="s-maintain-index" data-track="maintain" data-step="index">
+    <div class="stephead"><span class="badge">我要开始维护它</span><span class="badge">2 / 5</span></div>
+    <h2>校验与目录</h2>
+    <p class="en">validate is the gate; write-index rebuilds the catalog from the payloads; check-index is the CI form that fails when the catalog is stale.</p>
+    <div class="goal"><strong>这一步的目标：</strong>知道这三个命令各自负责什么。</div>
+    
+<table>
+  <tr><th>命令</th><th>作用</th><th>什么时候用</th></tr>
+  <tr><td><code>validate</code></td><td>校验 schema、每份元信息、每个摘要、目录是否最新</td><td>每次提交前；CI</td></tr>
+  <tr><td><code>write-index</code></td><td>从 payloads 重新生成 <code>index.yaml</code></td><td>改动 payload 之后</td></tr>
+  <tr><td><code>check-index</code></td><td>只检查目录是否过期，不写文件</td><td>CI</td></tr>
+</table>
+<p>校验器在导入工具里。两个仓库同级时自动发现，否则用 <code>UTOOL_CORE</code> 指过去。</p>
+    <div class="cmd">
+        <div class="label">全量校验</div>
+        <pre><code data-cmd="node tools/registry.mjs validate">node tools/registry.mjs validate</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">CI 用的安静模式</div>
+        <pre><code data-cmd="node tools/registry.mjs validate --quiet">node tools/registry.mjs validate --quiet</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">重新生成目录</div>
+        <pre><code data-cmd="node tools/registry.mjs write-index">node tools/registry.mjs write-index</code></pre>
+      </div>
+    
+    
+    <details class="faq"><summary>为什么目录不让手改</summary><p>它是派生物。手改的结果是下一次生成时被覆盖，而你以为是缓存或编辑器的问题。</p></details>
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">下一步 →</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <section class="step" id="s-maintain-remote" data-track="maintain" data-step="remote">
+    <div class="stephead"><span class="badge">我要开始维护它</span><span class="badge">3 / 5</span></div>
+    <h2>建你自己的远程仓库</h2>
+    <p class="en">The template is a starting point, not a shared registry. Copy it into your own repository and version it like code: consumers pin a commit.</p>
+    <div class="goal"><strong>这一步的目标：</strong>这份注册库有自己的 origin，别人可以按 tag 拉取。</div>
+    
+<h4>方式 A：保留模板作为上游（以后能拉取改进）</h4>
+<ol>
+  <li>克隆模板 → 重命名 origin 为 <code>template</code> → 加自己的远程。</li>
+  <li>以后 <code>git fetch template &amp;&amp; git merge template/main</code> 就能拿更新；冲突通常只在
+  <code>index.yaml</code>，丢掉本地改动重新生成即可。</li>
+</ol>
+<h4>方式 B：完全独立（不关心上游）</h4>
+<p>克隆后删掉 origin，换成自己的。<code>git log</code> 从你的第一次提交开始。</p>
+<h4>为什么值得单独建仓</h4>
+<ul>
+  <li><strong>可钉住</strong>：使用者可以按 tag / commit 取，装出来的东西是确定的。</li>
+  <li><strong>可追溯</strong>：<code>git log payloads/my-tool/tool.yaml</code> 就是一条时间线。</li>
+  <li><strong>可分离</strong>：内部工具放私有仓库、公开工具放公开仓库，导入工具两个都支持。</li>
+</ul>
+    <div class="cmd">
+        <div class="label">方式 A：保留上游</div>
+        <pre><code data-cmd="git remote rename origin template">git remote rename origin template</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">方式 A：换成你自己的远程</div>
+        <pre><code data-cmd="git remote add origin git@github.com:&lt;你&gt;/my-registry.git">git remote add origin git@github.com:&lt;你&gt;/my-registry.git</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">方式 B：删掉 origin 再换</div>
+        <pre><code data-cmd="git remote remove origin">git remote remove origin</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">推上去并打一个 tag</div>
+        <pre><code data-cmd="git push -u origin main">git push -u origin main</code></pre>
+      </div>
+    
+    
+    <details class="faq"><summary>必须打 tag 吗</summary><p>不必须，但使用者要“钉住某次发布”时只有 tag 好用。建议用日期做 tag 名，例如 <code>2026.10</code>。</p></details>
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">下一步 →</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <section class="step" id="s-maintain-update" data-track="maintain" data-step="update">
+    <div class="stephead"><span class="badge">我要开始维护它</span><span class="badge">4 / 5</span></div>
+    <h2>更新 Registry</h2>
+    <p class="en">Publishing an update and pulling one are the same three commands: fetch, validate, regenerate. Consumers see a new version only after you push and they pull.</p>
+    <div class="goal"><strong>这一步的目标：</strong>知道“我改了东西之后”与“上游改了之后”分别跑什么。</div>
+    
+<h4>我自己加了工具之后</h4>
+<p>生成目录 → 校验 → 提交 → 推送。四步固定顺序，校验不过不要提交。</p>
+<h4>从模板拉取改进（方式 A）</h4>
+<p><code>fetch</code> → <code>merge</code> → <strong>重新生成目录</strong> → 校验。冲突通常只在
+<code>index.yaml</code>，它的正确解法永远是重新生成，而不是手工合并。</p>
+<h4>使用者那一侧</h4>
+<p>在注册库目录里 <code>git pull</code> 就够了。导入工具不缓存“你以为是它缓存了”的东西：计划里显示的永远是它这次读到的。</p>
+    <div class="cmd">
+        <div class="label">发布：生成 + 校验 + 提交</div>
+        <pre><code data-cmd="node tools/registry.mjs write-index">node tools/registry.mjs write-index</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">拉取上游后重新生成</div>
+        <pre><code data-cmd="git fetch template">git fetch template</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">合并上游</div>
+        <pre><code data-cmd="git merge template/main">git merge template/main</code></pre>
+      </div>
+    
+    
+    <details class="faq"><summary>合并后 index.yaml 冲突了</summary><p>把冲突标记整个丢掉，运行 <code>write-index</code> 重新生成，再 <code>validate</code>。</p></details>
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">下一步 →</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <section class="step" id="s-maintain-update-tool" data-track="maintain" data-step="update-tool">
+    <div class="stephead"><span class="badge">我要开始维护它</span><span class="badge">5 / 5</span></div>
+    <h2>更新导入工具</h2>
+    <p class="en">Replace the folder, run npm install, keep the settings. Receipts in a project are data, not cache, so an update does not require reinstalling anything.</p>
+    <div class="goal"><strong>这一步的目标：</strong>换到新版本且内容不丢。</div>
+    
+<ol class="steps">
+  <li>下载新版本 zip，<strong>整个目录替换</strong>（不要两个版本混着覆盖部分文件）。</li>
+  <li><code>npm install</code>——依赖可能变过。</li>
+  <li>前端：Unity 覆盖 <code>Assets/ToolImport/Editor</code>；Godot 覆盖 <code>res://addons/tool_import/</code>。</li>
+  <li>确认版本：Godot 窗口右下角、Unity 状态行右端。</li>
+</ol>
+<p>已装内容不受影响：回执是数据记录，不是代码缓存。确实需要“先卸再装”的工具，会在计划里写明。</p>
+    <div class="cmd">
+        <div class="label">更新后在解压目录里重装依赖</div>
+        <pre><code data-cmd="npm install">npm install</code></pre>
+      </div>
+      <div class="cmd">
+        <div class="label">确认版本</div>
+        <pre><code data-cmd="node apps/cli/bin/utool.js --help">node apps/cli/bin/utool.js --help</code></pre>
+      </div>
+    
+    
+    <details class="faq"><summary>能只更新前端吗</summary><p>能，但版本号就对不上了。前端与 CLI 是同一次发布构建的，一起换。</p></details>
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">完成 ✓</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <section class="step" id="s-reference-concepts" data-track="reference" data-step="concepts">
+    <div class="stephead"><span class="badge">我只想读懂它</span><span class="badge">1 / 3</span></div>
+    <h2>三个角色与一条边界</h2>
+    <p class="en">A registry of data, an import tool of logic, and a project that is the only thing written to. There is no install logic in the registry and no tool knowledge in the importer.</p>
+    <div class="goal"><strong>这一步的目标：</strong>说清 Registry / 导入工具 / 工程各自负责什么。</div>
+    
+<div class="grid">
+  <div class="card"><h4>Registry（数据）</h4><p>每个工具一个 <code>payloads/&lt;id&gt;/tool.yaml</code>，加它指向的不可变制品。<strong>没有安装逻辑。</strong></p></div>
+  <div class="card"><h4>ToolImport（逻辑）</h4><p>解析、校验、依赖求解、写盘、回执、卸载。它不知道具体有哪些工具。</p></div>
+  <div class="card"><h4>你的工程（唯一被写的）</h4><p>装了什么记在 <code>Library/ToolImport/receipts/</code>，卸载按回执删。</p></div>
+</div>
+<p>两者之间只有一份数据契约与一份 JSON Schema。契约不变，任一侧都能单独替换——这也是为什么
+“前端坏了还能用 CLI 装”成立：编辑器里的 C# 编译不过时，CLI 仍然能跑。</p>
+<h4>四条约束带来的价值</h4>
+<ul>
+  <li><strong>可审阅</strong>：装的是人类读得懂的清单，不是不透明的大包。</li>
+  <li><strong>可复现</strong>：<code>size</code> 与 <code>sha256</code> 在写盘前校验。</li>
+  <li><strong>可卸载</strong>：回执记录每个文件的来源。</li>
+  <li><strong>可跨引擎</strong>：一个工具可以同时给 Unity 与 Godot 提供落点。</li>
+</ul>
+<h4>典型场景</h4>
+<ul>
+  <li>把散落的复用代码做成“可安装清单”，而不是聊天记录里的压缩包。</li>
+  <li>一个工作区多个工程共用同一批库，升级只改一处版本号。</li>
+  <li>交付一包带依赖关系的能力，而不是一个巨大的 <code>.unitypackage</code>。</li>
+  <li>CI 里校验“这份清单还能不能装”，不需要启动编辑器。</li>
+</ul>
+    
+    
+    
+    
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">下一步 →</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <section class="step" id="s-reference-docs" data-track="reference" data-step="docs">
+    <div class="stephead"><span class="badge">我只想读懂它</span><span class="badge">2 / 3</span></div>
+    <h2>文档索引</h2>
+    <p class="en">Two sets: the registry format lives in docs/ here; the import tool lives in its own repository. Each entry says who it is for.</p>
+    <div class="goal"><strong>这一步的目标：</strong>知道遇到什么问题翻哪一份。</div>
+    
+<h4>本仓库（Registry）</h4>
+<ul class="docs">
+  <li><a href="docs/SPEC.zh-CN.md">格式规范</a>：合法数据长什么样（规范性文件），含迁移规则。</li>
+  <li><a href="docs/ATTRIBUTES.zh-CN.md">属性速查</a>：每个字段填什么（由 schema 生成）。</li>
+  <li><a href="docs/CONTRIBUTING.zh-CN.md">贡献指南</a>：加工具、发版本的完整流程。</li>
+  <li><a href="docs/ERRORS.zh-CN.md">错误码参考</a>：校验失败按码查改法。</li>
+  <li><a href="docs/GLOSSARY.zh-CN.md">术语表</a>：容易混的几个词。</li>
+  <li><a href="docs/FRONTEND-INTEGRATION.zh-CN.md">导入工具契约</a>：想自己写一个前端时读这个。</li>
+  <li><a href="CHANGELOG.zh-CN.md">变更记录</a> · <a href="README.md">README</a></li>
+</ul>
+<h4>ToolImport 仓库</h4>
+<ul class="docs">
+  <li>README：CLI 全部命令、输出模式、退出码。</li>
+  <li>CHANGELOG：每一次改动。</li>
+  <li><code>docs/release-notes-*.md</code>：每个发行版的说明。</li>
+  <li>发布页：<a href="https://github.com/JokeVallen/ToolImport/releases">https://github.com/JokeVallen/ToolImport/releases</a></li>
+</ul>
+    
+    
+    
+    
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">下一步 →</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <section class="step" id="s-reference-problems" data-track="reference" data-step="problems">
+    <div class="stephead"><span class="badge">我只想读懂它</span><span class="badge">3 / 3</span></div>
+    <h2>排错：最常见的四件事</h2>
+    <p class="en">Version mismatch, missing Node, the validator not finding utool-core, and a stale index. Each has one command that says which one it is.</p>
+    <div class="goal"><strong>这一步的目标：</strong>遇到问题时先看这张表。</div>
+    
+<table>
+  <tr><th>症状</th><th>原因</th><th>怎么办</th></tr>
+  <tr><td><code>cannot find the utool-core validator</code></td><td>Registry 脚本找不到导入工具</td><td>两个仓库放成同级，或设 <code>UTOOL_CORE</code> 指向 <code>packages/utool-core/src/index.js</code></td></tr>
+  <tr><td>校验报 <code>index.yaml</code> 过期</td><td>改了 payload 没重新生成目录</td><td><code>node tools/registry.mjs write-index</code></td></tr>
+  <tr><td>编辑器窗口提示找不到 CLI</td><td>Node 或 CLI 路径不在自动查找范围</td><td>窗口里的 Settings，或环境变量 <code>UTOOL_CLI</code> / <code>UTOOL_NODE</code></td></tr>
+  <tr><td>计划里写“摘要不符”</td><td>制品被改动过</td><td>不要改 <code>artifacts/</code> 里的字节；重新打包并更新 <code>size</code> / <code>sha256</code></td></tr>
+</table>
+<div class="note">顺序永远是：先跑 <code>node tools/registry.mjs validate</code>。它绿了，问题基本在导入工具一侧（版本或路径），不在这份数据里。</div>
+    
+    
+    
+    
+    <div class="stepnav">
+      <button type="button" data-go="prev">← 上一步</button>
+      <button type="button" class="next" data-go="next">完成 ✓</button>
+      <span class="pos"></span>
+    </div>
+  </section>
+    <div class="footer">
+      本文档由 <code>tools/build-registry-template.mjs</code> 生成 ·
+      对应 ToolImport 1.2.1 ·
+      仓库 JokeVallen/ToolRegistry-Template
+    </div>
+  </main>
+</div>
+<script>
+(function () {
+  var KEY = 'registry-starter-v2';
+  var state = { track: 'quickstart', step: 0, done: {}, paths: { toolimport: '', registry: '', project: '', engine: 'unity', tool: "example-hello" } };
+  try {
+    var saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (saved) {
+      state.track = saved.track || state.track;
+      state.step = typeof saved.step === 'number' ? saved.step : 0;
+      state.done = saved.done || {};
+      state.paths = Object.assign(state.paths, saved.paths || {});
+    }
+  } catch (error) { /* a browser that blocks storage still gets a working page */ }
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (error) { /* ignore */ }
+  }
+
+  var tracks = Array.prototype.slice.call(document.querySelectorAll('section.step')).reduce(function (all, step) {
+    var id = step.dataset.track;
+    (all[id] = all[id] || []).push(step);
+    return all;
+  }, {});
+  var trackOrder = Array.prototype.slice.call(document.querySelectorAll('.route')).map(function (card) { return card.dataset.track; });
+
+  function trackSteps() { return tracks[state.track] || []; }
+
+  function replaceTokens(text) {
+    var paths = state.paths;
+    var engineArgs = paths.engine === 'godot' ? ' --engine godot --host-godot 4.2' : '';
+    var values = {
+      toolimport: paths.toolimport || '{toolimport}',
+      registry: paths.registry || '{registry}',
+      project: paths.project || '{project}',
+      tool: paths.tool || "example-hello",
+      engineArgs: engineArgs,
+    };
+    return text.replace(/\{(toolimport|registry|project|tool|engineArgs)\}/g, function (all, key) {
+      return values[key];
+    });
+  }
+
+  function refreshCommands() {
+    Array.prototype.forEach.call(document.querySelectorAll('code[data-cmd]'), function (code) {
+      code.textContent = replaceTokens(code.dataset.cmd);
+    });
+  }
+
+  function refreshNav() {
+    Array.prototype.forEach.call(document.querySelectorAll('nav a.step'), function (link) {
+      var key = link.dataset.track + '/' + link.dataset.step;
+      var strip = tracks[link.dataset.track] || [];
+      var index = strip.findIndex(function (s) { return s.id === 's-' + link.dataset.track + '-' + link.dataset.step; });
+      link.classList.toggle('done', !!state.done[key]);
+      var dot = link.querySelector('.dot');
+      if (dot) dot.innerHTML = '<span>' + (index + 1) + '</span>';
+    });
+
+    var strip2 = trackSteps();
+    var done = strip2.filter(function (step) { return state.done[step.dataset.track + '/' + step.dataset.step]; }).length;
+    var bar = document.querySelector('.progress > i');
+    var text = document.querySelector('.progress-text');
+    if (bar) bar.style.width = (strip2.length === 0 ? 0 : Math.round(done * 100 / strip2.length)) + '%';
+    if (text) text.textContent = '本路线：' + done + ' / ' + strip2.length + ' 步已完成';
+  }
+
+  function showStep() {
+    var strip = trackSteps();
+    if (strip.length === 0) return;
+    state.step = Math.max(0, Math.min(strip.length - 1, state.step));
+
+    Array.prototype.forEach.call(document.querySelectorAll('section.step'), function (step) { step.classList.remove('active'); });
+    Array.prototype.forEach.call(document.querySelectorAll('nav a.step'), function (link) { link.classList.remove('active'); });
+    Array.prototype.forEach.call(document.querySelectorAll('.route'), function (card) { card.classList.toggle('active', card.dataset.track === state.track); });
+
+    var active = strip[state.step];
+    active.classList.add('active');
+
+    var link = document.querySelector('nav a.step[data-track="' + state.track + '"][data-step="' + active.dataset.step + '"]');
+    if (link) link.classList.add('active');
+
+    Array.prototype.forEach.call(active.querySelectorAll('.stepnav button'), function (button) {
+      if (button.dataset.go === 'prev') button.disabled = state.step === 0;
+      if (button.dataset.go === 'next') {
+        button.textContent = state.step === strip.length - 1 ? '完成 ✓' : '下一步 →';
+      }
+    });
+
+    var counter = active.querySelector('.stepnav .pos');
+    if (counter) counter.textContent = '第 ' + (state.step + 1) + ' / ' + strip.length + ' 步';
+
+    refreshNav();
+    refreshCommands();
+    save();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function go(track, index) {
+    if (track) state.track = track;
+    if (typeof index === 'number') state.step = index;
+    showStep();
+  }
+
+  function markDone(step) {
+    state.done[step.dataset.track + '/' + step.dataset.step] = true;
+    refreshNav();
+    save();
+  }
+
+  // --- copy, with a fallback for file:// where the clipboard API may be denied -----------------
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).catch(function () { return legacyCopy(text); });
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+
+  function legacyCopy(text) {
+    var area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    try { document.execCommand('copy'); } catch (error) { /* nothing else to try */ }
+    document.body.removeChild(area);
+  }
+
+  function addCopyButtons() {
+    Array.prototype.forEach.call(document.querySelectorAll('.cmd'), function (block) {
+      var code = block.querySelector('code[data-cmd]');
+      if (!code || block.querySelector('.copy')) return;
+      var button = document.createElement('button');
+      button.className = 'copy';
+      button.textContent = '复制';
+      button.addEventListener('click', function () {
+        copyText(code.textContent).then(function () {
+          button.textContent = '已复制';
+          setTimeout(function () { button.textContent = '复制'; }, 1400);
+        });
+      });
+      block.querySelector('pre').appendChild(button);
+    });
+  }
+
+  // --- the one place paths are typed -----------------------------------------------------------
+  function wireFields() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-path]'), function (input) {
+      var key = input.dataset.path;
+      input.value = state.paths[key] || '';
+      var handler = function () {
+        state.paths[key] = input.value;
+        save();
+        refreshCommands();
+      };
+      input.addEventListener('input', handler);
+      input.addEventListener('change', handler);
+    });
+  }
+
+  // --- proof that a step worked ----------------------------------------------------------------
+  function wireVerifiers() {
+    Array.prototype.forEach.call(document.querySelectorAll('.verify'), function (box) {
+      if (box.dataset.wired === '1') return;
+      box.dataset.wired = '1';
+
+      var kind = box.dataset.kind;
+      var expect = (box.dataset.expect || '').toLowerCase();
+      var textarea = box.querySelector('textarea');
+      var button = box.querySelector('button');
+      var result = box.querySelector('.result');
+
+      button.addEventListener('click', function () {
+        var text = textarea.value;
+        var ok = false;
+        var message = '';
+
+        if (kind === 'node') {
+          var match = text.match(/(\d+)\.(\d+)/);
+          if (!match) {
+            message = '没读到版本号。请粘贴 node -v 的输出，形如 v24.12.0。';
+          } else {
+            var major = parseInt(match[1], 10);
+            var minor = parseInt(match[2], 10);
+            ok = major > 20 || (major === 20 && minor >= 11);
+            message = ok
+              ? 'Node ' + major + '.' + minor + '，够用。'
+              : 'Node ' + major + '.' + minor + ' 低于 20.11，先升级。';
+          }
+        } else {
+          ok = text.toLowerCase().indexOf(expect) >= 0;
+          message = ok
+            ? '看到了，这一步成功。'
+            : '输出里没有出现 “' + expect + '”。看下面的常见问题，或重跑上一条命令。';
+        }
+
+        result.textContent = message;
+        result.className = 'result ' + (ok ? 'ok' : 'bad');
+        if (ok) {
+          var step = box.closest('section.step');
+          if (step) markDone(step);
+        }
+      });
+    });
+  }
+
+  // --- tabs inside a step ----------------------------------------------------------------------
+  function wireTabs() {
+    Array.prototype.forEach.call(document.querySelectorAll('.tabs'), function (group) {
+      Array.prototype.forEach.call(group.querySelectorAll('.tab'), function (tab) {
+        tab.addEventListener('click', function () {
+          var panelId = tab.dataset.tab;
+          Array.prototype.forEach.call(group.querySelectorAll('.tab'), function (other) { other.classList.toggle('active', other === tab); });
+          var step = group.closest('section.step');
+          Array.prototype.forEach.call(step.querySelectorAll('.tabpanel'), function (panel) {
+            panel.classList.toggle('active', panel.dataset.panel === panelId);
+          });
+        });
+      });
+    });
+  }
+
+  // --- navigation --------------------------------------------------------------------------------
+  function wireNavigation() {
+    Array.prototype.forEach.call(document.querySelectorAll('nav a.step'), function (link) {
+      link.addEventListener('click', function (event) {
+        event.preventDefault();
+        var strip = tracks[link.dataset.track] || [];
+        var index = strip.findIndex(function (s) { return s.dataset.step === link.dataset.step; });
+        go(link.dataset.track, Math.max(0, index));
+      });
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('.route'), function (card) {
+      card.addEventListener('click', function () { go(card.dataset.track, 0); });
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('.stepnav button'), function (button) {
+      button.addEventListener('click', function () {
+        var strip = trackSteps();
+        var current = strip[state.step];
+        markDone(current);
+        if (button.dataset.go === 'prev') {
+          go(null, state.step - 1);
+        } else if (state.step < strip.length - 1) {
+          go(null, state.step + 1);
+        } else {
+          // Last step of a track: point at the next track rather than dead-ending.
+          var position = trackOrder.indexOf(state.track);
+          var nextTrack = trackOrder[position + 1];
+          if (nextTrack) go(nextTrack, 0);
+          else go('quickstart', 0);
+        }
+      });
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.target && /INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
+      if (event.key === 'ArrowRight') { var next = document.querySelector('.stepnav button.next'); if (next) next.click(); }
+      if (event.key === 'ArrowLeft') { var prev = document.querySelector('.stepnav button[data-go="prev"]'); if (prev && !prev.disabled) prev.click(); }
+    });
+
+    var reset = document.getElementById('reset');
+    if (reset) {
+      reset.addEventListener('click', function () {
+        try { localStorage.removeItem(KEY); } catch (error) { /* ignore */ }
+        state = { track: 'quickstart', step: 0, done: {}, paths: { toolimport: '', registry: '', project: '', engine: 'unity', tool: "example-hello" } };
+        wireFields();
+        showStep();
+      });
+    }
+  }
+
+  // --- paths: paste from the clipboard, and clean what Explorer hands over --------------------
+  function cleanPath(text) {
+    var value = String(text || '').trim();
+    if ((value.charAt(0) === '"' && value.charAt(value.length - 1) === '"') ||
+        (value.charAt(0) === "'" && value.charAt(value.length - 1) === "'")) {
+      value = value.slice(1, -1).trim();
+    }
+    // Explorer's "Copy as path" and most terminals add a trailing separator; a path with one is
+    // quoted differently on the command line, so drop it here instead of surprising the reader.
+    while (value.length > 3 && (value.charAt(value.length - 1) === '\\' || value.charAt(value.length - 1) === '/')) {
+      value = value.slice(0, -1);
+    }
+    return value;
+  }
+
+  function wirePaste() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-paste]'), function (button) {
+      button.addEventListener('click', function () {
+        var key = button.dataset.paste;
+        var input = document.querySelector('[data-path="' + key + '"]');
+        if (!input) return;
+
+        function apply(text) {
+          input.value = cleanPath(text);
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          button.textContent = '已粘贴';
+          button.classList.add('ok');
+          setTimeout(function () { button.textContent = '粘贴'; button.classList.remove('ok'); }, 1400);
+        }
+
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          navigator.clipboard.readText().then(apply).catch(function () {
+            input.focus();
+            button.textContent = '按 Ctrl+V';
+            setTimeout(function () { button.textContent = '粘贴'; }, 1800);
+          });
+        } else {
+          input.focus();
+          button.textContent = '按 Ctrl+V';
+          setTimeout(function () { button.textContent = '粘贴'; }, 1800);
+        }
+      });
+    });
+  }
+
+  // --- offline digest calculator ---------------------------------------------------------------
+  // SHA-256 in the page rather than crypto.subtle: subtle is only exposed in a secure context, and
+  // "open the file from a network share" is a normal way to use this page. The implementation is
+  // checked against node:crypto by tools/test-registry-template.mjs.
+  function sha256Hex(bytes) {
+    var K = [
+      0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+      0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+      0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+      0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+      0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+      0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+      0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+      0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    ];
+    var H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+
+    function rotr(x, n) { return (x >>> n) | (x << (32 - n)); }
+
+    var length = bytes.length;
+    var bitLength = length * 8;
+    var total = ((length + 9 + 63) >> 6) << 6;
+    var padded = new Uint8Array(total);
+    padded.set(bytes);
+    padded[length] = 0x80;
+
+    var view = new DataView(padded.buffer);
+    view.setUint32(total - 8, Math.floor(bitLength / 4294967296));
+    view.setUint32(total - 4, bitLength % 4294967296);
+
+    var w = new Array(64);
+    for (var offset = 0; offset < total; offset += 64) {
+      for (var i = 0; i < 16; i += 1) w[i] = view.getUint32(offset + i * 4);
+      for (i = 16; i < 64; i += 1) {
+        var s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+        var s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+      }
+
+      var a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+      for (i = 0; i < 64; i += 1) {
+        var S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+        var ch = (e & f) ^ (~e & g);
+        var t1 = (h + S1 + ch + K[i] + w[i]) | 0;
+        var S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+        var maj = (a & b) ^ (a & c) ^ (b & c);
+        var t2 = (S0 + maj) | 0;
+        h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+      }
+
+      H[0] = (H[0] + a) | 0;
+      H[1] = (H[1] + b) | 0;
+      H[2] = (H[2] + c) | 0;
+      H[3] = (H[3] + d) | 0;
+      H[4] = (H[4] + e) | 0;
+      H[5] = (H[5] + f) | 0;
+      H[6] = (H[6] + g) | 0;
+      H[7] = (H[7] + h) | 0;
+    }
+
+    return H.map(function (x) { return ('00000000' + (x >>> 0).toString(16)).slice(-8); }).join('');
+  }
+
+  function wireDigest() {
+    var box = document.getElementById('digest');
+    if (!box) return;
+
+    var input = box.querySelector('input[type=file]');
+    var details = box.querySelector('.kv');
+    var output = box.querySelector('textarea');
+    var note = box.querySelector('[data-out="note"]');
+
+    function guessType(name) {
+      var lower = name.toLowerCase();
+      if (lower.endsWith('.unitypackage')) return 'package / unitypackage';
+      if (lower.endsWith('.tgz') || lower.endsWith('.tar.gz')) return 'archive / tgz';
+      if (lower.endsWith('.zip')) return 'archive / zip';
+      return 'file / —（单文件用 type: file 与 targetPath）';
+    }
+
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      note.textContent = '正在计算…';
+      file.arrayBuffer().then(function (buffer) {
+        var hex = sha256Hex(new Uint8Array(buffer));
+        box.querySelector('[data-out="name"]').textContent = file.name;
+        box.querySelector('[data-out="size"]').textContent = String(file.size);
+        box.querySelector('[data-out="sha"]').textContent = hex;
+        box.querySelector('[data-out="kind"]').textContent = guessType(file.name);
+        details.hidden = false;
+        output.value = [
+          '# 粘进 targets.<engine>.artifact（type/format 按上面推断的填）',
+          'path: payloads/<id>/artifacts/' + file.name,
+          'size: ' + file.size,
+          "sha256: '" + hex + "'",
+        ].join('\n');
+        note.textContent = '算好了。路径里的 <id> 换成你的工具 id。';
+      }).catch(function () {
+        note.textContent = '读取失败：文件可能被占用或过大。';
+      });
+    });
+
+    box.querySelector('[data-digest-copy]').addEventListener('click', function () {
+      if (!output.value) return;
+      copyText(output.value).then(function () {
+        note.textContent = '已复制。';
+      });
+    });
+  }
+
+  wireFields();
+  wireVerifiers();
+  wireTabs();
+  wireNavigation();
+  addCopyButtons();
+  wirePaste();
+  wireDigest();
+
+  // A step can be linked directly (#s-maintain-add-tool), which is how the page is reviewed and
+  // how a reader can come back to one step without walking the whole track again.
+  var deepLink = (location.hash || '').replace('#', '');
+  if (deepLink !== '') {
+    var target = document.getElementById(deepLink);
+    if (target && target.classList.contains('step')) {
+      var index = (tracks[target.dataset.track] || []).indexOf(target);
+      if (index >= 0) {
+        state.track = target.dataset.track;
+        state.step = index;
+      }
+    }
+  }
+
+  showStep();
+
+  // Inputs can be typed into before the first showStep; keep commands honest either way.
+  refreshCommands();
+})();
+</script>
+</body>
+</html>

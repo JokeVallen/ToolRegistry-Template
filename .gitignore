@@ -1,0 +1,10 @@
+# Per-developer and per-machine state. Artifacts under payloads/*/artifacts/ are intentional
+# binaries and are never ignored: they are the bytes that get imported.
+node_modules/
+dist/
+Library/
+Temp/
+obj/
+.vs/
+.idea/
+*.swp

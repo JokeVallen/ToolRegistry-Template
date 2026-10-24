@@ -1,0 +1,48 @@
+# receipts/<toolId>.yaml
+#
+# ToolRegistry metadata -- formatVersion 3.
+# Extension is .yaml; contents are YAML (.yaml is accepted as an alias).
+#
+# The document is split in two halves:
+#   * everything down to `dependencies` is ENGINE-NEUTRAL - identity, capabilities
+#     and dependency edges mean the same thing whatever consumes the payload;
+#   * everything inside `targets` is ENGINE-SPECIFIC - floors, container format and
+#     install layout differ per engine, and that vocabulary belongs to the engine's
+#     adapter, not to the schema.
+#
+# One manifest describes ONE version. A tool that works in several engines declares
+# one target per engine instead of being duplicated.
+#
+# Schema: schema/tool.schema.json      Rules: docs/SPEC.zh-CN.md
+# Validate: node ../ToolImport/apps/cli/bin/utool.js validate . --write-index
+#
+# WRITTEN BY THE IMPORT TOOL - not by hand.
+#
+# Location inside a consumer project:
+#     <ProjectRoot>/Library/ToolImport/receipts/<toolId>.yaml
+#
+# Library/ is never committed by Unity, so receipts stay local by construction.
+# One receipt per installed TOOL (not per engine, so a cross-engine install is
+# still one decision). Receipts are what make uninstall exact: a file is deleted
+# only when no remaining receipt still claims it.
+#
+# previousSha256 is the version pointer: recording what a tool replaced is what
+# makes a failed update rollback-able rather than a one-way door.
+#
+
+kind: receipt
+formatVersion: '3'
+toolId: editor-tool-selection-history
+version: 1.0.0
+artifactSha256: '0000000000000000000000000000000000000000000000000000000000000000'
+artifactFormat: unitypackage
+installedAtUtc: '2026-01-01T00:00:00Z'
+registryRef: main
+registryCommit: '0000000'
+installedEngines:
+  - unity
+installedFiles:
+  - Assets/SelectionHistory/SelectionHistoryWindow.cs
+installedByTools:
+  - user
+previousSha256: null

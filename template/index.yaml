@@ -1,0 +1,49 @@
+# index.yaml
+#
+# ToolRegistry metadata -- formatVersion 3.
+# Extension is .yaml; contents are YAML (.yaml is accepted as an alias).
+#
+# The document is split in two halves:
+#   * everything down to `dependencies` is ENGINE-NEUTRAL - identity, capabilities
+#     and dependency edges mean the same thing whatever consumes the payload;
+#   * everything inside `targets` is ENGINE-SPECIFIC - floors, container format and
+#     install layout differ per engine, and that vocabulary belongs to the engine's
+#     adapter, not to the schema.
+#
+# One manifest describes ONE version. A tool that works in several engines declares
+# one target per engine instead of being duplicated.
+#
+# Schema: schema/tool.schema.json      Rules: docs/SPEC.zh-CN.md
+# Validate: node ../ToolImport/apps/cli/bin/utool.js validate . --write-index
+#
+# GENERATED FILE - do not hand-edit.
+#     node ../ToolImport/apps/cli/bin/utool.js validate . --write-index
+#
+# Why it exists: an import tool can list every available tool with a single request
+# instead of walking the tree. Entries are summaries: they carry the LATEST version and
+# every published version NUMBER, plus the engine names a tool targets - never floors
+# or artifacts. Per-engine and per-version detail stays in each payloads/<id>/tool.yaml,
+# which is what gets read before an install.
+#
+
+kind: index
+formatVersion: '3'
+repository: https://github.com/JokeVallen/ToolRegistry.git
+tools:
+  - id: core-editor-utils
+    displayName: Core Editor Utils
+    type: tool-library
+    description: Short summary, mirrored from the tool's own manifest for fast listing.
+    latest: 1.1.0
+    versions:
+      - 1.1.0
+    engines:
+      - godot
+      - unity
+    provides:
+      - script.api.argument-guards
+    injects: []
+    dependencies: []
+    tags:
+      - core
+    manifestPath: payloads/core-editor-utils/tool.yaml
