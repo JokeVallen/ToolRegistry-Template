@@ -23,7 +23,7 @@ through setup, the matching import tool release, validation and the first instal
 index.yaml              目录（自动生成，不手改）
 payloads/example-hello/ 一个可校验、可规划、可安装的示例工具
 schema/                 校验依据
-tools/                  registry.mjs 与三个离线页面
+tools/                  registry.mjs 与四个离线页面（validate / editor / guide / workbench）
 template/               骨架 yaml
 docs/                   格式规范等文档
 START-HERE.html         离线引导（第一个该打开的文件）

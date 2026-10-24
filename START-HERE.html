@@ -377,6 +377,8 @@
     
 <p>在注册库目录里运行校验。<strong>它不写任何文件</strong>，失败也只是打印原因。</p>
 <p>期望看到最后一行类似 <code>PASSED - 4 check(s), 0 errors</code>。</p>
+<p>不想开终端：双击 <a href="tools/workbench.html">tools/workbench.html</a> 选同一个文件夹，
+它会逐条列出清单问题与制品摘要，效果与这里等价（压缩包内部结构仍需命令行）。</p>
     <div class="cmd">
         <div class="label">在 Registry 目录里执行</div>
         <pre><code data-cmd="node tools/registry.mjs validate">node tools/registry.mjs validate</code></pre>
@@ -588,6 +590,9 @@
   <tr><td><code>check-index</code></td><td>只检查目录是否过期，不写文件</td><td>CI</td></tr>
 </table>
 <p>校验器在导入工具里。两个仓库同级时自动发现，否则用 <code>UTOOL_CORE</code> 指过去。</p>
+<p>不想开终端时，双击 <a href="tools/workbench.html">tools/workbench.html</a>：选一次文件夹，
+清单问题、制品摘要、<code>index.yaml</code> 是否最新一次看完，过期的目录还能直接下载覆盖。
+它和这里的命令用同一套规则（校验器与目录生成函数来自同一个源），区别只是不需要 Node 与终端。</p>
     <div class="cmd">
         <div class="label">全量校验</div>
         <pre><code data-cmd="node tools/registry.mjs validate">node tools/registry.mjs validate</code></pre>

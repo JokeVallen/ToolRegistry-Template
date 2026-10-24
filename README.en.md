@@ -10,7 +10,7 @@ walks through the environment, the matching import tool, validation, and the fir
 index.yaml              the catalog (generated, never hand-edited)
 payloads/example-hello/ one real tool: validates, plans and installs
 schema/                 the validation source
-tools/                  registry.mjs and three offline pages
+tools/                  registry.mjs and four offline pages (validate / editor / guide / workbench)
 template/               yaml skeletons
 docs/                   format spec and friends
 START-HERE.html         the offline onboarding page - open this first

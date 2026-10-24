@@ -1,0 +1,3569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registry 工作台 · Registry workbench</title>
+<!--
+  GENERATED FILE - do not edit.
+  Rebuild with: node tools/build-workbench-html.mjs
+-->
+<style>
+  :root { --bg:#1b1d21; --panel:#24272c; --panel-2:#2a2e34; --line:#34383f; --fg:#e6e8ea;
+          --dim:#9aa1ab; --ok:#4ec26a; --bad:#e2564a; --accent:#7fa6c4; --warn:#d8a657;
+          --link:#9dbdd4; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:15px/1.7 "Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 28px 24px 60px; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .sub { color: var(--dim); margin: 0 0 20px; }
+  a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(157,189,212,.4);
+      text-underline-offset: 2px; }
+  .panel { border:1px solid var(--line); border-radius:8px; background:var(--panel);
+           padding:16px 18px; margin:0 0 16px; }
+  .panel h2 { font-size:15px; margin:0 0 10px; }
+  .hint { color:var(--dim); font-size:13px; }
+  code { font-family:"Cascadia Mono",Consolas,monospace; font-size:13px;
+         font-variant-ligatures:none; background:var(--panel-2); padding:1px 5px; border-radius:4px; }
+  button { background:var(--panel-2); color:var(--fg); border:1px solid var(--line);
+           border-radius:6px; padding:7px 14px; cursor:pointer; font:inherit; font-size:14px; }
+  button:hover { border-color:var(--accent); }
+  button:disabled { opacity:.45; cursor:default; }
+  input[type=file] { color:var(--dim); font-size:13px; }
+  table { border-collapse:collapse; width:100%; font-size:13.5px; margin:8px 0 0; }
+  th,td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--dim); font-weight:normal; font-size:12.5px; }
+  td.mono { font-family:"Cascadia Mono",Consolas,monospace; font-size:12.5px; }
+  .tag { display:inline-block; font-size:11.5px; border-radius:20px; padding:1px 8px; border:1px solid; }
+  .tag.ok { color:var(--ok); border-color:rgba(78,194,106,.45); }
+  .tag.bad { color:var(--bad); border-color:rgba(226,86,74,.45); }
+  .tag.warn { color:var(--warn); border-color:rgba(216,166,87,.45); }
+  ul.problems { margin:6px 0 0; padding-left:18px; color:var(--dim); font-size:13px; }
+  ul.problems li { color:var(--bad); }
+  .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  textarea { width:100%; min-height:220px; background:var(--bg); color:var(--fg);
+             border:1px solid var(--line); border-radius:6px; padding:10px;
+             font:12.5px/1.55 "Cascadia Mono",Consolas,monospace; }
+  .great { color:var(--ok); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Registry 工作台</h1>
+  <p class="sub">选一个注册库文件夹，在这里校验清单、核对制品摘要、重写 index.yaml。
+  整页离线运行，文件不离开这台机器。<br>
+  Pick a registry folder to validate its manifests, check artifact digests and rewrite
+  <code>index.yaml</code>. Fully offline; nothing is uploaded.</p>
+
+  <div class="panel">
+    <h2>1. 选文件夹 / Pick the folder</h2>
+    <div class="row">
+      <input type="file" id="folder" webkitdirectory multiple>
+      <span class="hint" id="folderNote">选择包含 <code>payloads/</code> 的那个目录</span>
+    </div>
+    <p class="hint">浏览器的文件夹选择器只在这一个动作里给你读取权限；页面不保存也不上传任何文件。</p>
+  </div>
+
+  <div class="panel">
+    <h2>2. 清单 / Manifests</h2>
+    <div id="manifests"><p class="hint">还没选文件夹。</p></div>
+  </div>
+
+  <div class="panel">
+    <h2>3. 制品 / Artifacts</h2>
+    <div id="artifacts"><p class="hint">清单读完之后逐个体检：存在、大小、sha256。</p></div>
+    <p class="hint">压缩包内部（<code>contentRoot</code>、<code>files</code>）需要解压才能核对，
+    这一步留给 <code>node tools/registry.mjs validate</code>。</p>
+  </div>
+
+  <div class="panel">
+    <h2>4. 目录 / index.yaml</h2>
+    <div id="indexState"><p class="hint">选文件夹后，这里会对比现有的 index.yaml 与重新生成的目录。</p></div>
+    <div class="row" style="margin-top:12px">
+      <button id="download" disabled>下载重新生成的 index.yaml</button>
+      <button id="copyText" disabled>复制 YAML 文本</button>
+    </div>
+    <textarea id="indexText" readonly spellcheck="false" placeholder="生成结果会出现在这里"></textarea>
+  </div>
+
+  <p class="hint">这个页面和 <code>utool</code> 用同一套规则：schema、清单类、目录生成函数都是从
+  导入工具的源码里内联进来的，不是另写一份。</p>
+</main>
+
+<script>
+const path = {
+  sep: '/',
+  join: (...parts) => parts.filter((part) => part !== '' && part !== '.').join('/').replace(/\/+/g, '/'),
+  dirname: (value) => {
+    const cut = value.lastIndexOf('/');
+    return cut < 0 ? '.' : value.slice(0, cut) || '/';
+  },
+  basename: (value) => value.slice(value.lastIndexOf('/') + 1),
+  resolve: (...parts) => parts.join('/').replace(/\/+/g, '/'),
+  relative: (from, to) => to,
+  isAbsolute: (value) => value.startsWith('/'),
+  normalize: (value) => value.replace(/\/+/g, '/'),
+};
+
+function readFileSync(where) {
+  throw new Error('the page has no file system: it only sees the folder you picked (' + where + ')');
+}
+function existsSync(where) {
+  throw new Error('the page has no file system: it only sees the folder you picked (' + where + ')');
+}
+function readdir() {
+  throw new Error('the page cannot list a directory; the folder picker already gave it the files');
+}
+function loadUtool() {
+  throw new Error('loadUtool reads from disk; the page parses text it was given by the picker');
+}
+function loadKind() {
+  throw new Error('loadKind reads from disk; the page parses text it was given by the picker');
+}
+function verifyArtifactFile() {
+  throw new Error('artifact files are verified from bytes in the page, not from a path');
+}
+
+
+// ---- minimal-yaml.js (this repository) (inlined) ----
+/**
+ * A deliberately small YAML reader for manifest files.
+ *
+ * Why this exists: the standalone HTML validator must be one file with no dependencies and
+ * no build step, and the `yaml` package cannot be embedded that way - it is forty-odd
+ * modules whose top-level names collide when flattened (visit, schema, int and fifteen
+ * others are declared in more than one file). Two attempts at flattening produced a page
+ * that built successfully and then threw at load.
+ *
+ * So the page carries its own reader, supporting exactly the constructs a ToolRegistry
+ * manifest is allowed to use. That constraint is the point rather than a limitation: the
+ * format is deliberately narrow, and a reader that accepts more than the format allows
+ * would be the wrong tool for validating it.
+ *
+ * Supported
+ *   * block mappings and block sequences, nested by indentation
+ *   * flow mappings and flow sequences: { a: 1, b: [x, y] }
+ *   * plain scalars, single- and double-quoted scalars
+ *   * block scalars: | literal and > folded, with - / + chomping
+ *   * comments, blank lines, and a mandatory single document
+ *
+ * Refused, by name, because silently misreading them would be worse:
+ *   * anchors and aliases (&a / *a)
+ *   * tags (!!str, !Custom)
+ *   * multiple documents (---)
+ *   * explicit keys (? key)
+ *   * multi-line flow collections
+ *
+ * Not a general YAML implementation, and does not pretend to be one.
+ */
+
+/**
+ * @param {string} text
+ * @returns {{doc: any}|{error: {code: string, message: string}[]}}
+ */
+function parseYaml(text) {
+  const source = text.replace(/^\uFEFF/, '');
+
+  if (source.trim() === '') {
+    return { error: [{ code: 'E-UTOOL-EMPTY', message: 'the document is empty' }] };
+  }
+
+  const lines = source.split(/\r\n|\r|\n/);
+
+  // `---` either opens the single document (legal, when it is the first thing) or SEPARATES
+  // two documents (illegal here). Counting markers alone missed the second case, because
+  // `a: 1\n---\nb: 2` has exactly one marker and yet is plainly two documents.
+  const markerLines = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    // Only a marker that is not indented starts a document.
+    if (/^---\s*(#.*)?$/.test(lines[i])) markerLines.push(i);
+    if (/^\.\.\.\s*(#.*)?$/.test(lines[i])) markerLines.push(i);
+  }
+  const opensDocument = markerLines.length > 0 && /^\s*$/.test(lines.slice(0, markerLines[0]).join(''));
+  const separated = opensDocument ? markerLines.length - 1 : markerLines.length;
+
+  if (separated > 0) {
+    return {
+      error: [{
+        code: 'E-UTOOL-YAML',
+        message: 'expected exactly one YAML document, found 2 or more',
+      }],
+    };
+  }
+
+  const tokens = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const raw = lines[index];
+
+    if (/^---\s*(#.*)?$/.test(raw) || /^\.\.\.\s*(#.*)?$/.test(raw)) continue;
+
+    const withoutComment = stripComment(raw);
+    if (withoutComment.trim() === '') continue;
+
+    // Checked on the raw leading whitespace: after trimming, a leading tab is
+    // indistinguishable from indentation and tab-indented input would be accepted.
+    const leading = withoutComment.match(/^[ \t]*/)[0];
+    if (leading.includes('\t')) {
+      return { error: [problem(index, 'tabs may not be used for indentation')] };
+    }
+    const indent = leading.length;
+
+    const text = withoutComment.trim();
+
+    // A block scalar's body is NOT tokenised. It is raw text whose blank lines are content
+    // and whose indentation is relative to the parent, so it must be read from the source
+    // rather than filtered into the token stream - doing the latter produced
+    // "unexpected indentation" on every manifest with a folded description.
+    //
+    // The indicator appears as a VALUE (`description: >-`) or as a whole sequence item
+    // (`- >-`), so both forms are recognised here rather than in the parser.
+    if (isBlockScalarValue(text)) {
+      const body = [];
+      let cursor = index + 1;
+      while (cursor < lines.length) {
+        const bodyLine = lines[cursor];
+        if (bodyLine.trim() === '') {
+          body.push('');
+          cursor += 1;
+          continue;
+        }
+        const bodyIndent = bodyLine.length - bodyLine.trimStart().length;
+        if (bodyIndent <= indent) break;
+        body.push(bodyLine.slice(Math.min(bodyIndent, indent + 2)));
+        cursor += 1;
+      }
+      // Trailing blank lines belong to the chomping decision, not to the content.
+      while (body.length > 0 && body[body.length - 1] === '') body.pop();
+
+      tokens.push({
+        line: index,
+        indent,
+        text,
+        block: { indicator: blockIndicatorOf(text), chomp: chompOf(text), body },
+      });
+      index = cursor - 1;
+      continue;
+    }
+
+    tokens.push({ line: index, indent, text, raw: withoutComment });
+  }
+
+  if (tokens.length === 0) {
+    return { error: [{ code: 'E-UTOOL-EMPTY', message: 'the document is empty' }] };
+  }
+
+  const unsupported = findUnsupported(source);
+  if (unsupported) return { error: [unsupported] };
+
+  const state = { tokens, at: 0, lines };
+  try {
+    const doc = parseBlock(state, tokens[0].indent);
+    if (state.at < tokens.length) {
+      const token = tokens[state.at];
+      return {
+        error: [problem(token.line, `unexpected content at indentation ${token.indent}`)],
+      };
+    }
+    if (doc === undefined) {
+      return { error: [{ code: 'E-UTOOL-EMPTY', message: 'the document is empty' }] };
+    }
+    if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
+      return {
+        error: [{
+          code: 'E-UTOOL-ROOT',
+          message: 'the document root must be a mapping',
+        }],
+      };
+    }
+    return { doc };
+  } catch (cause) {
+    return { error: [{ code: 'E-UTOOL-YAML', message: cause.message }] };
+  }
+}
+
+// ------------------------------------------------------------------ scanning
+
+/** Remove a trailing comment, respecting quotes. */
+function stripComment(line) {
+  let quote = null;
+  for (let i = 0; i < line.length; i += 1) {
+    const c = line[i];
+    if (quote) {
+      if (c === '\\' && quote === '"') i += 1;
+      else if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      continue;
+    }
+    // A `#` starts a comment only at the start of the line or after whitespace.
+    if (c === '#' && (i === 0 || /\s/.test(line[i - 1]))) return line.slice(0, i);
+  }
+  return line;
+}
+
+/** Refuse constructs this reader does not implement, rather than misreading them. */
+function findUnsupported(source) {
+  // Patterns must not require a preceding newline: the construct can be on the first line,
+  // and testing against "\n" + source missed exactly that case.
+  const checks = [
+    [/&\w+/, 'anchors (&name) are not supported'],
+    [/\*\w+/, 'aliases (*name) are not supported'],
+    [/(^|[:\s])!\S/m, 'tags (!tag) are not supported'],
+    [/^\s*\?\s/m, 'explicit keys (? key) are not supported'],
+  ];
+  for (const [pattern, message] of checks) {
+    if (pattern.test(source)) {
+      return { code: 'E-UTOOL-YAML', message };
+    }
+  }
+  return null;
+}
+
+
+function problem(line, message) {
+  return { code: 'E-UTOOL-YAML', message: `line ${line + 1}: ${message}` };
+}
+
+// ------------------------------------------------------------------ parsing
+
+/** Parse everything at one indentation level: a mapping or a sequence. */
+function parseBlock(state, indent) {
+  const first = state.tokens[state.at];
+  if (!first || first.indent < indent) return undefined;
+
+  return first.text.startsWith('- ') || first.text === '-'
+    ? parseSequence(state, indent)
+    : parseMapping(state, indent);
+}
+
+/**
+ * Continue a plain scalar across the following, more-indented lines.
+ *
+ * YAML folds them into spaces. This is legal and the generated index.yaml relies on it for
+ * long descriptions, so without it a wrapped description reads as unexpected indentation.
+ */
+function continuePlainScalar(state, value, parentIndent) {
+  let out = value;
+  while (state.at < state.tokens.length) {
+    const next = state.tokens[state.at];
+    if (next.indent <= parentIndent || next.block) break;
+    if (splitKey(next.text)) break;
+    if (next.text.startsWith('- ') || next.text === '-') break;
+    out += ` ${next.text}`;
+    state.at += 1;
+  }
+  return out;
+}
+
+function parseMapping(state, indent) {
+  const out = {};
+  while (state.at < state.tokens.length) {
+    const token = state.tokens[state.at];
+    if (token.indent < indent) break;
+    if (token.indent > indent) {
+      throw new Error(`line ${token.line + 1}: unexpected indentation`);
+    }
+    if (token.text.startsWith('- ') || token.text === '-') {
+      throw new Error(`line ${token.line + 1}: a sequence item where a mapping key was expected`);
+    }
+
+    const split = splitKey(token.text);
+    if (!split) {
+      throw new Error(`line ${token.line + 1}: expected 'key: value'`);
+    }
+    const { key, rest } = split;
+    state.at += 1;
+
+    // A block scalar carries its own indicator in this token (`description: >-`), so the
+    // body has to be taken from the token we are already holding rather than from the next
+    // one - which is why this precedes the `rest !== ''` case below.
+    if (token.block) {
+      out[key] = readBlockScalar(token);
+      continue;
+    }
+
+    if (rest !== '') {
+      // A plain scalar may continue on following lines that are indented further. YAML
+      // folds those into spaces, which is legal and which the generated index.yaml uses for
+      // long descriptions:
+      //     description: first part
+      //       second part
+      // Without this the continuation lines look like unexpected indentation.
+      let value = rest;
+      while (state.at < state.tokens.length) {
+        const continuation = state.tokens[state.at];
+        if (continuation.indent <= indent || continuation.block) break;
+        if (splitKey(continuation.text)) break;
+        value += ` ${continuation.text}`;
+        state.at += 1;
+      }
+      out[key] = parseScalarOrFlow(value, token.line);
+      continue;
+    }
+
+    // No value on this line. What follows is either a nested block, a block scalar, or a
+    // sibling key - and a SEQUENCE may sit at the key's own indentation, which is legal
+    // YAML and what the generated index.yaml uses:
+    //     tools:
+    //     - id: first
+    const next = state.tokens[state.at];
+    if (next && next.indent > indent) {
+      // A DEEPER line is a nested block, and it carries its own key - `b: |` is a mapping
+      // entry for `b`, not this key's scalar. This used to test `next.block` FIRST and hand
+      // the folded text to the OUTER key, so
+      //     a:
+      //       b: >-
+      //         text
+      // parsed as { a: "text" }: `b` disappeared. Nothing caught it until a manifest ended
+      // with a block scalar, because that is when the misread value is visible.
+      out[key] = parseBlock(state, next.indent);
+    } else if (next && next.block) {
+      // Only reachable for a block scalar that belongs to THIS key without a key of its own,
+      // which the tokeniser produces for `- |` items; parseSequence handles those.
+      out[key] = readBlockScalar(next);
+      state.at += 1;
+    } else if (next && next.indent === indent && (next.text.startsWith('- ') || next.text === '-')) {
+      out[key] = parseSequence(state, indent);
+    } else {
+      out[key] = null;
+    }
+  }
+  return out;
+}
+
+/**
+ * Materialise a block scalar token.
+ *
+ * `|` keeps newlines; `>` folds a single newline into a space and keeps blank lines as
+ * newlines. Chomping: `-` strips the trailing newline, default clips to exactly one, `+`
+ * keeps them all.
+ */
+function readBlockScalar(token) {
+  const { indicator, chomp, body } = token.block;
+  let value = indicator === '|' ? body.join('\n') : foldLines(body);
+
+  if (chomp === '-') return value.replace(/\n+$/, '');
+  if (chomp === '+') return `${value}\n`;
+  return `${value.replace(/\n+$/, '')}\n`;
+}
+
+/**
+ * Is this line's value a block scalar indicator?
+ *
+ * Matches both `description: >-` and a bare `>-` as a sequence item, and nothing else - a
+ * value like `a: |x` is not an indicator and must fall through to the scalar parser.
+ */
+function isBlockScalarValue(text) {
+  return /:\s*[|>][+-]?\d*$/.test(text) || /^[|>][+-]?\d*$/.test(text);
+}
+
+/** The `|` or `>` that opens the scalar. */
+function blockIndicatorOf(text) {
+  return text.match(/[|>]/)[0];
+}
+
+function chompOf(text) {
+  if (text.includes('-')) return '-';
+  if (text.includes('+')) return '+';
+  return 'clip';
+}
+
+/**
+ * Fold a block scalar's lines the way `>` does: a single newline becomes a space, and a
+ * blank line becomes a newline.
+ */
+function foldLines(lines) {
+  let out = '';
+  for (const line of lines) {
+    if (line.trim() === '') {
+      out += '\n';
+      continue;
+    }
+    out += (out !== '' && !out.endsWith('\n') ? ' ' : '') + line;
+  }
+  return out;
+}
+
+function parseSequence(state, indent) {
+  const out = [];
+  while (state.at < state.tokens.length) {
+    const token = state.tokens[state.at];
+    if (token.indent < indent) break;
+    if (token.indent > indent) {
+      throw new Error(`line ${token.line + 1}: unexpected indentation`);
+    }
+    if (!(token.text.startsWith('- ') || token.text === '-')) break;
+
+    state.at += 1;
+    const rest = token.text === '-' ? '' : token.text.slice(2).trim();
+    const itemIndent = indent + 2;
+
+    if (rest === '') {
+      const next = state.tokens[state.at];
+      if (next && next.block) {
+        out.push(readBlockScalar(next));
+        state.at += 1;
+      } else {
+        out.push(next && next.indent > indent ? parseBlock(state, next.indent) : null);
+      }
+      continue;
+    }
+
+    // `- key: value` starts a mapping whose keys line up under the dash.
+    if (splitKey(rest)) {
+      const inline = parseInlineMapping(state, rest, itemIndent, token.line);
+      out.push(inline);
+      continue;
+    }
+
+    out.push(parseScalarOrFlow(rest, token.line));
+  }
+  return out;
+}
+
+/**
+ * A sequence item that begins a mapping: `- id: x` followed by `  version: y`.
+ *
+ * The first pair is on the dash line; the rest are at the item's indentation, which is the
+ * dash column plus two.
+ */
+function parseInlineMapping(state, firstPair, itemIndent, line) {
+  const { key, rest } = splitKey(firstPair);
+  const out = {};
+
+  // The dash line's own token carries a block-scalar body when the item opens one
+  // (`- notes: >-`). Consulting `rest` alone reads the indicator as the value.
+  const firstToken = state.tokens[state.at - 1];
+  if (firstToken?.block) {
+    out[key] = readBlockScalar(firstToken);
+  } else if (rest !== '') {
+    out[key] = parseScalarOrFlow(continuePlainScalar(state, rest, itemIndent), line);
+  } else {
+    const next = state.tokens[state.at];
+    if (next && next.block) {
+      out[key] = readBlockScalar(next);
+      state.at += 1;
+    } else {
+      out[key] = next && next.indent > itemIndent ? parseBlock(state, next.indent) : null;
+    }
+  }
+
+  // Continue with any further keys at the item's indentation.
+  while (state.at < state.tokens.length) {
+    const token = state.tokens[state.at];
+    if (token.indent !== itemIndent) break;
+    if (token.text.startsWith('- ') || token.text === '-') break;
+
+    const split = splitKey(token.text);
+    if (!split) break;
+    state.at += 1;
+
+    // Same rule as in parseBlock: a `key: >-` line is a block scalar, and the token
+    // already holds the folded body. Checking `rest` first made the indicator itself the
+    // value, so a sequence item's last key read as the literal string ">-".
+    if (token.block) {
+      out[split.key] = readBlockScalar(token);
+      continue;
+    }
+
+    if (split.rest !== '') {
+      out[split.key] = parseScalarOrFlow(
+        continuePlainScalar(state, split.rest, itemIndent), token.line,
+      );
+      continue;
+    }
+    const next = state.tokens[state.at];
+    if (next && next.block) {
+      out[split.key] = readBlockScalar(next);
+      state.at += 1;
+    } else if (next && next.indent > itemIndent) {
+      out[split.key] = parseBlock(state, next.indent);
+    } else if (next && next.indent === itemIndent && (next.text.startsWith('- ') || next.text === '-')) {
+      out[split.key] = parseSequence(state, itemIndent);
+    } else {
+      out[split.key] = null;
+    }
+  }
+
+  return out;
+}
+
+/** Split `key: value`, honouring quoted keys. Returns null when there is no key. */
+function splitKey(text) {
+  if (text.startsWith('"') || text.startsWith("'")) {
+    const quote = text[0];
+    let i = 1;
+    while (i < text.length) {
+      if (quote === '"' && text[i] === '\\') i += 2;
+      else if (text[i] === quote) break;
+      else i += 1;
+    }
+    if (i >= text.length) return null;
+    const key = parseQuoted(text.slice(0, i + 1), 0);
+    const after = text.slice(i + 1).trimStart();
+    if (!after.startsWith(':')) return null;
+    const rest = after.slice(1).trim();
+    return { key: String(key), rest };
+  }
+
+  // A plain key ends at the first `: ` or a trailing `:`.
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] !== ':') continue;
+    const after = text.slice(i + 1);
+    if (after === '' || /^\s/.test(after)) {
+      return { key: text.slice(0, i).trim(), rest: after.trim() };
+    }
+  }
+  return null;
+}
+
+// ------------------------------------------------------------------ scalars
+
+/** A scalar, or a flow collection when the value starts with `{` or `[`. */
+function parseScalarOrFlow(text, line) {
+  const trimmed = text.trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    const [value, consumed] = parseFlow(trimmed, 0);
+    if (trimmed.slice(consumed).trim() !== '') {
+      throw new Error(`line ${line + 1}: unexpected text after a flow collection`);
+    }
+    return value;
+  }
+  return parseScalar(trimmed, line);
+}
+
+function parseScalar(text, line) {
+  if (text.startsWith('"') || text.startsWith("'")) {
+    if (!isClosedQuote(text)) throw new Error(`line ${line + 1}: unterminated quoted scalar`);
+    return parseQuoted(text, line);
+  }
+  return resolvePlain(text);
+}
+
+function isClosedQuote(text) {
+  const quote = text[0];
+  let i = 1;
+  while (i < text.length) {
+    if (quote === '"' && text[i] === '\\') i += 2;
+    else if (text[i] === quote) return i === text.length - 1;
+    else i += 1;
+  }
+  return false;
+}
+
+function parseQuoted(text, line) {
+  const quote = text[0];
+  if (!isClosedQuote(text)) throw new Error(`line ${line + 1}: unterminated quoted scalar`);
+  const body = text.slice(1, -1);
+  if (quote === "'") return body.replace(/''/g, "'");
+
+  return body.replace(/\\(u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2}|.)/g, (whole, escape) => {
+    const simple = { n: '\n', t: '\t', r: '\r', '"': '"', '\\': '\\', '0': '\0', b: '\b', f: '\f' };
+    if (escape[0] === 'u' || escape[0] === 'x') {
+      return String.fromCodePoint(Number.parseInt(escape.slice(1), 16));
+    }
+    return simple[escape] ?? escape;
+  });
+}
+
+/** Plain scalars: null, boolean, number, or string. */
+function resolvePlain(text) {
+  if (text === '' || text === '~' || text === 'null' || text === 'Null' || text === 'NULL') {
+    return null;
+  }
+  if (/^(true|True|TRUE)$/.test(text)) return true;
+  if (/^(false|False|FALSE)$/.test(text)) return false;
+  if (/^[-+]?\d+$/.test(text)) return Number.parseInt(text, 10);
+  if (/^[-+]?(\d+\.\d*|\.\d+|\d+)([eE][-+]?\d+)?$/.test(text)) return Number.parseFloat(text);
+  return text;
+}
+
+/** Flow collections, which may nest. Returns [value, charactersConsumed]. */
+function parseFlow(text, start) {
+  let i = skipSpace(text, start);
+  const open = text[i];
+
+  if (open === '[') {
+    const out = [];
+    i += 1;
+    for (;;) {
+      i = skipSpace(text, i);
+      if (text[i] === ']') return [out, i + 1];
+      const [value, next] = parseFlowValue(text, i);
+      out.push(value);
+      i = skipSpace(text, next);
+      if (text[i] === ',') i += 1;
+      else if (text[i] === ']') return [out, i + 1];
+      else throw new Error(`unexpected '${text[i] ?? 'end of line'}' in a flow sequence`);
+    }
+  }
+
+  if (open === '{') {
+    const out = {};
+    i += 1;
+    for (;;) {
+      i = skipSpace(text, i);
+      if (text[i] === '}') return [out, i + 1];
+      const [key, afterKey] = parseFlowValue(text, i, true);
+      i = skipSpace(text, afterKey);
+      if (text[i] !== ':') throw new Error(`expected ':' in a flow mapping`);
+      i += 1;
+      const [value, afterValue] = parseFlowValue(text, i);
+      out[String(key)] = value;
+      i = skipSpace(text, afterValue);
+      if (text[i] === ',') i += 1;
+      else if (text[i] === '}') return [out, i + 1];
+      else throw new Error(`unexpected '${text[i] ?? 'end of line'}' in a flow mapping`);
+    }
+  }
+
+  throw new Error(`expected a flow collection`);
+}
+
+function parseFlowValue(text, start, asKey = false) {
+  const i = skipSpace(text, start);
+  if (text[i] === '[' || text[i] === '{') return parseFlow(text, i);
+
+  if (text[i] === '"' || text[i] === "'") {
+    const quote = text[i];
+    let j = i + 1;
+    while (j < text.length) {
+      if (quote === '"' && text[j] === '\\') j += 2;
+      else if (text[j] === quote) break;
+      else j += 1;
+    }
+    if (j >= text.length) throw new Error('unterminated quoted scalar');
+    return [parseQuoted(text.slice(i, j + 1), 0), j + 1];
+  }
+
+  // A plain flow scalar ends at a terminator.
+  let j = i;
+  while (j < text.length && !',]}'.includes(text[j])) {
+    if (text[j] === ':' && (asKey || /\s/.test(text[j + 1] ?? ''))) break;
+    j += 1;
+  }
+  const raw = text.slice(i, j).trim();
+  return [resolvePlain(raw), j];
+}
+
+function skipSpace(text, i) {
+  while (i < text.length && /\s/.test(text[i])) i += 1;
+  return i;
+}
+
+
+// ---- sha256.js (this repository) (inlined) ----
+/**
+ * SHA-256, in plain JavaScript.
+ *
+ * WHY NOT crypto.subtle
+ * ---------------------
+ * `crypto.subtle` is only exposed in a secure context. These pages are opened from `file://`, from
+ * a network share, or straight off a USB stick, and a digest tool that silently stops working
+ * depending on how the file was opened is worse than useless.
+ *
+ * WHAT THIS IS USED FOR
+ * ---------------------
+ * Artifact digests, on both generated pages: the starter guide's digest calculator and the
+ * registry workbench. The value has to be the one `utool digest` prints, so it is checked against
+ * `node:crypto` on block boundaries in tools/test-registry-template.mjs.
+ */
+function sha256Hex(bytes) {
+  const K = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+  ];
+  const H = [
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+  ];
+
+  function rotr(x, n) {
+    return (x >>> n) | (x << (32 - n));
+  }
+
+  const length = bytes.length;
+  const bitLength = length * 8;
+  const total = ((length + 9 + 63) >> 6) << 6;
+  const padded = new Uint8Array(total);
+  padded.set(bytes);
+  padded[length] = 0x80;
+
+  const view = new DataView(padded.buffer);
+  view.setUint32(total - 8, Math.floor(bitLength / 4294967296));
+  view.setUint32(total - 4, bitLength % 4294967296);
+
+  const w = new Array(64);
+  for (let offset = 0; offset < total; offset += 64) {
+    for (let i = 0; i < 16; i += 1) w[i] = view.getUint32(offset + i * 4);
+    for (let i = 16; i < 64; i += 1) {
+      const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+      const s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+    }
+
+    let a = H[0];
+    let b = H[1];
+    let c = H[2];
+    let d = H[3];
+    let e = H[4];
+    let f = H[5];
+    let g = H[6];
+    let h = H[7];
+
+    for (let i = 0; i < 64; i += 1) {
+      const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+      const ch = (e & f) ^ (~e & g);
+      const t1 = (h + S1 + ch + K[i] + w[i]) | 0;
+      const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+      const maj = (a & b) ^ (a & c) ^ (b & c);
+      const t2 = (S0 + maj) | 0;
+      h = g;
+      g = f;
+      f = e;
+      e = (d + t1) | 0;
+      d = c;
+      c = b;
+      b = a;
+      a = (t1 + t2) | 0;
+    }
+
+    H[0] = (H[0] + a) | 0;
+    H[1] = (H[1] + b) | 0;
+    H[2] = (H[2] + c) | 0;
+    H[3] = (H[3] + d) | 0;
+    H[4] = (H[4] + e) | 0;
+    H[5] = (H[5] + f) | 0;
+    H[6] = (H[6] + g) | 0;
+    H[7] = (H[7] + h) | 0;
+  }
+
+  return H.map((x) => ('00000000' + (x >>> 0).toString(16)).slice(-8)).join('');
+}
+
+
+// ---- format.js (from ToolImport/packages/utool-core/src) (inlined) ----
+/**
+ * Closed vocabulary of the .yaml format, formatVersion 2.
+ *
+ * The manifest is split in two halves and this file mirrors that split:
+ *
+ *   ENGINE-NEUTRAL  identity, capabilities, dependency edges. These mean the same
+ *                   thing whatever consumes the payload.
+ *   ENGINE-SPECIFIC requirements and artifacts, which live under `targets` and
+ *                   whose vocabulary belongs to that engine's adapter.
+ *
+ * Nothing engine-specific is enumerated here. `unitypackage` in particular is NOT
+ * a core format: it is registered by the Unity adapter like any other engine
+ * container. The core knows only general archives plus the artifact *kinds*.
+ */
+
+const FORMAT_VERSION = '3';
+
+/** Document discriminators. A reader must reject a `kind` it does not know. */
+const KIND = Object.freeze({
+  TOOL: 'tool',
+  INDEX: 'index',
+  RECEIPT: 'receipt',
+});
+
+const KNOWN_KINDS = Object.freeze([KIND.TOOL, KIND.INDEX, KIND.RECEIPT]);
+
+/** Fixed file names. A payload is identified by its manifest file name. */
+const FILE_NAMES = Object.freeze({
+  MANIFEST: 'tool.yaml',
+  /** Accepted alias: the contents are YAML, so a tool.yaml manifest is not a lie. */
+  MANIFEST_ALIAS: 'tool.yaml',
+  INDEX: 'index.yaml',
+  INDEX_ALIAS: 'index.yaml',
+  receiptFor: (toolId) => `${toolId}.yaml`,
+});
+
+/** Entries a payload directory is allowed to contain, and nothing else. */
+const ALLOWED_PAYLOAD_ENTRIES = Object.freeze([
+  FILE_NAMES.MANIFEST,
+  FILE_NAMES.MANIFEST_ALIAS,
+  'README.md',
+  'artifacts',
+]);
+
+/** Engine-neutral tool kinds. Engine-specific kinds (shader packs) are not here. */
+const TOOL_TYPES = Object.freeze([
+  'editor-tool',
+  'tool-library',
+  'framework',
+  'asset-pack',
+  'template',
+]);
+
+/**
+ * Artifact kinds, which the CORE understands:
+ *
+ *   archive   a general container the core itself opens (see CORE_ARCHIVE_FORMATS)
+ *   package   an engine-specific container; only that engine's adapter opens it
+ *   file      a single-file payload with no container at all (dll, shader, txt)
+ *   external  nothing is stored here; the payload lives in another repository
+ */
+const ARTIFACT_TYPE = Object.freeze({
+  ARCHIVE: 'archive',
+  PACKAGE: 'package',
+  FILE: 'file',
+  EXTERNAL: 'external',
+});
+
+const KNOWN_ARTIFACT_TYPES = Object.freeze(Object.values(ARTIFACT_TYPE));
+
+/**
+ * General archive formats the core opens with node:zlib alone.
+ *
+ * Deliberately excludes xz/lzma: Node has no built-in lzma codec, and adding a
+ * dependency for a format that is rare in package distribution is not worth it.
+ * An engine that needs it can register it through its adapter.
+ */
+const CORE_ARCHIVE_FORMATS = Object.freeze(['zip', 'tgz', 'tar.gz', 'tar.zst']);
+
+/**
+ * Leading bytes that identify each core archive format.
+ *
+ * Plain arrays of numbers rather than Buffers, because this module is embedded verbatim into the
+ * standalone browser validator in ToolRegistry, where `Buffer` does not exist. A top-level
+ * `Buffer.from(...)` there throws on load, which kills the entire page script before a single event
+ * handler is attached - the file picker and the drop zone both go dead, with nothing on screen to
+ * say why. Keeping the core free of Node-only globals is what stops that class of failure.
+ */
+const ARCHIVE_MAGIC = Object.freeze({
+  'zip': Object.freeze([0x50, 0x4b, 0x03, 0x04]),
+  'tgz': Object.freeze([0x1f, 0x8b]),
+  'tar.gz': Object.freeze([0x1f, 0x8b]),
+  'tar.zst': Object.freeze([0x28, 0xb5, 0x2f, 0xfd]),
+});
+
+/** Container format -> file extension used in artifact names. */
+const FORMAT_EXTENSION = Object.freeze({
+  'zip': 'zip',
+  'tgz': 'tgz',
+  'tar.gz': 'tgz',
+  'tar.zst': 'tar.zst',
+});
+
+const UNPACK = Object.freeze({ AUTO: 'auto', NONE: 'none' });
+
+/** Where receipts live inside a consumer project. Library/ is never committed. */
+const RECEIPT_DIR = 'Library/ToolImport/receipts';
+
+/**
+ * Receipt directories written by earlier versions, newest first.
+ *
+ * A receipt is the ONLY record of which files a tool owns, so a project that installed
+ * something before the rename must keep being able to uninstall it. Rather than asking anyone
+ * to move files by hand, `ReceiptStore` migrates the directory on first use.
+ */
+const LEGACY_RECEIPT_DIRS = Object.freeze([
+  'Library/DevCatToolRegistry/receipts',
+]);
+
+const ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const ENGINE_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const CAPABILITY_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+(-[a-z0-9]+)*)+$/;
+const STRICT_VERSION_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.\-]+)?$/;
+const CONSTRAINT_PATTERN = /^(\^|~|>=|<=|>|<|=)?\d+\.\d+\.\d+(?:-[0-9A-Za-z.\-]+)?$/;
+const SHA256_PATTERN = /^[a-f0-9]{64}$/;
+const PACKAGE_NAME_PATTERN = /^[a-z0-9]+(\.[a-z0-9\-]+)+$/;
+
+/** payloads/<id>/artifacts/<file> - the directory part only. */
+const ARTIFACT_PATH_PARTS_PATTERN = /^payloads\/([a-z0-9-]+)\/artifacts\/([^/]+)$/;
+
+/**
+ * The mandated artifact file name: <id>-<version>[-<engine>].<ext>.
+ *
+ * Exported for documentation and for the validator's looser pre-check, but note
+ * that `artifactNameEngine` does NOT use its groups. A regular expression cannot
+ * split this name reliably: the id may end in a digit, so for
+ * `core-editor-utils-1.1.0-unity.unitypackage` the engine group is optional and
+ * the id group can absorb the leading `1`, making the engine come back null. The
+ * deterministic check below is used instead.
+ */
+const ARTIFACT_NAME_PATTERN = new RegExp(
+  '^([a-z0-9-]+)-(\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.\\-]+)?)' +
+    '(?:-([a-z0-9]+(?:-[a-z0-9]+)*))?\\.([a-z0-9]+(?:\\.[a-z0-9]+)*)$',
+);
+
+/**
+ * Split an artifact file name into its parts, deterministically.
+ *
+ * Works from BOTH ends inwards rather than with one regular expression, because a
+ * single regex cannot do this reliably in either direction:
+ *
+ *   - scanning forward, the id may end in a digit, so `core-editor-utils-1.1.0`
+ *     lets the id group absorb the leading `1` and the engine segment disappears
+ *     (it is optional, so the engine comes back null);
+ *   - scanning for the version, a prerelease suffix is greedy and
+ *     `1.1.0-unity` looks exactly like a valid `1.1.0-unity` prerelease.
+ *
+ * So: the extension is everything after the last dot; then a trailing segment is
+ * an engine only when what remains still ends in a version triple. Whatever is
+ * left is the id.
+ *
+ * @param {string} name file name only, no directory
+ * @returns {{ok: boolean, id?: string, version?: string, engine?: string|null, extension?: string, reason?: string}}
+ */
+function splitArtifactName(name) {
+  // Known extensions first, longest first, so a compound one such as `.tar.zst`
+  // is not mistaken for a `.zst` file whose version ends in `.tar`.
+  const known = [...new Set(Object.values(FORMAT_EXTENSION))].sort((a, b) => b.length - a.length);
+  const knownMatch = known.find((extension) => name.endsWith(`.${extension}`));
+
+  const lastDot = name.lastIndexOf('.');
+  if (lastDot <= 0 || lastDot === name.length - 1) {
+    return { ok: false, reason: `no extension in '${name}'` };
+  }
+
+  let stem;
+  let extension;
+  if (knownMatch) {
+    extension = knownMatch;
+    stem = name.slice(0, name.length - knownMatch.length - 1);
+  } else {
+    extension = name.slice(lastDot + 1);
+    stem = name.slice(0, lastDot);
+  }
+
+  // Peel off a trailing segment when the remainder still ends in a version.
+  // `-1.1.0-unity` -> stem `-1.1.0`, engine `unity`;  `-1.1.0` -> stays put.
+  let engine = null;
+  const stemDot = stem.lastIndexOf('.');
+  if (stemDot !== -1) {
+    const tail = stem.slice(stemDot + 1);
+    const dash = tail.indexOf('-');
+    if (dash > 0) {
+      const candidateStem = stem.slice(0, stemDot + 1 + dash);
+      if (VERSION_TRIPLE_AT_END.test(candidateStem)) {
+        engine = tail.slice(dash + 1);
+        stem = candidateStem;
+      }
+    }
+  }
+
+  const versionMatch = VERSION_AT_END.exec(stem);
+  if (!versionMatch) {
+    return { ok: false, reason: `no version triple at the end of '${name}'` };
+  }
+  const version = versionMatch[1];
+  const id = stem.slice(0, stem.length - versionMatch[0].length);
+
+  if (!id) return { ok: false, reason: `no id before the version in '${name}'` };
+  if (engine !== null && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(engine)) {
+    return { ok: false, reason: `engine segment '${engine}' is not lowercase kebab-case` };
+  }
+
+  return { ok: true, id, version, engine, extension };
+}
+
+/** A version triple anchored at the end of a string. */
+const VERSION_AT_END = /-(\d+\.\d+\.\d+(?:-[0-9A-Za-z.\-]+)?)$/;
+
+/** A version triple anchored at the end, without capturing. */
+const VERSION_TRIPLE_AT_END = /-\d+\.\d+\.\d+(?:-[0-9A-Za-z.\-]+)?$/;
+
+/** @returns {string|null} the engine segment of an artifact name, if present */
+function artifactNameEngine(name) {
+  const parts = splitArtifactName(String(name));
+  return parts.ok ? parts.engine : null;
+}
+/**
+ * Is a capability name well formed? Two segments minimum, so a capability always
+ * states its namespace rather than being a bare word.
+ *
+ * @param {string} name
+ * @returns {boolean}
+ */
+function isCapability(name) {
+  return typeof name === 'string' && CAPABILITY_PATTERN.test(name);
+}
+
+/**
+ * Expected artifact file name for one target.
+ *
+ * @param {string} toolId
+ * @param {string} version
+ * @param {string} engine
+ * @param {boolean} multiEngine one manifest with several targets adds the engine
+ *   segment, so two engines' artifacts can share a directory
+ * @param {string} format
+ * @returns {string}
+ */
+function expectedArtifactName(toolId, version, engine, multiEngine, format) {
+  const extension = FORMAT_EXTENSION[format] ?? format;
+  const engineSegment = multiEngine ? `-${engine}` : '';
+  return `${toolId}-${version}${engineSegment}.${extension}`;
+}
+
+
+// ---- errors.js (from ToolImport/packages/utool-core/src) (inlined) ----
+/**
+ * Structured errors.
+ *
+ * Resolution failures are values, not exceptions, wherever a caller may want to
+ * report several problems at once. Exceptions are reserved for "cannot continue
+ * at all": malformed documents, digest mismatches, unsafe archives.
+ *
+ * Every error carries a stable `code` and an `exitCode` from the CLI contract in
+ * docs/FRONTEND-INTEGRATION.md section 8, so a shell caller and the Unity front
+ * end can both branch on it.
+ */
+
+/** Exit codes: the CLI's contract with shells and with the Unity front end. */
+const EXIT = Object.freeze({
+  OK: 0,
+  FAILURE: 1,
+  USAGE: 2,
+  RESOLUTION: 3,
+  PLATFORM: 4,
+});
+
+class UtoolError extends Error {
+  /**
+   * @param {string} code stable machine-readable code, e.g. E-ARTIFACT-HASH
+   * @param {string} message human-readable explanation
+   * @param {{exitCode?: number, detail?: unknown}} [options]
+   */
+  constructor(code, message, options = {}) {
+    super(message);
+    this.name = 'UtoolError';
+    this.code = code;
+    this.exitCode = options.exitCode ?? EXIT.FAILURE;
+    this.detail = options.detail;
+  }
+
+  toJSON() {
+    return { code: this.code, message: this.message, detail: this.detail };
+  }
+}
+
+/** A document is malformed, or uses a kind/formatVersion we do not implement. */
+class DocumentError extends UtoolError {
+  constructor(code, message, detail) {
+    super(code, message, { exitCode: EXIT.FAILURE, detail });
+    this.name = 'DocumentError';
+  }
+}
+
+/** Dependency graph could not be satisfied: unknown id, bad constraint, cycle. */
+class ResolutionError extends UtoolError {
+  constructor(code, message, detail) {
+    super(code, message, { exitCode: EXIT.RESOLUTION, detail });
+    this.name = 'ResolutionError';
+  }
+}
+
+/** Host is below a declared floor: minUnityVersion / minDotNetVersion. */
+class PlatformError extends UtoolError {
+  constructor(code, message, detail) {
+    super(code, message, { exitCode: EXIT.PLATFORM, detail });
+    this.name = 'PlatformError';
+  }
+}
+
+/** An artifact is missing, the wrong size, the wrong digest, or unsafe. */
+class ArtifactError extends UtoolError {
+  constructor(code, message, detail) {
+    super(code, message, { exitCode: EXIT.FAILURE, detail });
+    this.name = 'ArtifactError';
+  }
+}
+
+/**
+ * Collects findings so a validation run can report everything instead of
+ * stopping at the first problem. Used by the registry validator.
+ */
+class DiagnosticBag {
+  constructor() {
+    /** @type {{code: string, message: string}[]} */
+    this.errors = [];
+    /** @type {{code: string, message: string}[]} */
+    this.warnings = [];
+    this.checks = 0;
+  }
+
+  note() {
+    this.checks += 1;
+  }
+
+  error(code, message) {
+    this.checks += 1;
+    this.errors.push({ code, message });
+  }
+
+  warn(code, message) {
+    this.warnings.push({ code, message });
+  }
+
+  get ok() {
+    return this.errors.length === 0;
+  }
+}
+
+
+// ---- semver.js (from ToolImport/packages/utool-core/src) (inlined) ----
+/**
+ * semver-lite: version parsing and dependency constraint satisfaction.
+ *
+ * The registry publishes `major.minor.patch` with an optional prerelease suffix.
+ * Ordering uses the numeric triple only; the suffix is a label, not a precedence
+ * (docs/SPEC.zh-CN.md R-VER-2). Keeping this deliberately small is what lets the
+ * Python validator and this module agree without a shared dependency.
+ */
+
+
+/**
+ * Parse a version into its comparable triple plus label.
+ *
+ * @param {string} text
+ * @returns {{major: number, minor: number, patch: number, prerelease: string|null, raw: string}}
+ */
+function parseVersion(text) {
+  if (typeof text !== 'string') {
+    throw new TypeError(`version must be a string, got ${typeof text}`);
+  }
+  const match = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.\-]+))?$/.exec(text.trim());
+  if (!match) {
+    throw new TypeError(`not a valid version: ${JSON.stringify(text)}`);
+  }
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3]),
+    prerelease: match[4] ?? null,
+    raw: text.trim(),
+  };
+}
+
+/** @returns {boolean} true when `text` is a well-formed strict version */
+function isVersion(text) {
+  return typeof text === 'string' && STRICT_VERSION_PATTERN.test(text.trim());
+}
+
+/** @returns {number} negative, zero or positive, comparing the numeric triple */
+function compareVersions(a, b) {
+  const left = typeof a === 'string' ? parseVersion(a) : a;
+  const right = typeof b === 'string' ? parseVersion(b) : b;
+  if (left.major !== right.major) return left.major - right.major;
+  if (left.minor !== right.minor) return left.minor - right.minor;
+  return left.patch - right.patch;
+}
+
+/**
+ * Does `version` satisfy `constraint`?
+ *
+ *   ^1.2.3  ->  >= 1.2.3, same major
+ *   ~1.2.3  ->  >= 1.2.3, same major.minor
+ *   >=, >, <=, <  ->  half-open bounds
+ *   1.4.2 or =1.4.2  ->  exact triple
+ *   undefined/null/''  ->  any version the registry provides
+ *
+ * @param {string} version concrete version from the registry
+ * @param {string|null|undefined} constraint range expression
+ * @returns {boolean}
+ */
+function satisfies(version, constraint) {
+  if (constraint === undefined || constraint === null || constraint === '') return true;
+  if (!isVersion(version)) {
+    throw new TypeError(`not a valid version: ${JSON.stringify(version)}`);
+  }
+
+  const match = /^(\^|~|>=|<=|>|<|=)?(.+)$/.exec(constraint.trim());
+  if (!match) {
+    throw new TypeError(`not a valid constraint: ${JSON.stringify(constraint)}`);
+  }
+  const operator = match[1] ?? '=';
+  const targetText = match[2].trim();
+  if (!isVersion(targetText)) {
+    throw new TypeError(`constraint target is not a version: ${JSON.stringify(constraint)}`);
+  }
+
+  const v = parseVersion(version);
+  const t = parseVersion(targetText);
+  const cmp = compareVersions(v, t);
+
+  switch (operator) {
+    case '=':
+      return cmp === 0;
+    case '>=':
+      return cmp >= 0;
+    case '<=':
+      return cmp <= 0;
+    case '>':
+      return cmp > 0;
+    case '<':
+      return cmp < 0;
+    case '^':
+      return cmp >= 0 && v.major === t.major;
+    case '~':
+      return cmp >= 0 && v.major === t.major && v.minor === t.minor;
+    default:
+      throw new TypeError(`unsupported operator: ${operator}`);
+  }
+}
+
+/** @returns {boolean} true when `text` is a well-formed constraint expression */
+function isConstraint(text) {
+  return typeof text === 'string' && CONSTRAINT_PATTERN.test(text.trim());
+}
+
+/**
+ * Unity versions compare by year, then minor, then patch, then release stage
+ * (a < b < f < p), then the stage number, then the China-build revision.
+ * `2019.4` has no patch or stage.
+ *
+ * A distribution build may append a `cN` revision after the stage, as in
+ * `2021.3.45f1c2`. That suffix is part of the release identity, so it is
+ * compared rather than discarded: `2021.3.45f1c2` is treated as newer than
+ * `2021.3.45f1`. A trailing `(hash)` in parentheses is internal to Unity and
+ * carries no ordering, so it is accepted and ignored.
+ *
+ * @param {string} text
+ * @returns {{year:number, minor:number, patch:number, stage:number, stageNumber:number, revision:number}}
+ */
+function parseUnityVersion(text) {
+  const match =
+    /^(\d{4})\.(\d+)(?:\.(\d+)([abfp])(\d+)(?:c(\d+))?)?(?:\s*\([0-9a-f]+\))?$/.exec(
+      String(text).trim(),
+    );
+  if (!match) {
+    throw new TypeError(`not a valid Unity version: ${JSON.stringify(text)}`);
+  }
+  const stageOrder = { a: 0, b: 1, f: 2, p: 3 };
+  return {
+    year: Number(match[1]),
+    minor: Number(match[2]),
+    patch: match[3] === undefined ? 0 : Number(match[3]),
+    stage: match[4] === undefined ? 2 : stageOrder[match[4]],
+    stageNumber: match[5] === undefined ? 0 : Number(match[5]),
+    revision: match[6] === undefined ? 0 : Number(match[6]),
+  };
+}
+
+/**
+ * Compare two Unity versions. Note that a bare `2019.4` is treated as the
+ * released `f` build of patch 0, which is what a host editor reports.
+ *
+ * @returns {number}
+ */
+function compareUnityVersions(a, b) {
+  const left = parseUnityVersion(a);
+  const right = parseUnityVersion(b);
+  for (const key of ['year', 'minor', 'patch', 'stage', 'stageNumber', 'revision']) {
+    if (left[key] !== right[key]) return left[key] - right[key];
+  }
+  return 0;
+}
+
+/**
+ * Compare .NET API compatibility levels, which are `MAJOR.MINOR`.
+ *
+ * @returns {number}
+ */
+function compareDotNetVersions(a, b) {
+  const parse = (text) => {
+    const match = /^(\d+)\.(\d+)$/.exec(String(text).trim());
+    if (!match) throw new TypeError(`not a valid .NET version: ${JSON.stringify(text)}`);
+    return { major: Number(match[1]), minor: Number(match[2]) };
+  };
+  const left = parse(a);
+  const right = parse(b);
+  return left.major !== right.major ? left.major - right.major : left.minor - right.minor;
+}
+
+
+// ---- manifest.js (from ToolImport/packages/utool-core/src) (inlined) ----
+/**
+ * Typed view over a validated tool manifest (formatVersion 3).
+ *
+ * Mirrors the format's own split: engine- and version-neutral accessors at the top,
+ * and one published release behind `entry`, whose `targets` map holds the
+ * engine-specific data. Nothing here knows what a Unity or a Godot is.
+ *
+ * The central idea is that a manifest is a LIST of releases, not a release. Every
+ * accessor that reads engine data therefore has to know which version is being read,
+ * which is why an instance carries that choice and why `at(version)` exists.
+ */
+
+
+
+/**
+ * One engine's view of ONE version of a tool.
+ */
+class ToolTarget {
+  /**
+   * @param {string} engine
+   * @param {object} target the raw `versions[n].targets.<engine>` mapping
+   * @param {string} toolId
+   * @param {string} version
+   * @param {boolean} multiEngine
+   */
+  constructor(engine, target, toolId, version, multiEngine) {
+    this.engine = engine;
+    this.doc = target;
+    this.toolId = toolId;
+    this.version = version;
+    this.multiEngine = multiEngine;
+  }
+
+  /** Adapter-defined floors. minEngineVersion is guaranteed to exist. */
+  get requirements() {
+    return this.doc.requirements ?? {};
+  }
+
+  get minEngineVersion() {
+    return String(this.requirements.minEngineVersion);
+  }
+
+  /** Everything except minEngineVersion, for adapters with extra floors. */
+  get extraRequirements() {
+    const { minEngineVersion, ...rest } = this.requirements;
+    return rest;
+  }
+
+  get artifact() {
+    return this.doc.artifact ?? {};
+  }
+
+  get type() {
+    return this.artifact.type;
+  }
+
+  get format() {
+    return this.artifact.format;
+  }
+
+  get isExternal() {
+    return this.type === ARTIFACT_TYPE.EXTERNAL;
+  }
+
+  get shouldUnpack() {
+    if (this.isExternal) return false;
+    if (this.type === ARTIFACT_TYPE.FILE) return false;
+    return this.artifact.unpack !== UNPACK.NONE;
+  }
+
+  get artifactPath() {
+    return this.artifact.path ?? null;
+  }
+
+  get contentRoot() {
+    return this.artifact.contentRoot ?? null;
+  }
+
+  get targetPath() {
+    return this.artifact.targetPath ?? null;
+  }
+
+  get subdirectory() {
+    return this.artifact.subdirectory ?? null;
+  }
+
+  get editorOnly() {
+    return this.artifact.editorOnly === true;
+  }
+
+  get restartRequired() {
+    return this.artifact.restartRequired === true;
+  }
+
+  get files() {
+    return this.artifact.files ?? [];
+  }
+
+  get external() {
+    if (!this.isExternal) return null;
+    return {
+      source: this.artifact.source ?? null,
+      url: this.artifact.url ?? null,
+      ref: this.artifact.ref ?? null,
+      subdirectory: this.artifact.subdirectory ?? null,
+      upmPackageName: this.artifact.upmPackageName ?? null,
+    };
+  }
+
+  /** The declared artifact, in the shape verification expects. */
+  get declaredArtifact() {
+    if (this.isExternal) return null;
+    return {
+      type: this.type,
+      format: this.format,
+      path: this.artifactPath,
+      size: this.artifact.size,
+      sha256: this.artifact.sha256,
+      unpack: this.artifact.unpack,
+      targetPath: this.targetPath,
+      contentRoot: this.contentRoot,
+      subdirectory: this.subdirectory,
+      files: this.files,
+      editorOnly: this.editorOnly,
+    };
+  }
+
+  /**
+   * @returns {{ok: boolean, reason?: string}}
+   */
+  checkArtifactConvention() {
+    if (this.isExternal) return { ok: true };
+
+    const declared = this.artifactPath;
+    if (typeof declared !== 'string') {
+      return { ok: false, reason: 'artifact.path is missing' };
+    }
+    const match = ARTIFACT_PATH_PARTS_PATTERN.exec(declared);
+    if (!match) {
+      return {
+        ok: false,
+        reason: `artifact path must be payloads/<id>/artifacts/<file>, got ${declared}`,
+      };
+    }
+    const [, directoryId, fileName] = match;
+    if (directoryId !== this.toolId) {
+      return {
+        ok: false,
+        reason: `artifact directory '${directoryId}' does not match the tool id '${this.toolId}'`,
+      };
+    }
+    const expected = expectedArtifactName(
+      this.toolId, this.version, this.engine, this.multiEngine, String(this.format),
+    );
+    if (fileName !== expected) {
+      return { ok: false, reason: `artifact must be named '${expected}', got '${fileName}'` };
+    }
+    return { ok: true };
+  }
+
+  toSummary() {
+    return {
+      engine: this.engine,
+      requirements: this.requirements,
+      artifactType: this.type,
+      artifactFormat: this.format ?? null,
+      artifactPath: this.artifactPath,
+      artifactSize: this.artifact.size ?? null,
+      contentRoot: this.contentRoot,
+      editorOnly: this.editorOnly,
+      external: this.external,
+      files: this.files,
+    };
+  }
+}
+
+/**
+ * One published release.
+ */
+class ToolVersion {
+  /**
+   * @param {object} entry the raw `versions[n]` mapping
+   * @param {string} toolId
+   */
+  constructor(entry, toolId) {
+    this.doc = entry;
+    this.toolId = toolId;
+  }
+
+  get version() {
+    return String(this.doc.version);
+  }
+
+  get targets() {
+    return this.doc.targets ?? {};
+  }
+
+  get engines() {
+    return Object.keys(this.targets).sort();
+  }
+
+  get deprecated() {
+    return this.doc.deprecated === true;
+  }
+
+  /**
+   * Withdrawn: must not be chosen automatically, for a release that is broken or
+   * unsafe. Distinct from `deprecated`, which only means "prefer something newer".
+   */
+  get yanked() {
+    return this.doc.yanked === true;
+  }
+
+  get releasedAt() {
+    return this.doc.releasedAt ?? null;
+  }
+
+  get notes() {
+    return this.doc.notes ?? null;
+  }
+
+  /** @returns {ToolTarget|null} */
+  target(engine) {
+    const raw = this.targets[engine];
+    if (!raw) return null;
+    return new ToolTarget(engine, raw, this.toolId, this.version, this.engines.length > 1);
+  }
+
+  get allTargets() {
+    return this.engines.map((engine) => this.target(engine));
+  }
+
+  supports(engine) {
+    return Object.prototype.hasOwnProperty.call(this.targets, engine);
+  }
+}
+
+class ToolManifest {
+  /**
+   * @param {Record<string, any>|ToolManifest} doc a loaded manifest, or an existing
+   *   ToolManifest. Accepting a manifest makes this idempotent, which matters because
+   *   callers at different layers each normalise what they receive.
+   * @param {{version?: string}} [options] pin the version this instance reads;
+   *   defaults to `latest`
+   */
+  constructor(doc, options = {}) {
+    const fromManifest = doc instanceof ToolManifest;
+    /** @type {Record<string, any>} */
+    this.doc = fromManifest ? doc.doc : doc;
+    this.requestedVersion = options.version
+      ? String(options.version)
+      : (fromManifest ? doc.requestedVersion : null);
+    this.entries = Array.isArray(this.doc.versions) ? this.doc.versions : [];
+  }
+
+  // --- engine- and version-neutral ------------------------------------
+
+  get id() {
+    return this.doc.id;
+  }
+
+  get displayName() {
+    return this.doc.displayName;
+  }
+
+  get type() {
+    return this.doc.type;
+  }
+
+  get description() {
+    return this.doc.description;
+  }
+
+  get license() {
+    return this.doc.license ?? null;
+  }
+
+  get author() {
+    return this.doc.author ?? null;
+  }
+
+  get homepage() {
+    return this.doc.homepage ?? null;
+  }
+
+  get tags() {
+    return this.doc.tags ?? [];
+  }
+
+  get deprecated() {
+    return this.doc.deprecated === true;
+  }
+
+  get provides() {
+    return this.doc.provides ?? [];
+  }
+
+  get injects() {
+    return this.doc.injects ?? [];
+  }
+
+  get dependencies() {
+    return this.doc.dependencies ?? [];
+  }
+
+  get requiredDependencies() {
+    return this.dependencies.filter((dep) => !dep.optional);
+  }
+
+  /**
+   * Dependencies that apply to a given engine. A dependency with no `engines` list
+   * applies everywhere.
+   *
+   * @param {string|null} engine
+   */
+  dependenciesFor(engine) {
+    if (!engine) return this.dependencies;
+    return this.dependencies.filter(
+      (dep) => !dep.engines || dep.engines.length === 0 || dep.engines.includes(engine),
+    );
+  }
+
+  get dependencyIds() {
+    return this.dependencies.map((dep) => dep.id);
+  }
+
+  // --- versions -------------------------------------------------------
+
+  /** The version an importer offers by default. */
+  get latest() {
+    return String(this.doc.latest);
+  }
+
+  get versions() {
+    // Note: no dependency on isCrossEngine here. ToolVersion derives that from its own
+    // target count, and asking the manifest would be circular (versions -> entry ->
+    // isCrossEngine -> entry -> versions).
+    return this.entries.map((entry) => new ToolVersion(entry, this.id));
+  }
+
+  get versionNumbers() {
+    return this.versions.map((entry) => entry.version);
+  }
+
+  /**
+   * The version this instance reads: the pinned one, else `latest`.
+   *
+   * A pin naming a version that is not published falls back to `latest` rather than
+   * resolving to nothing, so a stale pin degrades instead of emptying a whole listing.
+   */
+  get version() {
+    if (this.requestedVersion && this.versionNumbers.includes(this.requestedVersion)) {
+      return this.requestedVersion;
+    }
+    return this.latest;
+  }
+
+  /** @returns {ToolVersion|null} the release being read */
+  get entry() {
+    return this.versions.find((candidate) => candidate.version === this.version) ?? null;
+  }
+
+  /**
+   * Which releases could be installed automatically?
+   *
+   * Yanked ones are excluded, because "withdrawn" means precisely that it must not be
+   * chosen without a human saying so.
+   */
+  selectable() {
+    return this.versions.filter((entry) => !entry.yanked);
+  }
+
+  /**
+   * The highest release satisfying every constraint.
+   *
+   * @param {string[]} constraints
+   * @param {{allowYanked?: boolean}} [options] allowYanked lets an explicit pin reach a
+   *   withdrawn version, which a receipt may already reference.
+   * @returns {ToolVersion|null}
+   */
+  resolve(constraints = [], options = {}) {
+    const pool = options.allowYanked ? this.versions : this.selectable();
+    const usable = pool.filter((entry) =>
+      constraints.every((constraint) => {
+        try {
+          return satisfies(entry.version, constraint);
+        } catch {
+          return false;
+        }
+      }),
+    );
+    if (usable.length === 0) return null;
+    usable.sort((a, b) => compareVersions(a.version, b.version));
+    return usable[usable.length - 1];
+  }
+
+  /** @returns {ToolVersion|null} the newest release that is not deprecated */
+  get preferred() {
+    const fresh = this.selectable().filter((entry) => !entry.deprecated);
+    const pool = fresh.length > 0 ? fresh : this.selectable();
+    if (pool.length === 0) return null;
+    return [...pool].sort((a, b) => compareVersions(b.version, a.version))[0];
+  }
+
+  /** @returns {boolean} more than one release is published */
+  get hasVariants() {
+    return this.versions.length > 1;
+  }
+
+  // --- engine-specific, for the version being read --------------------
+
+  get targets() {
+    return this.entry?.targets ?? {};
+  }
+
+  /** Engine names on the version being read, sorted. */
+  get engines() {
+    return this.entry?.engines ?? [];
+  }
+
+  /** Engines across ALL versions, for "does this tool ever support X". */
+  get allEngines() {
+    const found = new Set();
+    for (const entry of this.versions) {
+      for (const engine of entry.engines) found.add(engine);
+    }
+    return [...found].sort();
+  }
+
+  get isCrossEngine() {
+    return this.engines.length > 1;
+  }
+
+  /** @returns {ToolTarget|null} null when this version has no such target */
+  target(engine) {
+    return this.entry?.target(engine) ?? null;
+  }
+
+  get allTargets() {
+    return this.entry?.allTargets ?? [];
+  }
+
+  supports(engine) {
+    return this.entry?.supports(engine) ?? false;
+  }
+
+  /** A copy reading another published version, so one manifest can be compared across releases. */
+  at(version) {
+    return new ToolManifest(this.doc, { version });
+  }
+
+  /**
+   * Serializable summary for index.yaml.
+   *
+   * Carries every version NUMBER plus `latest`, so a listing can offer a choice. It
+   * deliberately omits per-version engines, floors and artifacts, which belong to the
+   * manifest.
+   */
+  toSummary(manifestPath) {
+    return {
+      id: this.id,
+      displayName: this.displayName,
+      type: this.type,
+      description: this.description,
+      latest: this.latest,
+      versions: this.versionNumbers,
+      engines: this.allEngines,
+      provides: this.provides,
+      injects: this.injects,
+      dependencies: this.dependencies,
+      tags: this.tags,
+      manifestPath: manifestPath ?? `payloads/${this.id}/tool.yaml`,
+    };
+  }
+
+  /** Absolute path of one engine's artifact for the version being read. */
+  artifactAbsolutePath(registryRoot, engine) {
+    const target = this.target(engine);
+    return target?.artifactPath ? path.join(registryRoot, target.artifactPath) : null;
+  }
+}
+
+/** @param {Record<string, any>|ToolManifest} doc @param {{version?: string}} [options] */
+function toManifest(doc, options = {}) {
+  return doc instanceof ToolManifest && !options.version ? doc : new ToolManifest(doc, options);
+}
+
+
+// ---- schema.js (from ToolImport/packages/utool-core/src) (inlined) ----
+/**
+ * Minimal JSON Schema (draft-07 subset) evaluator.
+ *
+ * Mirrors schema/tool.schema.json's needs exactly, and deliberately nothing
+ * more. The same subset is implemented in tools/validate_registry.py, so the
+ * Python CI gate and this parser agree on what "valid" means.
+ *
+ * Supported: $ref (local), type, enum, const, properties,
+ * additionalProperties, propertyNames, required, items, minItems, maxItems, uniqueItems,
+ * minLength, maxLength, pattern, format (date, uri), minimum, maximum,
+ * allOf, anyOf, oneOf, not, if/then/else, definitions, $defs.
+ */
+
+
+// `fromFile` is the only platform-dependent part of this module, and it is kept that way
+// on purpose: the validator itself is pure, so the same code validates a manifest in Node
+// and in a browser. That is what lets the standalone HTML checker use these rules instead
+// of reimplementing them. The import above is tolerated in a browser via the shim the
+// HTML page installs; see ToolRegistry/tools/validate.html.
+
+const KNOWN_KEYWORDS = new Set([
+  '$schema', '$id', '$comment', 'title', 'description', 'default', 'examples',
+  'definitions', '$defs', 'type', 'enum', 'const', 'properties',
+  'additionalProperties', 'propertyNames', 'required', 'items', 'minItems', 'maxItems',
+  'uniqueItems', 'minLength', 'maxLength', 'pattern', 'format', 'minimum',
+  'maximum', 'allOf', 'anyOf', 'oneOf', 'not', 'if', 'then', 'else', '$ref',
+]);
+
+/**
+ * @param {unknown} value
+ * @param {string} expected
+ * @returns {boolean}
+ */
+function typeMatches(value, expected) {
+  switch (expected) {
+    case 'object':
+      return value !== null && typeof value === 'object' && !Array.isArray(value);
+    case 'array':
+      return Array.isArray(value);
+    case 'string':
+      return typeof value === 'string';
+    case 'boolean':
+      return typeof value === 'boolean';
+    case 'integer':
+      return typeof value === 'number' && Number.isInteger(value);
+    case 'number':
+      return typeof value === 'number' && Number.isFinite(value);
+    case 'null':
+      return value === null;
+    default:
+      throw new Error(`unsupported schema type: ${expected}`);
+  }
+}
+
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const URI_PATTERN = /^[a-zA-Z][a-zA-Z0-9+.\-]*:\/\/\S+$/;
+
+class SchemaValidator {
+  /**
+   * @param {Record<string, unknown>} schema
+   */
+  constructor(schema) {
+    this.root = schema;
+    this.#assertSupported(schema, '#');
+  }
+
+  /** @param {string} path */
+  static fromFile(path) {
+    let text;
+    try {
+      text = readFileSync(path, 'utf8');
+    } catch (cause) {
+      throw new Error(`cannot read schema ${path}: ${cause.message}`);
+    }
+    return new SchemaValidator(JSON.parse(text));
+  }
+
+  #assertSupported(node, path) {
+    if (Array.isArray(node)) {
+      node.forEach((sub, i) => this.#assertSupported(sub, `${path}/${i}`));
+      return;
+    }
+    if (node === null || typeof node !== 'object') return;
+
+    for (const [key, value] of Object.entries(node)) {
+      if (!KNOWN_KEYWORDS.has(key)) {
+        throw new Error(`schema ${path}: unsupported keyword '${key}'`);
+      }
+      if (key === 'properties' || key === 'definitions' || key === '$defs') {
+        for (const [subKey, sub] of Object.entries(value)) {
+          this.#assertSupported(sub, `${path}/${key}/${subKey}`);
+        }
+      } else if (key === 'allOf' || key === 'anyOf' || key === 'oneOf') {
+        value.forEach((sub, i) => this.#assertSupported(sub, `${path}/${key}/${i}`));
+      } else if (['items', 'not', 'if', 'then', 'else', 'additionalProperties', 'propertyNames'].includes(key)) {
+        if (value !== null && typeof value === 'object') {
+          this.#assertSupported(value, `${path}/${key}`);
+        }
+      }
+    }
+  }
+
+  /** @param {string} ref */
+  #resolve(ref) {
+    if (!ref.startsWith('#/')) {
+      throw new Error(`only local $ref is supported, got '${ref}'`);
+    }
+    return ref
+      .slice(2)
+      .split('/')
+      .reduce((node, part) => node[part.replace(/~1/g, '/').replace(/~0/g, '~')], this.root);
+  }
+
+  /**
+   * Validate a value, returning every problem found.
+   *
+   * @param {unknown} value
+   * @param {Record<string, unknown>} [schema]
+   * @param {string} [path]
+   * @returns {string[]} human-readable problems, empty when valid
+   */
+  errors(value, schema = this.root, path = '$') {
+    const out = [];
+
+    if (schema.$ref !== undefined) {
+      return this.errors(value, this.#resolve(String(schema.$ref)), path);
+    }
+
+    if (schema.type !== undefined) {
+      const types = Array.isArray(schema.type) ? schema.type : [schema.type];
+      if (!types.some((t) => typeMatches(value, t))) {
+        return [`${path}: expected type ${types.join('|')}, got ${describe(value)}`];
+      }
+    }
+
+    if (schema.const !== undefined && value !== schema.const) {
+      out.push(`${path}: must equal ${JSON.stringify(schema.const)}`);
+    }
+
+    if (Array.isArray(schema.enum) && !schema.enum.includes(value)) {
+      out.push(`${path}: must be one of ${JSON.stringify(schema.enum)}, got ${JSON.stringify(value)}`);
+    }
+
+    if (typeof value === 'string') {
+      if (schema.minLength !== undefined && value.length < schema.minLength) {
+        out.push(`${path}: shorter than ${schema.minLength} characters`);
+      }
+      if (schema.maxLength !== undefined && value.length > schema.maxLength) {
+        out.push(`${path}: longer than ${schema.maxLength} characters`);
+      }
+      if (schema.pattern !== undefined && !new RegExp(String(schema.pattern)).test(value)) {
+        out.push(`${path}: ${JSON.stringify(value)} does not match ${schema.pattern}`);
+      }
+      // Only formats this validator understands are enforced; a declared but
+      // unsupported format must not silently become a failure.
+      if (schema.format === 'date' && !DATE_PATTERN.test(value)) {
+        out.push(`${path}: ${JSON.stringify(value)} is not an ISO date (YYYY-MM-DD)`);
+      }
+      if (schema.format === 'uri' && !URI_PATTERN.test(value)) {
+        out.push(`${path}: ${JSON.stringify(value)} is not an absolute URI`);
+      }
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      if (schema.minimum !== undefined && value < schema.minimum) {
+        out.push(`${path}: ${value} is below the minimum ${schema.minimum}`);
+      }
+      if (schema.maximum !== undefined && value > schema.maximum) {
+        out.push(`${path}: ${value} is above the maximum ${schema.maximum}`);
+      }
+    }
+
+    if (Array.isArray(value)) {
+      if (schema.minItems !== undefined && value.length < schema.minItems) {
+        out.push(`${path}: needs at least ${schema.minItems} item(s)`);
+      }
+      if (schema.maxItems !== undefined && value.length > schema.maxItems) {
+        out.push(`${path}: allows at most ${schema.maxItems} item(s)`);
+      }
+      if (schema.uniqueItems === true) {
+        const seen = new Set(value.map((v) => JSON.stringify(v)));
+        if (seen.size !== value.length) out.push(`${path}: entries must be unique`);
+      }
+      if (schema.items !== undefined) {
+        value.forEach((item, i) => out.push(...this.errors(item, schema.items, `${path}[${i}]`)));
+      }
+    }
+
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      for (const key of schema.required ?? []) {
+        if (!Object.prototype.hasOwnProperty.call(value, key)) {
+          out.push(`${path}: missing required property '${key}'`);
+        }
+      }
+      // propertyNames constrains the KEYS rather than the values, which is how the schema
+      // says "every key here is an engine name" without enumerating engines.
+      if (schema.propertyNames !== undefined) {
+        for (const key of Object.keys(value)) {
+          for (const problem of this.errors(key, schema.propertyNames, `${path} key '${key}'`)) {
+            out.push(problem);
+          }
+        }
+      }
+      const props = schema.properties ?? {};
+      for (const [key, sub] of Object.entries(props)) {
+        if (Object.prototype.hasOwnProperty.call(value, key)) {
+          out.push(...this.errors(value[key], sub, `${path}.${key}`));
+        }
+      }
+      const extra = schema.additionalProperties;
+      if (extra === false) {
+        for (const key of Object.keys(value)) {
+          if (!Object.prototype.hasOwnProperty.call(props, key)) {
+            out.push(`${path}: unexpected property '${key}'`);
+          }
+        }
+      } else if (extra !== null && typeof extra === 'object') {
+        for (const [key, sub] of Object.entries(value)) {
+          if (!Object.prototype.hasOwnProperty.call(props, key)) {
+            out.push(...this.errors(sub, extra, `${path}.${key}`));
+          }
+        }
+      }
+    }
+
+    for (const sub of schema.allOf ?? []) out.push(...this.errors(value, sub, path));
+
+    if (Array.isArray(schema.anyOf)) {
+      const hit = schema.anyOf.some((sub) => this.errors(value, sub, path).length === 0);
+      if (!hit) out.push(`${path}: matches none of the allowed forms`);
+    }
+
+    if (Array.isArray(schema.oneOf)) {
+      const hits = schema.oneOf.filter((sub) => this.errors(value, sub, path).length === 0).length;
+      if (hits !== 1) out.push(`${path}: must match exactly one allowed form (matched ${hits})`);
+    }
+
+    if (schema.not !== undefined && this.errors(value, schema.not, path).length === 0) {
+      out.push(`${path}: matches a forbidden form`);
+    }
+
+    if (schema.if !== undefined) {
+      const branch = this.errors(value, schema.if, path).length === 0 ? 'then' : 'else';
+      if (schema[branch] !== undefined) out.push(...this.errors(value, schema[branch], path));
+    }
+
+    return out;
+  }
+
+  /** @returns {boolean} */
+  isValid(value) {
+    return this.errors(value).length === 0;
+  }
+}
+
+function describe(value) {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  return typeof value;
+}
+
+
+// ---- registry.js (from ToolImport/packages/utool-core/src) (inlined) ----
+/**
+ * Registry validation.
+ *
+ * The same rules tools/validate_registry.py enforces, expressed here because the
+ * import tool must be able to check a registry it fetched over HTTP without
+ * running Python. The two implementations are kept deliberately parallel: when a
+ * rule changes, both change.
+ *
+ * Every violation is collected rather than thrown, so one run reports the whole
+ * picture.
+ *
+ * Containers arrive through a registry rather than being known here, so validating
+ * a Unity payload requires the Unity adapter to have been loaded. That is why the
+ * signature takes `containers` explicitly: a caller that forgets to load an adapter
+ * gets a clear "no handler registered" instead of a silent pass.
+ */
+
+
+
+/**
+ * @typedef {Object} ValidationResult
+ * @property {boolean} ok
+ * @property {{code: string, message: string}[]} errors
+ * @property {{code: string, message: string}[]} warnings
+ * @property {number} checks
+ * @property {import('./manifest.js').ToolManifest[]} manifests
+ */
+
+/**
+ * Validate a whole registry rooted at a local directory.
+ *
+ * @param {string} root
+ * @param {{
+ *   containers: import('./containers.js').ContainerRegistry,
+ *   schema?: import('./schema.js').SchemaValidator,
+ *   hash?: boolean,
+ *   quiet?: boolean,
+ *   onCheck?: (message: string) => void,
+ * }} options
+ * @returns {Promise<ValidationResult>}
+ */
+async function validateRegistry(root, options) {
+  const { containers, schema = null, hash = true, onCheck, skipIndexCheck = false } = options;
+  if (!containers) {
+    throw new TypeError(
+      'validateRegistry requires a container registry; build one with createCoreContainerRegistry() ' +
+        "and register the adapters for the engines you expect (for Unity: unityAdapter.containerHandlers)",
+    );
+  }
+
+  const bag = new DiagnosticBag();
+  const note = (message) => {
+    bag.note();
+    onCheck?.(message);
+  };
+
+  const payloadsRoot = path.join(root, 'payloads');
+  if (!existsSync(payloadsRoot)) {
+    bag.error('E-LAYOUT', `missing payloads/ directory under ${root}`);
+    return result(bag, []);
+  }
+
+  const entries = (await readdir(payloadsRoot, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+
+  /** @type {import('./manifest.js').ToolManifest[]} */
+  const manifests = [];
+
+  for (const id of entries) {
+    const dir = path.join(payloadsRoot, id);
+    const manifestPath = path.join(dir, FILE_NAMES.MANIFEST);
+
+    if (!existsSync(manifestPath)) {
+      bag.error(
+        'E-MANIFEST-MISSING',
+        `${id}: no ${FILE_NAMES.MANIFEST} (every payload must declare its metadata)`,
+      );
+      continue;
+    }
+
+    let doc;
+    try {
+      doc = loadUtool(manifestPath);
+      checkHeader(doc, manifestPath, KIND.TOOL);
+    } catch (cause) {
+      bag.error(cause.code ?? 'E-MANIFEST', `${id}/${FILE_NAMES.MANIFEST}: ${cause.message}`);
+      continue;
+    }
+
+    // Schema first. The checks below are all relationship rules that a JSON Schema cannot
+    // express - does the artifact name match the id and version, is `latest` published,
+    // does a dependency resolve - so they assume the document already has the right shape.
+    //
+    // This ran nowhere until the standalone HTML checker exposed it: SchemaValidator was
+    // exported and never called, so the shipped schema was decoration, and a keyword it
+    // does not implement (minProperties) sat in it unnoticed. Checking here is what makes
+    // schema/tool.schema.json the contract rather than a comment.
+    if (schema) {
+      for (const problem of schema.errors(doc)) {
+        bag.error('E-SCHEMA', `${id}/${FILE_NAMES.MANIFEST}: ${problem}`);
+      }
+    }
+
+    const manifest = toManifest(doc);
+
+    // --- identity -------------------------------------------------------
+    if (typeof manifest.id !== 'string' || !ID_PATTERN.test(manifest.id)) {
+      bag.error('E-ID-FORMAT', `${id}: id ${JSON.stringify(manifest.id)} is not lowercase kebab-case`);
+    } else if (manifest.id !== id) {
+      bag.error('E-ID-DIR', `${id}: directory name must equal the id '${manifest.id}'`);
+    }
+
+    // --- capabilities ---------------------------------------------------
+    for (const [field, list] of [['provides', manifest.provides], ['injects', manifest.injects]]) {
+      for (const capability of list) {
+        if (!isCapability(capability)) {
+          bag.error(
+            'E-CAP-FORMAT',
+            `${id}: ${field} entry ${JSON.stringify(capability)} needs at least two dot-separated ` +
+              `lowercase segments, so it states its namespace`,
+          );
+        }
+      }
+    }
+
+    const stray = (await readdir(dir)).filter((name) => !ALLOWED_PAYLOAD_ENTRIES.includes(name));
+    if (stray.length > 0) {
+      bag.error(
+        'E-PAYLOAD-EXTRA',
+        `${id}: only ${FILE_NAMES.MANIFEST}, README.md and artifacts/ may live in a payload ` +
+          `(found ${stray.sort().join(', ')}) - loose files are never importable`,
+      );
+    }
+
+    // --- versions and targets -------------------------------------------
+    if (manifest.versionNumbers.length === 0) {
+      bag.error('E-VERSIONS-MISSING', `${id}: versions must declare at least one release`);
+    }
+    if (!manifest.versionNumbers.includes(manifest.latest)) {
+      bag.error(
+        'E-LATEST-UNKNOWN',
+        `${id}: latest is ${manifest.latest}, which is not among the published versions ` +
+          `(${manifest.versionNumbers.join(', ')})`,
+      );
+    }
+
+    const declaredNames = new Set();
+    let targetCount = 0;
+
+    // Every version is checked, and every version's artifacts are collected, so the
+    // stray-file check below does not report an older release's artifact as an
+    // undeclared file.
+    for (const entry of manifest.versions) {
+      const where = `${id}@${entry.version}`;
+
+      if (entry.engines.length === 0) {
+        bag.error('E-TARGETS-MISSING', `${where}: targets must declare at least one engine`);
+        continue;
+      }
+      if (entry.yanked && entry.version === manifest.latest) {
+        bag.error(
+          'E-YANKED-LATEST',
+          `${where}: latest must not name a yanked version; point latest at a release that ` +
+            `is still installable`,
+        );
+      }
+
+      for (const engine of entry.engines) {
+        const target = entry.target(engine);
+        targetCount += 1;
+
+        if (target.artifactPath) declaredNames.add(path.basename(target.artifactPath));
+
+        if (target.minEngineVersion === undefined || target.minEngineVersion === 'undefined') {
+          bag.error(
+            'E-TARGET-REQUIREMENTS',
+            `${where}/${engine}: requirements.minEngineVersion is mandatory; a tool that cannot ` +
+              `state its floor is not admitted`,
+          );
+        }
+
+        if (target.isExternal) {
+          const external = target.external;
+          if (!external?.url || !external?.ref) {
+            bag.error('E-EXTERNAL-INCOMPLETE', `${where}/${engine}: external source needs both url and ref`);
+          } else {
+            note(`${where}/${engine}: external ${external.source} ${external.url} @ ${external.ref}`);
+          }
+          continue;
+        }
+
+        if (!ARTIFACT_TYPE[String(target.type).toUpperCase()] && target.type !== 'file') {
+          bag.error(
+            'E-ARTIFACT-TYPE',
+            `${where}/${engine}: unknown artifact type ${JSON.stringify(target.type)}`,
+          );
+          continue;
+        }
+
+      if (target.artifactPath) declaredNames.add(path.basename(target.artifactPath));
+
+      const convention = target.checkArtifactConvention();
+      if (!convention.ok) {
+        bag.error('E-ARTIFACT-NAME', `${id}/${engine}: ${convention.reason}`);
+      }
+
+      // A core archive must name a core format; an engine container needs a handler.
+      if (target.type === ARTIFACT_TYPE.ARCHIVE && !CORE_ARCHIVE_FORMATS.includes(String(target.format))) {
+        bag.error(
+          'E-ARTIFACT-FORMAT',
+          `${id}/${engine}: format '${target.format}' is not a core archive format ` +
+            `(${CORE_ARCHIVE_FORMATS.join(', ')}); an engine-specific container must be declared ` +
+            `as type package`,
+        );
+      }
+
+      if (!target.artifactPath) {
+        bag.error('E-ARTIFACT-MISSING', `${id}/${engine}: artifact.path is required`);
+        continue;
+      }
+
+      const artifactFile = path.join(root, target.artifactPath);
+      if (!existsSync(artifactFile)) {
+        bag.error('E-ARTIFACT-MISSING', `${id}/${engine}: declared artifact ${target.artifactPath} does not exist`);
+        continue;
+      }
+
+      if (!hash) {
+        note(`${id}/${engine}: hash verification skipped by request`);
+        continue;
+      }
+
+      try {
+        const report = await verifyArtifactFile(artifactFile, target.declaredArtifact, containers);
+        note(
+          `${where}/${engine}: ${report.format ?? 'file'}, ${report.size} bytes, sha256 verified, ` +
+            `${report.items.length} destination(s)`,
+        );
+      } catch (cause) {
+        bag.error(cause.code ?? 'E-ARTIFACT', `${where}/${engine}: ${cause.message}`);
+      }
+    }
+    }
+
+    if (targetCount > 0) {
+      note(
+        `${id}: ${manifest.versionNumbers.length} version(s), ${targetCount} target(s): ` +
+          `${manifest.versionNumbers.join(', ')} (latest ${manifest.latest})`,
+      );
+    }
+
+    const artifactsDir = path.join(dir, 'artifacts');
+    if (existsSync(artifactsDir)) {
+      const undeclared = (await readdir(artifactsDir)).filter((name) => !declaredNames.has(name));
+      if (undeclared.length > 0) {
+        bag.error(
+          'E-ARTIFACT-STRAY',
+          `${id}: artifacts/ holds undeclared file(s): ${undeclared.sort().join(', ')}`,
+        );
+      }
+    }
+
+    manifests.push(manifest);
+  }
+
+  // --- dependencies -----------------------------------------------------
+  const byId = new Map(manifests.map((manifest) => [manifest.id, manifest]));
+  note(`${byId.size} manifest(s), checking dependencies and capabilities`);
+
+  for (const manifest of manifests) {
+    for (const dep of manifest.dependencies) {
+      if (dep.id === manifest.id) {
+        bag.error('E-DEP-SELF', `${manifest.id}: depends on itself`);
+        continue;
+      }
+      const target = byId.get(dep.id);
+      if (!target) {
+        bag.error('E-DEP-MISSING', `${manifest.id}: depends on unknown tool '${dep.id}'`);
+        continue;
+      }
+      try {
+        // Multi-version aware: the constraint must be satisfiable by SOME published
+        // version. A constraint naming an older release is legitimate, and comparing it
+        // against the default would reject it here while the resolver accepted it.
+        const matched = target.resolve(dep.version ? [dep.version] : []);
+        if (matched) {
+          note(`${manifest.id} -> ${dep.id} ${dep.version ?? '*'} satisfied by ${matched.version}`);
+        } else {
+          bag.error(
+            'E-DEP-VERSION',
+            `${manifest.id}: requires ${dep.id} ${dep.version ?? '*'} but the registry publishes ` +
+              `${target.versionNumbers.join(', ') || '(nothing)'}`,
+          );
+        }
+      } catch (cause) {
+        bag.error('E-DEP-CONSTRAINT', `${manifest.id}: invalid constraint for ${dep.id}: ${cause.message}`);
+      }
+    }
+  }
+
+  // --- capabilities: one provider each, every inject satisfiable --------
+  /** @type {Map<string, string[]>} */
+  const providers = new Map();
+  for (const manifest of manifests) {
+    for (const capability of manifest.provides) {
+      if (!providers.has(capability)) providers.set(capability, []);
+      providers.get(capability).push(manifest.id);
+    }
+  }
+  // Multiple providers in the REGISTRY are legitimate alternatives: injects names
+  // a capability precisely so a user may choose among them. The real conflict is
+  // inside one PLAN, which the resolver refuses, because two providers installed into
+  // one project is what leaves a consumer unable to say which it received.
+  for (const [capability, owners] of providers) {
+    if (owners.length > 1) {
+      bag.warn(
+        'W-CAP-MULTIPLE',
+        `capability '${capability}' has ${owners.length} providers ` +
+          `(${[...owners].sort().join(', ')}); installing more than one of them at once will be ` +
+          `refused, because a consumer cannot tell which provider it got`,
+      );
+    }
+  }
+  for (const manifest of manifests) {
+    for (const capability of manifest.injects) {
+      if (!providers.has(capability)) {
+        bag.error(
+          'E-CAP-UNSATISFIED',
+          `${manifest.id}: injects '${capability}' but no tool in the registry provides it`,
+        );
+      } else {
+        note(`${manifest.id} injects '${capability}' satisfied by ${providers.get(capability).join(', ')}`);
+      }
+    }
+  }
+
+  // Cycle detection over required dependencies.
+  const graph = new Map(
+    manifests.map((manifest) => [
+      manifest.id,
+      manifest.requiredDependencies.map((dep) => dep.id).filter((id) => byId.has(id)),
+    ]),
+  );
+  const state = new Map(); // 1 = on stack, 2 = done
+  const reportedCycles = new Set();
+
+  const visit = (node, stack) => {
+    state.set(node, 1);
+    for (const next of graph.get(node) ?? []) {
+      if (state.get(next) === 1) {
+        const cycle = [...stack, node, next].join(' -> ');
+        if (!reportedCycles.has(cycle)) {
+          reportedCycles.add(cycle);
+          bag.error('E-DEP-CYCLE', `dependency cycle: ${cycle}`);
+        }
+      } else if (!state.has(next)) {
+        visit(next, [...stack, node]);
+      }
+    }
+    state.set(node, 2);
+  };
+
+  for (const id of graph.keys()) {
+    if (!state.has(id)) visit(id, []);
+  }
+
+  // --- index ------------------------------------------------------------
+  //
+  // `skipIndexCheck` exists because regenerating the index otherwise refuses to run:
+  // write-index validates first, and a stale index IS a validation error, so the one
+  // command that fixes staleness was blocked by staleness. The same applied to a brand
+  // new registry, where E-INDEX-MISSING made the index impossible to create at all.
+  //
+  // The check is still meaningful for `validate` and `check-index`, which are supposed
+  // to report it; only the command that REWRITES the file skips it.
+  const indexPath = path.join(root, FILE_NAMES.INDEX);
+  if (skipIndexCheck) {
+    note(`${FILE_NAMES.INDEX} check skipped (regenerating)`);
+  } else if (!existsSync(indexPath)) {
+    bag.error('E-INDEX-MISSING', `${FILE_NAMES.INDEX} is missing (run with --write-index)`);
+  } else {
+    try {
+      const indexDoc = loadUtool(indexPath);
+      checkHeader(indexDoc, indexPath, KIND.INDEX);
+      const expected = buildIndex(manifests, indexDoc.repository ?? null);
+      const actualTools = indexDoc.tools ?? [];
+      if (JSON.stringify(actualTools) !== JSON.stringify(expected.tools)) {
+        const actualIds = new Set(actualTools.map((tool) => tool.id));
+        const expectedIds = new Set(expected.tools.map((tool) => tool.id));
+        const missing = [...expectedIds].filter((id) => !actualIds.has(id)).sort();
+        const stale = [...actualIds].filter((id) => !expectedIds.has(id)).sort();
+        const detail = [];
+        if (missing.length) detail.push(`missing: ${missing.join(', ')}`);
+        if (stale.length) detail.push(`stale: ${stale.join(', ')}`);
+        if (detail.length === 0) detail.push('entries differ in content');
+        bag.error('E-INDEX-STALE', `${FILE_NAMES.INDEX} is out of date (${detail.join('; ')})`);
+      } else {
+        note(`${FILE_NAMES.INDEX} matches ${expected.tools.length} tool(s)`);
+      }
+    } catch (cause) {
+      bag.error(cause.code ?? 'E-INDEX', `${FILE_NAMES.INDEX}: ${cause.message}`);
+    }
+  }
+
+  return result(bag, manifests);
+}
+
+/**
+ * Build the index document from manifests. Mirrors the Python implementation so
+ * either side can regenerate the file the other one checks.
+ *
+ * @param {import('./manifest.js').ToolManifest[]} manifests
+ * @param {string|null} repository
+ */
+function buildIndex(manifests, repository = null) {
+  const tools = [...manifests]
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map((manifest) => manifest.toSummary());
+  return {
+    kind: KIND.INDEX,
+    formatVersion: FORMAT_VERSION,
+    repository,
+    tools,
+  };
+}
+
+function result(bag, manifests) {
+  return {
+    ok: bag.ok,
+    errors: bag.errors,
+    warnings: bag.warnings,
+    checks: bag.checks,
+    manifests,
+  };
+}
+
+
+
+/**
+ * The cross-value rules a manifest has to satisfy, in one place.
+ *
+ * WHY A FACTORY AND NOT PLAIN FUNCTIONS
+ * -------------------------------------
+ * These rules are used by two pages that must agree with each other and with utool-core: the
+ * single-manifest checker (tools/validate.html) and the registry workbench (tools/workbench.html).
+ * They run in a browser, so the schema and the format vocabulary have to be handed in - the page
+ * embeds them, and passing them keeps this module free of imports that a browser build would have
+ * to strip.
+ *
+ * The rules themselves are worth stating: a JSON Schema can check shape, but not that `latest`
+ * names a published version, that a version is not published twice, that `latest` is not yanked,
+ * or that an artifact is named the way the format requires. Those are the mistakes people make,
+ * and they need the rest of the document to detect.
+ */
+
+function createManifestRules({ SchemaValidator, schema, expectedArtifactName, FORMAT_VERSION }) {
+  return function validateManifest(doc) {
+    const problems = [];
+
+    if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
+      return [{ code: 'E-UTOOL-ROOT', message: 'the document root must be a mapping' }];
+    }
+
+    let validator;
+    try {
+      validator = new SchemaValidator(schema);
+    } catch (cause) {
+      return [{ code: 'E-SCHEMA', message: 'the embedded schema is unusable: ' + cause.message }];
+    }
+
+    for (const problem of validator.errors(doc)) {
+      problems.push({ code: 'E-SCHEMA', message: problem });
+    }
+
+    if (String(doc.formatVersion) !== FORMAT_VERSION) {
+      problems.push({
+        code: 'E-FORMAT-VERSION',
+        message: "formatVersion is '" + doc.formatVersion + "'; this page reads '" + FORMAT_VERSION + "'",
+      });
+    }
+
+    const versions = Array.isArray(doc.versions) ? doc.versions : [];
+    const numbers = versions.map((entry) => String(entry && entry.version));
+
+    if (doc.latest !== undefined && numbers.length > 0 && !numbers.includes(String(doc.latest))) {
+      problems.push({
+        code: 'E-LATEST-UNKNOWN',
+        message:
+          'latest is ' + doc.latest + ', which is not one of the published versions (' +
+          numbers.join(', ') + ')',
+      });
+    }
+
+    if (new Set(numbers).size !== numbers.length) {
+      problems.push({
+        code: 'E-VERSIONS-DUPLICATE',
+        message: 'a version appears more than once in versions: ' + numbers.join(', '),
+      });
+    }
+
+    for (const entry of versions) {
+      if (!entry || typeof entry !== 'object') continue;
+      const where = String(entry.version);
+      if (entry.yanked === true && String(doc.latest) === where) {
+        problems.push({
+          code: 'E-YANKED-LATEST',
+          message:
+            'latest names ' + where + ', which is yanked; point latest at a release that ' +
+            'is still installable',
+        });
+      }
+
+      const targets = entry.targets || {};
+      const engines = Object.keys(targets);
+
+      for (const engine of engines) {
+        const artifact = (targets[engine] || {}).artifact || {};
+        if (artifact.type === 'external' || typeof artifact.path !== 'string') continue;
+
+        const file = artifact.path.split('/').pop();
+        const expected = expectedArtifactName(
+          doc.id,
+          where,
+          engine,
+          engines.length > 1,
+          String(artifact.format),
+        );
+        if (file !== expected) {
+          problems.push({
+            code: 'E-ARTIFACT-NAME',
+            message:
+              where + '/' + engine + ": artifact must be named '" + expected +
+              "', got '" + file + "'",
+          });
+        }
+        if (artifact.type === 'file' && !artifact.targetPath) {
+          problems.push({
+            code: 'E-ARTIFACT-TARGETPATH',
+            message: where + '/' + engine + ': type file needs targetPath',
+          });
+        }
+      }
+    }
+
+    return problems;
+  };
+}
+
+
+/**
+ * Everything the workbench page does with a registry, with no DOM and no imports.
+ *
+ * DEPENDENCIES ARRIVE AS ARGUMENTS
+ * --------------------------------
+ * The page runs in a browser, so the parser, the manifest classes, the schema validator and the
+ * index builder are inlined from the real sources at build time - and are handed to this module
+ * rather than imported, so exactly one copy of each rule exists and the page cannot fall out of
+ * step with the command line. The same factory is called from tests with the real core modules,
+ * which means the thing under test is the code that ships, not a re-implementation of it.
+ */
+
+/** A registry path as the page sees it: always forward slashes, always relative to the root. */
+function normalisePath(value) {
+  return String(value).replace(/\\/g, '/').replace(/^\.?\//, '');
+}
+
+/**
+ * The manifest path a payload must have, relative to the registry root.
+ *
+ * The index records this, and `utool` reads the file it names, so a page that guessed a different
+ * default would produce an index pointing at nothing.
+ */
+function manifestPathFor(id) {
+  return `payloads/${id}/tool.yaml`;
+}
+
+/** Quote a scalar only when YAML would otherwise read it as something else. */
+function yamlScalar(value) {
+  if (value === null) return 'null';
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (value === undefined) return 'null';
+
+  const text = String(value);
+  if (text === '') return "''";
+
+  const looksNumeric = /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(text);
+  const looksBoolean = /^(true|false|yes|no|on|off|null|~)$/i.test(text);
+  const needsQuotes =
+    looksNumeric ||
+    looksBoolean ||
+    /^[\s!&*\[\]{},#|>@`"']/.test(text) ||
+    /:\s|:$|\s#|\n|\t|\s$/.test(text) ||
+    text.includes("'");
+
+  if (!needsQuotes) return text;
+  return `'${text.replace(/'/g, "''")}'`;
+}
+
+function emitObject(object, indent) {
+  const pad = ' '.repeat(indent);
+  const lines = [];
+
+  for (const [key, value] of Object.entries(object)) {
+    if (value === undefined) continue;
+    const name = yamlScalar(key).replace(/^'|'$/g, '');
+
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        lines.push(`${pad}${name}: []`);
+        continue;
+      }
+      lines.push(`${pad}${name}:`);
+      for (const item of value) {
+        if (item !== null && typeof item === 'object' && !Array.isArray(item)) {
+          const nested = emitObject(item, indent + 4).split('\n');
+          // The first key rides on the dash: `- id: foo`, the rest align under it.
+          lines.push(`${pad}  - ${nested[0].trimStart()}`);
+          for (const line of nested.slice(1)) lines.push(line);
+        } else if (Array.isArray(item)) {
+          lines.push(`${pad}  - ${yamlScalar(JSON.stringify(item))}`);
+        } else {
+          lines.push(`${pad}  - ${yamlScalar(item)}`);
+        }
+      }
+      continue;
+    }
+
+    if (value !== null && typeof value === 'object') {
+      lines.push(`${pad}${name}:`);
+      lines.push(emitObject(value, indent + 2));
+      continue;
+    }
+
+    lines.push(`${pad}${name}: ${yamlScalar(value)}`);
+  }
+
+  return lines.join('\n');
+}
+
+/** Serialise an index document. Shape only: the content is produced by the core's builder. */
+function toIndexYaml(document) {
+  return `${emitObject(document, 0)}\n`;
+}
+
+/**
+ * Build the page's API.
+ *
+ * `parseYaml` is the minimal reader; everything else is a core function inlined from the import
+ * tool at build time.
+ */
+function createWorkbenchApi({
+  parseYaml,
+  parseUtool,
+  toManifest,
+  buildIndex,
+  validateManifest,
+  sha256Hex,
+}) {
+  /** Parse one tool.yaml. Returns `{ doc }` or `{ problems }`, never throws at the caller. */
+  function readManifest(text) {
+    const parsed = parseYaml(text);
+    if (parsed.error) return { problems: [parsed.error] };
+
+    const doc = parsed.doc;
+    if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
+      return { problems: [{ code: 'E-UTOOL-ROOT', message: 'the document root must be a mapping' }] };
+    }
+    if (doc.kind !== 'tool') {
+      return {
+        problems: [
+          {
+            code: doc.kind === undefined ? 'E-UTOOL-KIND-MISSING' : 'E-UTOOL-KIND-UNKNOWN',
+            message:
+              doc.kind === undefined
+                ? "no 'kind' discriminator; a tool manifest needs 'kind: tool'"
+                : "kind is '" + doc.kind + "'; this page reads tool manifests",
+          },
+        ],
+      };
+    }
+    return { doc };
+  }
+
+  /** The manifest object the index builder expects, or the problems that stopped it. */
+  function manifestOf(doc, path) {
+    let manifest = null;
+    try {
+      manifest = toManifest(doc);
+    } catch (cause) {
+      return { problems: [{ code: cause.code ?? 'E-MANIFEST', message: cause.message }] };
+    }
+
+    const problems = validateManifest(doc);
+
+    // The index names the manifest file; a missing one is the difference between a listing and a
+    // 404, so it is checked here rather than left to the first install.
+    const declaredPath = manifestPathFor(manifest.id);
+    if (path !== undefined && normalisePath(path) !== declaredPath) {
+      problems.push({
+        code: 'E-MANIFEST-PATH',
+        message: `the manifest for '${manifest.id}' must live at ${declaredPath}`,
+      });
+    }
+
+    return { manifest, problems };
+  }
+
+  /**
+   * Compare one declared artifact with the bytes on disk.
+   *
+   * This is the same rule the installer applies before writing anything: declared size, then
+   * declared digest. What it deliberately does NOT do is open the container - that needs the
+   * engine adapters and a decompressor, and the command line already does it.
+   */
+  function checkArtifact(declared, bytes) {
+    if (!bytes) {
+      return { code: 'E-ARTIFACT-MISSING', message: `${declared.path}: no such file in this folder` };
+    }
+    if (bytes.length !== declared.size) {
+      return {
+        code: 'E-ARTIFACT-SIZE',
+        message: `${declared.path}: declared size ${declared.size} != actual ${bytes.length}`,
+      };
+    }
+    const hex = sha256Hex(bytes);
+    if (hex !== declared.sha256) {
+      return {
+        code: 'E-ARTIFACT-HASH',
+        message: `${declared.path}: declared sha256 ${declared.sha256} != actual ${hex}`,
+      };
+    }
+    return null;
+  }
+
+  /** Every artifact a manifest declares, as `{path, size, sha256, label}`. */
+  function artifactsOf(doc) {
+    const found = [];
+    for (const entry of doc.versions ?? []) {
+      for (const [engine, target] of Object.entries(entry.targets ?? {})) {
+        const artifact = target?.artifact ?? {};
+        if (typeof artifact.path !== 'string') continue;
+        if (artifact.type === 'external') continue;
+        found.push({
+          path: normalisePath(artifact.path),
+          size: artifact.size,
+          sha256: artifact.sha256,
+          label: `${doc.id}@${entry.version}/${engine}`,
+        });
+      }
+    }
+    return found;
+  }
+
+  /** Build the index document and its YAML text from manifests. */
+  function indexFrom(manifests, repository) {
+    const index = buildIndex(manifests, repository ?? null);
+    return { index, text: toIndexYaml(index) };
+  }
+
+  /**
+   * Is the committed index consistent with these manifests?
+   *
+   * The comparison is by parsed content, not by text: the command line may format the file
+   * differently (a different YAML writer) and that is not a reason to call it stale.
+   */
+  function diffIndex(existingText, expected) {
+    if (existingText === null || existingText === undefined || existingText.trim() === '') {
+      return { status: 'missing', detail: ['no index.yaml in this folder'] };
+    }
+
+    const parsed = parseYaml(existingText);
+    if (parsed.error) {
+      return { status: 'invalid', detail: [parsed.error.message] };
+    }
+
+    const actual = parsed.doc;
+    const detail = [];
+
+    if (actual.kind !== expected.kind) {
+      detail.push(`kind is ${String(actual.kind)}, expected ${expected.kind}`);
+    }
+    if (String(actual.formatVersion) !== String(expected.formatVersion)) {
+      detail.push(`formatVersion is ${actual.formatVersion}, expected ${expected.formatVersion}`);
+    }
+
+    const actualTools = Array.isArray(actual.tools) ? actual.tools : [];
+    const expectedTools = expected.tools;
+    const actualIds = actualTools.map((tool) => String(tool.id));
+    const expectedIds = expectedTools.map((tool) => String(tool.id));
+
+    for (const id of expectedIds) {
+      if (!actualIds.includes(id)) detail.push(`missing tool: ${id}`);
+    }
+    for (const id of actualIds) {
+      if (!expectedIds.includes(id)) detail.push(`lists a tool that is not here: ${id}`);
+    }
+
+    for (const wanted of expectedTools) {
+      const have = actualTools.find((tool) => String(tool.id) === String(wanted.id));
+      if (!have) continue;
+      // Compared as JSON: these are small plain objects, and a field-by-field diff here would be a
+      // second definition of what the index contains.
+      if (JSON.stringify(have) !== JSON.stringify(wanted)) {
+        const differing = Object.keys(wanted).filter(
+          (key) => JSON.stringify(have[key]) !== JSON.stringify(wanted[key]),
+        );
+        detail.push(`${wanted.id}: differs in ${differing.join(', ')}`);
+      }
+    }
+
+    if (actualIds.join(',') !== expectedIds.join(',')) {
+      detail.push('tools are not in the same order');
+    }
+
+    return detail.length === 0
+      ? { status: 'current', detail: [] }
+      : { status: 'stale', detail };
+  }
+
+  return {
+    readManifest,
+    manifestOf,
+    checkArtifact,
+    artifactsOf,
+    indexFrom,
+    diffIndex,
+  };
+}
+
+
+const SCHEMA = {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/JokeVallen/ToolRegistry/schema/tool.schema.json",
+  "title": "ToolRegistry tool manifest",
+  "description": "Metadata every importable unit in this registry must carry. The file is named tool.yaml (YAML contents) and lives at payloads/<id>/tool.yaml.\n\nThe document is split in two on purpose. Everything down to `dependencies` is ENGINE-NEUTRAL: identity, capabilities, dependency edges and the list of published versions mean the same thing whatever consumes the payload. Everything inside a version's `targets` is ENGINE-SPECIFIC: version floors, container format and install layout differ per engine, and that vocabulary belongs to the engine's adapter. It must not be empty; the validator reports an empty map as E-TARGETS-MISSING, because a release with no target installs nothing.\n\nOne manifest describes ALL published versions of one tool, so a consumer can pick one. `latest` names the version offered by default.",
+  "type": "object",
+  "required": [
+    "kind", "formatVersion", "id", "displayName", "type", "description",
+    "latest", "versions"
+  ],
+  "properties": {
+    "kind": {
+      "const": "tool",
+      "description": "Document discriminator. Every registry document carries one so a reader knows which shape to expect before parsing further: tool, index or receipt."
+    },
+    "formatVersion": {
+      "const": "3",
+      "description": "Format revision, as a string. Bumped only for breaking changes; a reader must reject a revision it does not implement. Version 2 described exactly one version at the document root, so it had no `versions` array and no `latest`."
+    },
+
+    "id": { "$ref": "#/definitions/toolId" },
+    "displayName": { "$ref": "#/definitions/displayName" },
+    "type": { "$ref": "#/definitions/toolType" },
+    "description": { "$ref": "#/definitions/description" },
+    "tags": { "$ref": "#/definitions/tags" },
+    "author": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "license": { "$ref": "#/definitions/license" },
+    "licenseUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Where the licence text lives, for a project that ships its own LICENSE file or whose licence has no SPDX page. Optional: an SPDX identifier already resolves to spdx.org, so this exists to point somewhere ELSE, and a front end uses it in preference to the identifier's default page."
+    },
+    "homepage": { "type": "string", "format": "uri" },
+    "documentation": {
+      "type": "string",
+      "format": "uri",
+      "description": "Where the tool's documentation lives, when that is not the homepage. A repository root and a docs site are different places, so homepage cannot stand in for both: a user who wants to read the API reference has no way to find it from a clone URL. Optional, and a URI with a scheme - 'example.com/docs' is rejected because it is not clickable."
+    },
+    "releaseNotes": {
+      "type": "string",
+      "format": "uri",
+      "description": "Where the maintainer publishes release notes. A link, not the text: release notes are maintained after publication, so a copy inside a registry goes stale exactly when it matters, and a user choosing between versions needs the maintainer's own page. A URI with a scheme, for the same reason as documentation."
+    },
+
+    "provides": { "$ref": "#/definitions/capabilityList" },
+    "injects": { "$ref": "#/definitions/capabilityList" },
+
+    "dependencies": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/dependency" },
+      "uniqueItems": true,
+      "description": "Declared by id only - never by path or URL. This is what keeps every tool relocatable inside the registry."
+    },
+
+    "latest": {
+      "$ref": "#/definitions/strictVersion",
+      "description": "The version an importer offers by default. MUST match one entry in `versions`, so the default can never point at something that is not published."
+    },
+
+    "versions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/versionEntry" },
+      "description": "Every published version; newest first is conventional but not required. A consumer MAY install any entry, and a resolver picks the highest that satisfies the constraints it was given."
+    },
+
+    "releasedAt": { "type": "string", "format": "date" },
+    "deprecated": {
+      "type": "boolean",
+      "default": false,
+      "description": "The tool as a whole is retired. Per-version retirement is `versions[].deprecated`."
+    }
+  },
+  "additionalProperties": false,
+
+  "definitions": {
+    "toolId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "minLength": 3,
+      "maxLength": 64,
+      "description": "Lowercase kebab-case. This is the primary key: directory name, dependency reference, index key, artifact file name stem and the first segment of every capability it provides. Because Windows paths are case-insensitive, lowercase-only also prevents two tools whose ids differ only by case from colliding."
+    },
+    "engineId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "minLength": 2,
+      "maxLength": 32,
+      "description": "Engine family name. The core does not enumerate these: an engine without an adapter is still valid data, it simply cannot be planned until an adapter claims it.",
+      "examples": ["unity", "godot", "unreal", "defold"]
+    },
+    "capability": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*(\\.[a-z0-9]+(-[a-z0-9]+)*)+$",
+      "maxLength": 96,
+      "description": "A namespaced capability name. Two segments minimum, so a capability always states its namespace rather than being a bare word.",
+      "examples": ["script.language.csharp", "unity.window.selection-history", "godot.addon.selection-history"]
+    },
+    "capabilityList": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/capability" },
+      "uniqueItems": true,
+      "maxItems": 32,
+      "description": "provides names capabilities this tool offers. injects names capabilities it needs from somewhere else. Unlike dependencies, which pins a specific tool, injects is satisfied by ANY installed tool that provides the capability - that is what makes a provider replaceable without editing its consumers."
+    },
+    "displayName": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "description": { "type": "string", "minLength": 10, "maxLength": 600 },
+    "toolType": {
+      "enum": ["editor-tool", "tool-library", "framework", "asset-pack", "template"],
+      "description": "Coarse ENGINE-NEUTRAL classification. Deliberately excludes engine-specific kinds such as shader packs: a shader model is engine-specific, so that belongs in a version's target or a tag."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+      "uniqueItems": true,
+      "maxItems": 12
+    },
+    "license": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9.\\-+]+$",
+      "description": "SPDX identifier, e.g. MIT."
+    },
+    "strictVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.\\-]+)?$",
+      "description": "Semver-lite: numeric major.minor.patch with an optional prerelease suffix.",
+      "examples": ["1.0.0", "2.3.1", "1.0.0-rc.1"]
+    },
+    "constraint": {
+      "type": "string",
+      "pattern": "^(\\^|~|>=|<=|>|<|=)?\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.\\-]+)?$",
+      "description": "^1.2.3 allows >=1.2.3 <2.0.0; ~1.2.3 allows >=1.2.3 <1.3.0; >= n has no upper bound; a bare version means exactly that version.",
+      "examples": ["^1.1.0", "~2.0.0", ">=1.0.0", "1.4.2"]
+    },
+    "dependency": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/definitions/toolId" },
+        "version": { "$ref": "#/definitions/constraint" },
+        "reason": { "type": "string", "maxLength": 200 },
+        "optional": {
+          "type": "boolean",
+          "default": false,
+          "description": "An optional dependency is used when the user already selected it, and never pulled in on its own."
+        },
+        "engines": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/engineId" },
+          "uniqueItems": true,
+          "description": "Restricts the dependency to some engines, for a helper that is only needed on one target."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "versionEntry": {
+      "type": "object",
+      "required": ["version", "targets"],
+      "properties": {
+        "version": { "$ref": "#/definitions/strictVersion" },
+        "targets": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/definitions/engineId" },
+          "additionalProperties": { "$ref": "#/definitions/target" },
+          "description": "Engine-keyed map for THIS version. A tool that works in more than one engine declares one target per engine instead of being duplicated. The core defines only this container; the meaning of a target's requirement keys and its artifact format belongs to that engine's adapter."
+        },
+        "releasedAt": { "type": "string", "format": "date" },
+        "deprecated": {
+          "type": "boolean",
+          "default": false,
+          "description": "This version is retired. Kept published so existing receipts stay resolvable, but an importer SHOULD prefer a newer one."
+        },
+        "yanked": {
+          "type": "boolean",
+          "default": false,
+          "description": "This version is withdrawn: it MUST NOT be selected automatically. Unlike `deprecated` this is a hard stop, for a release that is broken or unsafe. It stays listed because a receipt may still reference it."
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 400,
+          "description": "One or two sentences on what this version changed, shown when a user picks a version."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "target": {
+      "type": "object",
+      "required": ["requirements", "artifact"],
+      "properties": {
+        "requirements": {
+          "type": "object",
+          "required": ["minEngineVersion"],
+          "propertyNames": { "pattern": "^[a-zA-Z][a-zA-Z0-9]*$" },
+          "additionalProperties": {
+            "type": ["string", "number", "boolean"],
+            "description": "Flat scalar. Requirement keys are defined by the engine adapter; the core defines only minEngineVersion, which every adapter must be able to compare."
+          },
+          "description": "Host floors for this engine. minEngineVersion is mandatory - a tool that cannot state its floor is not admitted, because 'field absent' and 'forgot to fill it in' are indistinguishable in data. Everything else is adapter-defined: minRuntimeVersion for Unity's .NET API level, minApiVersion for Godot, and so on."
+        },
+        "artifact": { "$ref": "#/definitions/artifact" }
+      },
+      "additionalProperties": false
+    },
+
+    "artifact": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": ["archive", "package", "file", "external"],
+          "description": "archive: a general container the core itself can open (zip, tgz, tar.zst). package: an engine-specific container only that engine's adapter can open (unitypackage and friends). file: a single-file payload with no container at all (a dll, one shader, a licence file). external: no artifact is stored here at all; the payload lives in another repository and the core records where."
+        },
+        "format": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(\\.[a-z0-9]+)*$",
+          "description": "Container format. Required unless type is external. For type archive the core accepts zip, tgz, tar.gz and tar.zst. For type package the value is whatever the engine adapter registers, so unitypackage is a Unity concept rather than a core one. For type file this mirrors the extension: dll, pdb, so, dylib, txt.",
+          "examples": ["zip", "tgz", "tar.gz", "tar.zst", "unitypackage", "dll"]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^payloads/[a-z0-9-]+/artifacts/[A-Za-z0-9_.-]+$",
+          "description": "Repository-relative path, required unless type is external. Always inside the tool's own payload directory, so deleting a tool deletes one directory and nothing else. The file name must be <id>-<version>[-<engine>].<ext>. This pattern is intentionally loose; the exact naming rule is enforced by the validator, which can see the id, version and engine."
+        },
+        "size": { "type": "integer", "minimum": 1, "description": "Exact byte length. Required unless type is external." },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Digest of the artifact file itself, lower-case hex. Verified before import. Required unless type is external."
+        },
+        "source": {
+          "enum": ["git", "http", "npm"],
+          "description": "For type external: which kind of remote holds the payload."
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^(https://|git@|ssh://)",
+          "description": "For type external."
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "For type external. Pin a tag or a commit SHA; a branch head makes two installs of the same version diverge, which breaks the receipt model."
+        },
+        "subdirectory": {
+          "type": "string",
+          "description": "For an unpacked archive: take only entries under this prefix and strip it. For type external: the sub-path inside the remote repository that holds the package. Lets one archive or repository serve several layouts."
+        },
+        "upmPackageName": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(\\.[a-z0-9\\-]+)+$",
+          "description": "For type external that is a UPM package: lets the importer detect collisions and defer to the engine's own package resolution."
+        },
+        "unpack": {
+          "enum": ["none", "auto"],
+          "default": "auto",
+          "description": "auto: open the container and take its entries. none: place the artifact as-is, for a container that engine's own importer must see. none requires targetPath."
+        },
+        "targetPath": {
+          "type": "string",
+          "description": "Required for type file, and for any artifact with unpack: none: where the file lands in the project, relative to the project root. An unpacked artifact uses contentRoot rather than this."
+        },
+        "contentRoot": {
+          "type": "string",
+          "description": "For an unpacked archive: the directory under the project root that entries are extracted into.",
+          "examples": ["Assets", "addons", "res://addons"]
+        },
+        "files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Human-readable inventory of what the artifact installs, shown in the import tool before anything is written."
+        },
+        "editorOnly": {
+          "type": "boolean",
+          "default": false,
+          "description": "The payload is excluded from player builds."
+        },
+        "restartRequired": { "type": "boolean", "default": false }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "external" } }, "required": ["type"] },
+          "then": {
+            "required": ["source", "url", "ref"],
+            "not": { "anyOf": [{ "required": ["path"] }, { "required": ["sha256"] }, { "required": ["size"] }] }
+          },
+          "else": { "required": ["format", "path", "size", "sha256"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "file" } }, "required": ["type"] },
+          "then": { "required": ["targetPath"], "properties": { "unpack": { "const": "none" } } }
+        },
+        {
+          "if": {
+            "required": ["unpack"],
+            "properties": {
+              "type": { "enum": ["archive", "package", "file"] },
+              "unpack": { "const": "none" }
+            }
+          },
+          "then": { "required": ["targetPath"] }
+        }
+      ]
+    }
+  }
+}
+;
+
+const validateManifest = createManifestRules({
+  SchemaValidator,
+  schema: SCHEMA,
+  expectedArtifactName,
+  FORMAT_VERSION,
+});
+
+// ---- page wiring -----------------------------------------------------------------------------
+// Guarded so the same script can be loaded by the test runner, where there is no document.
+function main() {
+  const api = createWorkbenchApi({
+    parseYaml,
+    toManifest,
+    buildIndex,
+    validateManifest,
+    sha256Hex,
+  });
+
+  const input = document.getElementById('folder');
+  const manifestsBox = document.getElementById('manifests');
+  const artifactsBox = document.getElementById('artifacts');
+  const indexBox = document.getElementById('indexState');
+  const indexText = document.getElementById('indexText');
+  const download = document.getElementById('download');
+  const copyButton = document.getElementById('copyText');
+  const folderNote = document.getElementById('folderNote');
+
+  let produced = null;
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function table(headers) {
+    const node = el('table');
+    const head = el('tr');
+    for (const header of headers) head.appendChild(el('th', null, header));
+    node.appendChild(head);
+    return node;
+  }
+
+  function problemsList(problems) {
+    if (!problems || problems.length === 0) return null;
+    const list = el('ul', 'problems');
+    for (const problem of problems) {
+      list.appendChild(el('li', null, '[' + problem.code + '] ' + problem.message));
+    }
+    return list;
+  }
+
+  function sha256Of(file) {
+    return file.arrayBuffer().then((buffer) => sha256Hex(new Uint8Array(buffer)));
+  }
+
+  async function run(files) {
+    // Everything the picker returns is under one folder; the registry root is that folder.
+    const root = files.length > 0 ? normalisePath(files[0].webkitRelativePath).split('/')[0] : '';
+    const map = new Map();
+    for (const file of files) {
+      const full = normalisePath(file.webkitRelativePath || file.name);
+      const relative = root && full.startsWith(root + '/') ? full.slice(root.length + 1) : full;
+      map.set(relative, file);
+    }
+
+    folderNote.textContent = root + ' · ' + map.size + ' 个文件';
+
+    const manifestPaths = [...map.keys()]
+      .filter((key) => /^payloads\/[^/]+\/tool\.yaml$/.test(key))
+      .sort();
+
+    manifestsBox.textContent = '';
+    artifactsBox.textContent = '';
+    indexBox.textContent = '';
+    produced = null;
+    download.disabled = true;
+    copyButton.disabled = true;
+    indexText.value = '';
+
+    if (manifestPaths.length === 0) {
+      manifestsBox.appendChild(
+        el('p', 'hint', '这个文件夹里没有 payloads/<id>/tool.yaml。选的应该是注册库根目录。'),
+      );
+      return;
+    }
+
+    const entries = [];
+    for (const manifestPath of manifestPaths) {
+      const text = await map.get(manifestPath).text();
+      const read = api.readManifest(text);
+      if (read.problems) {
+        entries.push({ path: manifestPath, problems: read.problems, manifest: null, doc: null });
+        continue;
+      }
+      const built = api.manifestOf(read.doc, manifestPath);
+      entries.push({
+        path: manifestPath,
+        problems: built.problems ?? [],
+        manifest: built.manifest ?? null,
+        doc: read.doc,
+      });
+    }
+
+    // ---- manifests
+    const manifestTable = table(['工具 / tool', '版本 / versions', '清单路径', '结果']);
+    let failures = 0;
+    for (const entry of entries) {
+      const row = el('tr');
+      const id = entry.manifest ? entry.manifest.id : '?';
+      row.appendChild(el('td', 'mono', id));
+      row.appendChild(
+        el('td', 'mono', entry.manifest ? entry.manifest.versionNumbers.join(', ') : '—'),
+      );
+      row.appendChild(el('td', 'mono', entry.path));
+      const ok = entry.problems.length === 0;
+      if (!ok) failures += 1;
+      const cell = el('td');
+      cell.appendChild(el('span', 'tag ' + (ok ? 'ok' : 'bad'), ok ? 'ok' : entry.problems.length + ' 个问题'));
+      row.appendChild(cell);
+      manifestTable.appendChild(row);
+
+      if (!ok) {
+        const detailRow = el('tr');
+        const detailCell = el('td');
+        detailCell.colSpan = 4;
+        detailCell.appendChild(problemsList(entry.problems));
+        detailRow.appendChild(detailCell);
+        manifestTable.appendChild(detailRow);
+      }
+    }
+    manifestsBox.appendChild(manifestTable);
+    manifestsBox.appendChild(
+      el('p', 'hint', entries.length + ' 个工具，' + failures + ' 个有问题。'),
+    );
+
+    // ---- artifacts
+    const artifactTable = table(['制品 / artifact', '声明大小', '实际', '摘要']);
+    let checked = 0;
+    let bad = 0;
+
+    for (const entry of entries) {
+      if (!entry.doc) continue;
+      for (const artifact of api.artifactsOf(entry.doc)) {
+        const file = map.get(artifact.path);
+        const row = el('tr');
+        row.appendChild(el('td', 'mono', artifact.path));
+        row.appendChild(el('td', 'mono', String(artifact.size)));
+        row.appendChild(el('td', 'mono', file ? String(file.size) : '—'));
+
+        let problem = null;
+        let hashCell = null;
+        if (!file) {
+          problem = { code: 'E-ARTIFACT-MISSING', message: artifact.path + ': 不在这个文件夹里' };
+          row.appendChild(el('td', 'mono', '—'));
+        } else {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          problem = api.checkArtifact(artifact, bytes);
+          hashCell = el('td');
+          hashCell.appendChild(
+            el('span', 'tag ' + (problem ? 'bad' : 'ok'), problem ? problem.code : 'ok'),
+          );
+          row.appendChild(hashCell);
+        }
+
+        checked += 1;
+        if (problem) {
+          bad += 1;
+          const detailRow = el('tr');
+          const detailCell = el('td');
+          detailCell.colSpan = 4;
+          const list = el('ul', 'problems');
+          list.appendChild(el('li', null, '[' + problem.code + '] ' + problem.message));
+          detailCell.appendChild(list);
+          detailRow.appendChild(detailCell);
+          artifactTable.appendChild(row);
+          artifactTable.appendChild(detailRow);
+          continue;
+        }
+        artifactTable.appendChild(row);
+      }
+    }
+
+    if (checked === 0) {
+      artifactsBox.appendChild(el('p', 'hint', '没有声明任何制品。'));
+    } else {
+      artifactsBox.appendChild(artifactTable);
+      artifactsBox.appendChild(el('p', 'hint', checked + ' 个制品，' + bad + ' 个不符。'));
+    }
+
+    // ---- index
+    const manifests = entries.map((entry) => entry.manifest).filter(Boolean);
+    const existingText = map.has('index.yaml') ? await map.get('index.yaml').text() : null;
+    let repository = null;
+    if (existingText) {
+      const parsed = parseYaml(existingText);
+      if (!parsed.error && parsed.doc && typeof parsed.doc === 'object') {
+        repository = parsed.doc.repository ?? null;
+      }
+    }
+
+    const built = api.indexFrom(manifests, repository);
+    produced = { text: built.text, repository };
+
+    const verdict = api.diffIndex(existingText, built.index);
+    const header = el('p');
+    if (verdict.status === 'current') {
+      header.appendChild(el('span', 'tag ok', '最新'));
+      header.appendChild(el('span', 'hint', '  index.yaml 与这些清单一致，不需要重写。'));
+    } else if (verdict.status === 'missing') {
+      header.appendChild(el('span', 'tag warn', '缺失'));
+      header.appendChild(el('span', 'hint', '  这个文件夹里没有 index.yaml。'));
+    } else if (verdict.status === 'invalid') {
+      header.appendChild(el('span', 'tag bad', '无法解析'));
+    } else {
+      header.appendChild(el('span', 'tag bad', '过期'));
+      header.appendChild(el('span', 'hint', '  与重新生成的结果不同。'));
+    }
+    indexBox.appendChild(header);
+
+    if (verdict.detail.length > 0) {
+      const list = el('ul', 'problems');
+      for (const line of verdict.detail) list.appendChild(el('li', null, line));
+      indexBox.appendChild(list);
+    }
+
+    indexText.value = built.text;
+    download.disabled = false;
+    copyButton.disabled = false;
+    indexBox.appendChild(
+      el('p', 'hint', '下载后用生成的文件覆盖仓库根目录的 index.yaml，再提交。'),
+    );
+
+    if (failures > 0 || bad > 0) {
+      indexBox.appendChild(
+        el('p', 'hint', '注意：清单或制品还有问题，这里生成的目录可能不该提交。'),
+      );
+    }
+  }
+
+  input.addEventListener('change', () => {
+    const files = [...input.files];
+    if (files.length === 0) return;
+    run(files).catch((error) => {
+      manifestsBox.textContent = '读取失败：' + error.message;
+    });
+  });
+
+  download.addEventListener('click', () => {
+    if (!produced) return;
+    const blob = new Blob([produced.text], { type: 'text/yaml' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'index.yaml';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  });
+
+  copyButton.addEventListener('click', () => {
+    if (!produced) return;
+    const done = () => { copyButton.textContent = '已复制'; setTimeout(() => { copyButton.textContent = '复制 YAML 文本'; }, 1400); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(produced.text).then(done).catch(done);
+    } else {
+      indexText.select();
+      document.execCommand('copy');
+      done();
+    }
+  });
+}
+
+if (typeof document !== 'undefined') main();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    api: createWorkbenchApi({ parseYaml, toManifest, buildIndex, validateManifest, sha256Hex }),
+    parseYaml,
+    toManifest,
+    buildIndex,
+    validateManifest,
+    toIndexYaml,
+    sha256Hex,
+    FORMAT_VERSION,
+  };
+}</script>
+</body>
+</html>
