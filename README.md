@@ -35,9 +35,9 @@ git. The validator lives in the import tool: keep the two repositories side by s
 
 ## 配对的导入工具 / Matching import tool
 
-本模板对应 **ToolImport 1.2.1**：<https://github.com/JokeVallen/ToolImport/releases/tag/v1.2.1>
+本模板对应 **ToolImport 1.2.2**：<https://github.com/JokeVallen/ToolImport/releases/tag/v1.2.2>
 
-This template is written for **ToolImport 1.2.1**.
+This template is written for **ToolImport 1.2.2**.
 
 ## 示例工具 / The example tool
 

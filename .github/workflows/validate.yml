@@ -19,7 +19,7 @@ jobs:
           node-version: '22'
 
       - name: Fetch the matching ToolImport
-        run: git clone --depth 1 --branch v1.2.1 https://github.com/JokeVallen/ToolImport.git .toolimport
+        run: git clone --depth 1 --branch v1.2.2 https://github.com/JokeVallen/ToolImport.git .toolimport
 
       - name: Install its one dependency
         run: npm install --prefix .toolimport

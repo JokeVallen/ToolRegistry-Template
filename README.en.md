@@ -29,8 +29,8 @@ automatically; otherwise set `UTOOL_CORE`.
 
 ## Matching import tool
 
-This template is written for **ToolImport 1.2.1**:
-<https://github.com/JokeVallen/ToolImport/releases/tag/v1.2.1>
+This template is written for **ToolImport 1.2.2**:
+<https://github.com/JokeVallen/ToolImport/releases/tag/v1.2.2>
 
 ## The example tool
 

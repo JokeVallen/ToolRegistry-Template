@@ -7,7 +7,7 @@
 <!--
   GENERATED FILE - do not edit.
   Rebuild with: node tools/build-registry-template.mjs
-  Pinned import tool: 1.2.1
+  Pinned import tool: 1.2.2
 -->
 <style>
   :root {
@@ -295,19 +295,19 @@
     <div class="goal"><strong>这一步的目标：</strong>拿到 ToolImport，并确认它能启动。</div>
     
 <div class="pin">
-  <div><span class="label">本注册库配对的版本</span><strong>ToolImport 1.2.1</strong></div>
+  <div><span class="label">本注册库配对的版本</span><strong>ToolImport 1.2.2</strong></div>
   <div class="links">
-    <a href="https://github.com/JokeVallen/ToolImport/releases/tag/v1.2.1">发布页</a>
-    <a href="https://github.com/JokeVallen/ToolImport/releases/download/v1.2.1/toolimport-1.2.1.zip">整仓库 zip</a>
-    <a href="https://github.com/JokeVallen/ToolImport/releases/download/v1.2.1/toolimport-unity-1.2.1.zip">Unity 前端</a>
-    <a href="https://github.com/JokeVallen/ToolImport/releases/download/v1.2.1/toolimport-godot-1.2.1.zip">Godot 前端</a>
+    <a href="https://github.com/JokeVallen/ToolImport/releases/tag/v1.2.2">发布页</a>
+    <a href="https://github.com/JokeVallen/ToolImport/releases/download/v1.2.2/toolimport-1.2.2.zip">整仓库 zip</a>
+    <a href="https://github.com/JokeVallen/ToolImport/releases/download/v1.2.2/toolimport-unity-1.2.2.zip">Unity 前端</a>
+    <a href="https://github.com/JokeVallen/ToolImport/releases/download/v1.2.2/toolimport-godot-1.2.2.zip">Godot 前端</a>
   </div>
 </div>
 <p><strong>为什么强调“配对”</strong>：这份注册库的字段是按这个版本写的。用更旧的导入工具，遇到不认识的字段时
 它不会报错，只会当你没写过——那种沉默比报错难查得多。</p>
 <h4>装法（三分钟）</h4>
 <ol>
-  <li>下载 <code>toolimport-1.2.1.zip</code>（整仓库那个，前端两个包只是 <code>Editor/</code>
+  <li>下载 <code>toolimport-1.2.2.zip</code>（整仓库那个，前端两个包只是 <code>Editor/</code>
   与 <code>addons/</code>，单独下载不包含 CLI）。</li>
   <li>解压到一个固定位置，例如 <code>C:\Tools\ToolImport</code>。路径里尽量不要有空格。</li>
   <li>在解压后的目录里装唯一的一个依赖。</li>
@@ -459,20 +459,20 @@
 </div>
 <div class="tabpanel active" data-panel="unity">
   <ol>
-    <li>把 <code>toolimport-unity-1.2.1.zip</code>（或 ToolImport 里的
+    <li>把 <code>toolimport-unity-1.2.2.zip</code>（或 ToolImport 里的
     <code>frontends/unity-editor/Editor</code>）解到工程的 <code>Assets/ToolImport/Editor</code>。</li>
     <li>回到 Unity，等它编译完（右下角转圈结束）。</li>
     <li>菜单 <strong>Window → ToolRegistry → Import Tool</strong>。</li>
-    <li>窗口右下角应显示 <code>Tool Import 1.2.1</code>——版本对上了，配置就是自动找到的。</li>
+    <li>窗口右下角应显示 <code>Tool Import 1.2.2</code>——版本对上了，配置就是自动找到的。</li>
   </ol>
 </div>
 <div class="tabpanel" data-panel="godot">
   <ol>
-    <li>把 <code>toolimport-godot-1.2.1.zip</code>（或 <code>frontends/godot-editor/addons/tool_import</code>）
+    <li>把 <code>toolimport-godot-1.2.2.zip</code>（或 <code>frontends/godot-editor/addons/tool_import</code>）
     解到工程的 <code>res://addons/tool_import/</code>。</li>
     <li><strong>项目 → 项目设置 → 插件</strong>，启用 <code>Tool Import</code>。</li>
     <li>菜单 <strong>项目 → 工具 → Tool Import</strong>。</li>
-    <li>窗口右下角应显示 <code>Tool Import 1.2.1</code>。</li>
+    <li>窗口右下角应显示 <code>Tool Import 1.2.2</code>。</li>
   </ol>
 </div>
 <p>窗口里做的事和命令行完全一样：<strong>Verify and plan</strong> 读计划，<strong>Install</strong> 才写盘。
@@ -482,7 +482,7 @@
     
     <details class="faq"><summary>菜单里没有这一项</summary><p>Godot：插件没启用。Unity：脚本还没编译完，或被 <code>Assets/</code> 之外的目录挡住了。</p></details>
       <details class="faq"><summary>窗口说找不到 CLI</summary><p>打开窗口里的 <strong>Settings</strong>，把 CLI 与 Node 路径指过去；两个仓库同级时会自动找到，不用配。</p></details>
-      <details class="faq"><summary>右下角版本号对不上</summary><p>你解压的是另一个版本的前端。换成与本页一致的 1.2.1。</p></details>
+      <details class="faq"><summary>右下角版本号对不上</summary><p>你解压的是另一个版本的前端。换成与本页一致的 1.2.2。</p></details>
     <div class="stepnav">
       <button type="button" data-go="prev">← 上一步</button>
       <button type="button" class="next" data-go="next">下一步 →</button>
@@ -814,7 +814,7 @@
   </section>
     <div class="footer">
       本文档由 <code>tools/build-registry-template.mjs</code> 生成 ·
-      对应 ToolImport 1.2.1 ·
+      对应 ToolImport 1.2.2 ·
       仓库 JokeVallen/ToolRegistry-Template
     </div>
   </main>
