@@ -455,14 +455,17 @@
     <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">4 / 7</span></div>
     <h2>校验这份注册库</h2>
     <p class="en">One command proves the registry is internally consistent: schema, manifests, artifact digests and the generated catalog. It writes nothing.</p>
-    <div class="goal"><strong>这一步的目标：</strong>看到 PASSED。</div>
+    <div class="goal"><strong>这一步的目标：</strong>看到全部通过。</div>
     
-<p>在注册库目录里运行校验。<strong>它不写任何文件</strong>，失败也只是打印原因。</p>
-<p>期望看到最后一行类似 <code>PASSED - 4 check(s), 0 errors</code>。</p>
-<p>不想开终端：双击 <a href="tools/workbench.html">tools/workbench.html</a> 选同一个文件夹，
-它会逐条列出清单问题与制品摘要，效果与这里等价（压缩包内部结构仍需命令行）。</p>
+<p><strong>先不开终端</strong>：双击 <a href="tools/workbench.html">tools/workbench.html</a>，选注册库那个文件夹。
+它会逐条列出清单问题、制品摘要不符之处，以及 <code>index.yaml</code> 是否过期。</p>
+<p>它不写任何文件，选错文件夹也只是看不到东西。想重来就再选一次。</p>
+<p class="hint">只有一种情况仍需命令行：核对压缩包<strong>内部</strong>结构（<code>contentRoot</code> / <code>files</code> 是否真的存在）。
+流水线里也跑同一条命令，所以 CI 的门槛和页面的判断是同一套规则。</p>
+<h4>用命令行时</h4>
+<p>在注册库目录里运行，期望最后一行类似 <code>PASSED - 4 check(s), 0 errors</code>。</p>
     <div class="cmd">
-        <div class="label">在 Registry 目录里执行</div>
+        <div class="label">在 Registry 目录里执行（CI 同款）</div>
         <pre><code data-cmd="node tools/registry.mjs validate">node tools/registry.mjs validate</code></pre>
       </div>
       <div class="cmd">
@@ -472,7 +475,7 @@
     
     <div class="verify" data-kind="contains" data-expect="passed">
     <h4>怎么算这一步成功</h4>
-    <p class="hint">把校验输出粘贴到这里（应含 PASSED）</p>
+    <p class="hint">把 workbench 的结论，或校验输出粘贴到这里（应含 PASSED）</p>
     <textarea placeholder="粘贴命令输出"></textarea>
     <button type="button">检查</button>
     <div class="result"></div>
@@ -493,6 +496,8 @@
     <div class="goal"><strong>这一步的目标：</strong>工程里出现工具文件，并留下回执。</div>
     
 <p>先在页面顶部的「我的路径」里填好 Registry 与工程路径，下面的命令会立刻变成<strong>可以直接复制执行</strong>的样子。</p>
+<p>这一步是整套流程里<strong>唯一必须开终端</strong>的：安装要解压制品并往工程目录里写文件，
+浏览器做不到。页面负责把路径代进去、把命令拼对，你只负责复制。</p>
 <p class="hint">Godot 工程要注意：CLI 默认目标是 Unity，Godot 要多加 <code>--engine godot --host-godot 4.2</code>。
 页面会根据你选的引擎自动加上。</p>
 <h4>先看计划，再决定装</h4>
@@ -524,6 +529,7 @@
     <details class="faq"><summary>计划里写 nothing to do</summary><p>多半是引擎没对上。Godot 工程必须带 <code>--engine godot --host-godot 4.2</code>；Unity 工程用默认即可。</p></details>
       <details class="faq"><summary>装到哪里由谁决定</summary><p>由 <code>tool.yaml</code> 里的落点决定（<code>contentRoot</code> / <code>targetPath</code>），你可以在命令里用 <code>--into</code> 改工具自己占用的那个目录。</p></details>
       <details class="faq"><summary>回执在哪，能提交吗</summary><p>在 <code>Library/ToolImport/receipts/</code>。<code>Library/</code> 不进版本库——装了什么本来就是本机状态。</p></details>
+      <details class="faq"><summary>我的工程不是游戏（没有 Unity / Godot），能用吗</summary><p>能，但要先补一根线。核心不认识引擎：它只做"把声明的文件按落点铺进目录树并留回执"，引擎知识全在 <code>providers/engine-*</code> 里。所以要跑起来，得给 <code>--engine</code> 一个适配器——加一个 <code>providers/engine-generic</code> 再在 <code>apps/cli/lib/adapters.js</code> 里注册一行，不用改核心。这也是它通用的一面：CMake 插件、VS Code 扩展、团队内部脚手架，都是同一形状。</p></details>
     <div class="stepnav">
       <button type="button" data-go="prev">← 上一步</button>
       <button type="button" class="next" data-go="next">下一步 →</button>
