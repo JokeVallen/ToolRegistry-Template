@@ -6,6 +6,17 @@ Registry 的最小集合。**先双击 `START-HERE.html`**，它按顺序带你�
 A starter registry for the ToolRegistry format. **Open `START-HERE.html` first**: it walks you
 through setup, the matching import tool release, validation and the first install.
 
+## 开始用 / Start from this template
+
+- **在线看**：<https://jokevallen.github.io/ToolRegistry-Template/START-HERE.html>（不用下载）
+- **用模板建自己的仓库**：仓库页右上角 **Use this template → Create a new repository**
+- **只想本地跑一遍**：`git clone https://github.com/JokeVallen/ToolRegistry-Template.git my-registry`
+
+<!-- -->
+- **Read it online**: <https://jokevallen.github.io/ToolRegistry-Template/START-HERE.html>
+- **Make it yours**: **Use this template → Create a new repository**
+- **Just try it locally**: `git clone https://github.com/JokeVallen/ToolRegistry-Template.git my-registry`
+
 ## 这里有什么 / What is here
 
 ```text
