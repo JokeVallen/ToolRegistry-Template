@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>命令参考 · CLI reference</title>
+<!--
+  GENERATED PAGE - do not edit.
+  Rebuild with: node tools/build-registry-template.mjs
+  The help text below is the CLI's own output, captured at build time.
+-->
+<style>:root {
+    --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
+    --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
+    --link: #9dbdd4; --link-hover: #c6dbe9;
+  }
+  /* Light is a second palette, not a filter: the accent and the two signal colours have to keep
+     their contrast against a light panel, so they are darkened rather than reused. */
+  :root[data-theme="light"] {
+    --bg: #f6f7f9; --panel: #ffffff; --panel-2: #eceff4; --line: #d6dbe3; --fg: #1b2027;
+    --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
+    --link: #2b5c83; --link-hover: #17405f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.75 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  main a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(127,166,196,.45); text-underline-offset: 2px; }
+  main a:hover { color: var(--link-hover); text-decoration-color: var(--link-hover); }
+  code {
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px;
+    font-variant-ligatures: none; background: var(--panel-2); padding: 1px 5px; border-radius: 4px;
+  }
+  .switches {
+    position: fixed; top: 12px; right: 14px; z-index: 50; display: flex; gap: 6px;
+  }
+  .switches button {
+    background: var(--panel); color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 9px; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
+  }
+  .switches button:hover { color: var(--fg); border-color: var(--accent); }
+  html[data-lang="zh"] [data-lang="en"], html[data-lang="en"] [data-lang="zh"] { display: none !important; }
+  main { max-width: 900px; margin: 0 auto; padding: 34px 24px 70px; }
+  h1 { font-size: 25px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 34px 0 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+  h3 { font-size: 15px; margin: 20px 0 6px; }
+  .sub { color: var(--dim); margin: 0 0 20px; }
+  .hint { color: var(--dim); font-size: 13px; }
+  pre {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
+    overflow: auto; font: 12.5px/1.6 "Cascadia Mono", Consolas, monospace; font-variant-ligatures: none;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; }
+  th, td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top; }
+  th { background: var(--panel-2); font-weight: 600; }
+  .kv { font-family: "Cascadia Mono", Consolas, monospace; font-size: 12px; }
+  .note { border-left: 3px solid var(--line); padding: 2px 0 2px 14px; color: var(--dim); font-size: 13px; margin: 14px 0 0; }
+  .back { font-size: 12px; color: var(--dim); text-decoration: none; }
+  .back:hover { color: var(--link-hover); }
+</style>
+<script>(function () {
+  var META = {"languages":true};
+  var root = typeof document !== 'undefined' ? document.documentElement : null;
+
+  function stored(key, fallback) {
+    try {
+      var value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (error) { /* private mode */ }
+  }
+
+  function systemTheme() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark';
+    } catch (error) {
+      return 'dark';
+    }
+  }
+
+  var theme = stored('toolregistry-theme', systemTheme());
+  if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+  var lang = stored('toolregistry-lang', 'zh');
+  if (lang !== 'zh' && lang !== 'en') lang = 'zh';
+
+  function apply() {
+    // Defensive: this script is also loaded by the test harness, which has no documentElement.
+    if (!root || typeof root.setAttribute !== 'function') return;
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang === 'en' ? 'en' : 'zh-CN');
+  }
+
+  apply();
+
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', function () {
+    var themeButton = document.getElementById('theme-toggle');
+    if (themeButton) {
+      themeButton.textContent = theme === 'light' ? '☀' : '☾';
+      themeButton.addEventListener('click', function () {
+        theme = theme === 'light' ? 'dark' : 'light';
+        apply();
+        themeButton.textContent = theme === 'light' ? '☀' : '☾';
+        save('toolregistry-theme', theme);
+      });
+    }
+
+    var langButton = document.getElementById('lang-toggle');
+    if (langButton) {
+      // A page without the other language gets no switch: an inert button is worse than none.
+      var bilingual = document.querySelector('[data-lang]') !== null;
+      if (!bilingual) {
+        langButton.style.display = 'none';
+      } else {
+        langButton.textContent = lang === 'en' ? '中' : 'EN';
+        langButton.addEventListener('click', function () {
+          lang = lang === 'en' ? 'zh' : 'en';
+          apply();
+          langButton.textContent = lang === 'en' ? '中' : 'EN';
+          save('toolregistry-lang', lang);
+        });
+      }
+    }
+  });
+})();</script>
+</head>
+<body>
+<div class="switches">
+    <button id="theme-toggle" type="button" title="切换明暗 / Toggle theme">☾</button>
+    <button id="lang-toggle" type="button" title="切换语言 / Switch language">EN</button>
+  </div>
+<main>
+  <a class="back" href="../index.html">← <span data-lang="zh">入口</span><span data-lang="en">Home</span></a>
+  <h1><span data-lang="zh">命令参考</span><span data-lang="en">CLI reference</span></h1>
+  <p class="sub"><span data-lang="zh">日常维护不需要它——页面都能做。这里是给自动化、以及"页面做不到的那一件"（写盘）用的。</span><span data-lang="en">Daily work does not need this: the pages do it. This is for automation, and for the one thing the pages cannot do - writing to disk.</span></p>
+
+  <h2><span data-lang="zh">注册库命令</span><span data-lang="en">Registry commands</span></h2>
+  <p class="hint"><span data-lang="zh">在注册库根目录执行，需要 Node 22.15 以上。</span><span data-lang="en">Run from the registry root; Node 22.15+.</span></p>
+  <table>
+    <thead><tr><th><span data-lang="zh">命令</span><span data-lang="en">Command</span></th><th><span data-lang="zh">做什么</span><span data-lang="en">What it does</span></th></tr></thead>
+    <tbody>
+<tr><td class="kv">validate</td><td>校验每个 payload、制品摘要与目录；CI 的入口</td></tr>
+<tr><td class="kv">write-index</td><td>按 payloads/ 重建 index.yaml（不要手改它）</td></tr>
+<tr><td class="kv">check-index</td><td>只检查 index.yaml 是否为最新，过期就非零退出</td></tr>
+    </tbody>
+  </table>
+  <p class="note"><span data-lang="zh">退出码：0 = 通过，1 = 有问题，2 = 用法错。CI 只需要看退出码。</span><span data-lang="en">Exit code: 0 = clean, 1 = problems, 2 = usage. CI only needs the code.</span></p>
+
+  <h2><span data-lang="zh">导入工具命令</span><span data-lang="en">Import tool commands</span></h2>
+  <p class="hint"><span data-lang="zh">安装、卸载、规划、诊断。这一段是程序自己打印的帮助，不是手抄的。</span><span data-lang="en">Install, uninstall, plan, diagnose. The text below is the program’s own help, not a copy.</span></p>
+  <table>
+    <thead><tr><th><span data-lang="zh">命令</span><span data-lang="en">Command</span></th><th><span data-lang="zh">做什么</span><span data-lang="en">What it does</span></th></tr></thead>
+    <tbody>
+<tr>
+        <td class="kv">list</td>
+        <td>list every tool the registry offers</td>
+      </tr>
+<tr>
+        <td class="kv">show <span class="hint">&lt;id&gt;[@&lt;version&gt;]</span></td>
+        <td>full metadata for one tool</td>
+      </tr>
+<tr>
+        <td class="kv">plan <span class="hint">&lt;id...&gt;</span></td>
+        <td>resolve dependencies and print the install plan</td>
+      </tr>
+<tr>
+        <td class="kv">verify <span class="hint">&lt;id...&gt;</span></td>
+        <td>verify artifacts without writing anything</td>
+      </tr>
+<tr>
+        <td class="kv">install <span class="hint">&lt;id...&gt;</span></td>
+        <td>install tools into a Unity project</td>
+      </tr>
+<tr>
+        <td class="kv">uninstall <span class="hint">&lt;id...&gt;</span></td>
+        <td>remove tools recorded by their receipts refuses when another installed tool still depends on one; --force overrides that</td>
+      </tr>
+<tr>
+        <td class="kv">rollback <span class="hint">&lt;id...&gt;</span></td>
+        <td>report the version pointer for installed tools</td>
+      </tr>
+<tr>
+        <td class="kv">status</td>
+        <td>list what the project has installed</td>
+      </tr>
+<tr>
+        <td class="kv">validate <span class="hint">[&lt;registry&gt;]</span></td>
+        <td>validate a registry (CI gate)</td>
+      </tr>
+<tr>
+        <td class="kv">digest <span class="hint">&lt;file...&gt;</span></td>
+        <td>print size and sha256 ready to paste into a manifest</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span data-lang="zh">完整帮助</span><span data-lang="en">Full help</span></h3>
+  <pre>utool -- ToolRegistry import tool (backend CLI)
+
+Usage: utool &lt;command&gt; [options]
+
+Commands
+  list                              list every tool the registry offers
+  show &lt;id&gt;[@&lt;version&gt;]             full metadata for one tool
+  plan &lt;id...&gt;                      resolve dependencies and print the install plan
+  verify &lt;id...&gt;                    verify artifacts without writing anything
+  install &lt;id...&gt;                   install tools into a Unity project
+  uninstall &lt;id...&gt;                 remove tools recorded by their receipts
+                                    refuses when another installed tool still
+                                    depends on one; --force overrides that
+  rollback &lt;id...&gt;                  report the version pointer for installed tools
+  status                            list what the project has installed
+  validate [&lt;registry&gt;]             validate a registry (CI gate)
+  digest &lt;file...&gt;                  print size and sha256 ready to paste into a manifest
+
+Options
+  --tag &lt;name&gt;            list: only tools carrying this tag (repeatable, comma-separated)
+  --provides &lt;capability&gt; list: only tools PROVIDING this capability. Use it to answer
+                          "what can satisfy the capability this tool injects?"
+  --injects &lt;capability&gt;  list: only tools injecting this capability
+  --depends-on &lt;id&gt;       list: only tools depending on this tool
+  --type &lt;type&gt;           list: only tools of this type (tool-library, editor-tool, ...)
+  --engine-filter &lt;name&gt;  list: only tools supporting this engine
+  --search &lt;text&gt;         list: only tools whose DISPLAY NAME contains this text
+  --version &lt;v&gt;           install this version of a tool instead of the default
+  --registry &lt;path|url&gt;   registry location. Default: found automatically - the
+                          conventional ToolRegistry near the working
+                          directory, or any directory holding both index.yaml
+                          and payloads/
+  --mirror &lt;url&gt;          an additional host serving the SAME registry layout;
+                          repeatable, tried in the order given, after --registry.
+                          Also read from UTOOL_MIRROR (comma or semicolon
+                          separated). A mirror is only consulted when the
+                          previous host cannot be reached at all: a 404 or a
+                          malformed document is an answer, not an outage
+  --project &lt;dir&gt;         project root (default: current directory)
+  --into &lt;dir&gt;            install the tool you asked for into this project-relative
+                          directory instead of the one its manifest declares, e.g.
+                          Assets/Plugins/IMGUILib. Needs exactly one tool id:
+                          a dependency keeps its own declared layout. The directory
+                          is recorded in the receipt, so uninstall still finds it
+  --engine &lt;name&gt;         target engine, e.g. unity (default: unity)
+  --also-engine &lt;name&gt;    additionally plan this engine's target; repeatable. Use
+                          it to install one cross-engine tool into two engines
+  --host-unity &lt;ver&gt;      host Unity version, e.g. 2021.3.5f1 (enables the gate)
+  --host-dotnet &lt;ver&gt;     host .NET API level, e.g. 4.6 or 6.0 (enables the gate)
+  --host-godot &lt;ver&gt;      host Godot version, e.g. 4.2.1 (enables the gate); read from
+                          project.godot when a --project is given
+  --auto-provider         when a tool injects a capability nothing in the plan
+                          provides, select a provider for it. Off by default:
+                          silently adding a tool is worse than explaining the gap
+  --dry-run               plan and verify, write nothing
+  --no-hash               skip sha256 verification (size and format only)
+  --write-index           regenerate index.yaml (validate only)
+  --json                  machine-readable output (one JSON document)
+  --records               line-oriented output (TAB separated), for embedders
+  --quiet                 suppress per-check output
+  -h, --help              this message
+  -v, --version           print the version
+
+Engines
+  The core knows no engine. Unity support comes from providers/engine-unity, which
+  registers the unitypackage container and the Unity/.NET version comparisons. An
+  engine with no adapter is still valid registry data; the CLI names it and stops
+  rather than guessing how to compare its versions.
+
+Output modes
+  default    aligned tables and prose, for a terminal
+  --json     one JSON document on stdout
+  --records  one record per line, TAB separated, for the Unity front end. Records
+             are: META, TOOL, TARGET, DETAIL, DEPENDENCY, WILLINSTALL, PROBLEM,
+             PLANTOOL, PLANFILE, PLAN, INSTALLED, INSTALLEDFILE, SKIPPED, RESULT,
+             RECEIPT, WARNING, ERROR.
+             A value containing TAB, CR or LF is escaped as \t, \r, \n.
+
+Exit codes: 0 ok, 1 failure, 2 usage, 3 resolution, 4 platform.
+</pre>
+  <p class="note"><span data-lang="zh">改了一个参数却没重新生成这一页，测试会失败——这是故意的。导入工具自己的退出码：0 成功、1 失败、2 用法、3 解析、4 平台。</span><span data-lang="en">Change a flag without regenerating this page and the test fails. That is the point. The import tool exit codes: 0 ok, 1 failure, 2 usage, 3 resolution, 4 platform.</span></p>
+</main>
+</body>
+</html>

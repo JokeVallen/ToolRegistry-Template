@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>扩展 · Extending</title>
+<!--
+  GENERATED PAGE - do not edit.
+  Rebuild with: node tools/build-registry-template.mjs
+-->
+<style>:root {
+    --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
+    --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
+    --link: #9dbdd4; --link-hover: #c6dbe9;
+  }
+  /* Light is a second palette, not a filter: the accent and the two signal colours have to keep
+     their contrast against a light panel, so they are darkened rather than reused. */
+  :root[data-theme="light"] {
+    --bg: #f6f7f9; --panel: #ffffff; --panel-2: #eceff4; --line: #d6dbe3; --fg: #1b2027;
+    --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
+    --link: #2b5c83; --link-hover: #17405f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.75 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  main a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(127,166,196,.45); text-underline-offset: 2px; }
+  main a:hover { color: var(--link-hover); text-decoration-color: var(--link-hover); }
+  code {
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px;
+    font-variant-ligatures: none; background: var(--panel-2); padding: 1px 5px; border-radius: 4px;
+  }
+  .switches {
+    position: fixed; top: 12px; right: 14px; z-index: 50; display: flex; gap: 6px;
+  }
+  .switches button {
+    background: var(--panel); color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 9px; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
+  }
+  .switches button:hover { color: var(--fg); border-color: var(--accent); }
+  html[data-lang="zh"] [data-lang="en"], html[data-lang="en"] [data-lang="zh"] { display: none !important; }
+  main { max-width: 900px; margin: 0 auto; padding: 34px 24px 70px; }
+  h1 { font-size: 25px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 34px 0 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+  h3 { font-size: 15px; margin: 20px 0 6px; }
+  .sub { color: var(--dim); margin: 0 0 20px; }
+  .hint { color: var(--dim); font-size: 13px; }
+  pre {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
+    overflow: auto; font: 12.5px/1.6 "Cascadia Mono", Consolas, monospace; font-variant-ligatures: none;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; }
+  th, td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top; }
+  th { background: var(--panel-2); font-weight: 600; }
+  .kv { font-family: "Cascadia Mono", Consolas, monospace; font-size: 12px; }
+  .note { border-left: 3px solid var(--line); padding: 2px 0 2px 14px; color: var(--dim); font-size: 13px; margin: 14px 0 0; }
+  .back { font-size: 12px; color: var(--dim); text-decoration: none; }
+  .back:hover { color: var(--link-hover); }
+
+  code.block { display: block; }
+</style>
+<script>(function () {
+  var META = {"languages":true};
+  var root = typeof document !== 'undefined' ? document.documentElement : null;
+
+  function stored(key, fallback) {
+    try {
+      var value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (error) { /* private mode */ }
+  }
+
+  function systemTheme() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark';
+    } catch (error) {
+      return 'dark';
+    }
+  }
+
+  var theme = stored('toolregistry-theme', systemTheme());
+  if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+  var lang = stored('toolregistry-lang', 'zh');
+  if (lang !== 'zh' && lang !== 'en') lang = 'zh';
+
+  function apply() {
+    // Defensive: this script is also loaded by the test harness, which has no documentElement.
+    if (!root || typeof root.setAttribute !== 'function') return;
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang === 'en' ? 'en' : 'zh-CN');
+  }
+
+  apply();
+
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', function () {
+    var themeButton = document.getElementById('theme-toggle');
+    if (themeButton) {
+      themeButton.textContent = theme === 'light' ? '☀' : '☾';
+      themeButton.addEventListener('click', function () {
+        theme = theme === 'light' ? 'dark' : 'light';
+        apply();
+        themeButton.textContent = theme === 'light' ? '☀' : '☾';
+        save('toolregistry-theme', theme);
+      });
+    }
+
+    var langButton = document.getElementById('lang-toggle');
+    if (langButton) {
+      // A page without the other language gets no switch: an inert button is worse than none.
+      var bilingual = document.querySelector('[data-lang]') !== null;
+      if (!bilingual) {
+        langButton.style.display = 'none';
+      } else {
+        langButton.textContent = lang === 'en' ? '中' : 'EN';
+        langButton.addEventListener('click', function () {
+          lang = lang === 'en' ? 'zh' : 'en';
+          apply();
+          langButton.textContent = lang === 'en' ? '中' : 'EN';
+          save('toolregistry-lang', lang);
+        });
+      }
+    }
+  });
+})();</script>
+</head>
+<body>
+<div class="switches">
+    <button id="theme-toggle" type="button" title="切换明暗 / Toggle theme">☾</button>
+    <button id="lang-toggle" type="button" title="切换语言 / Switch language">EN</button>
+  </div>
+<main>
+  <a class="back" href="../index.html">← <span data-lang="zh">入口</span><span data-lang="en">Home</span></a>
+  <h1><span data-lang="zh">扩展这套东西</span><span data-lang="en">Extending it</span></h1>
+  <p class="sub"><span data-lang="zh">三个接缝，都不在核心里面。核心只认识"文件、清单、摘要、落点"，引擎和压缩格式都是外接的。</span><span data-lang="en">Three seams, none inside the core. The core knows files, manifests, digests and destinations; engines and archive formats plug in.</span></p>
+
+  <h2>1. <span data-lang="zh">再加一个引擎</span><span data-lang="en">Another engine</span></h2>
+  <p><span data-lang="zh">游戏之外也一样：非游戏工程在概念上就是"又一个宿主"，用一个通用适配器描述它的落点与版本规则。</span><span data-lang="en">This is also the answer for non-game projects: a project type is just another host, described by a generic adapter.</span></p>
+  <p><span data-lang="zh">做法：新建 <code>providers/engine-&lt;名字&gt;/</code>，导出 <code>&lt;名字&gt;Adapter</code>，再在 <code>apps/cli/lib/adapters.js</code> 的 <code>ADAPTERS</code> 里加一行。核心文件一个都不用改。</span><span data-lang="en">Add <code>providers/engine-&lt;name&gt;/</code> exporting <code>&lt;name&gt;Adapter</code>, and one line in <code>ADAPTERS</code> in <code>apps/cli/lib/adapters.js</code>. No core file changes.</span></p>
+  <pre>export const genericAdapter = {
+  engine: 'generic',
+  containerHandlers: [],          // 用普通压缩包就不需要写 handler
+  meetsRequirement(engine, key, value, host) { /* 返回 true / false / 原因 */ },
+  hostFacts(projectRoot) { /* 从工程里读出宿主版本 */ },
+};</pre>
+  <p class="hint"><span data-lang="zh">成员就是这几个：</span><span data-lang="en">These are the members the core actually calls:</span> <span class="kv">engine · containerHandlers · meetsRequirement · hostFacts</span></p>
+
+  <h2>2. <span data-lang="zh">再加一种压缩格式</span><span data-lang="en">Another container format</span></h2>
+  <p><span data-lang="zh">只有当制品不是 zip / tgz / tar.zst 时才需要：写一个 handler，注册到容器注册表。</span><span data-lang="en">Only needed when the artifact is not zip / tgz / tar.zst: write a handler and register it.</span></p>
+  <pre>registry.register({
+  id: 'generic:mypkg',
+  formats: ['mypkg'],
+  inspect(bytes, artifact, context) { /* 返回 { items: [{ path, size }], entries } */ },
+  async extract(bytes, artifact, context) { /* 写盘，返回实际写入的 items */ },
+});</pre>
+  <p class="hint"><span data-lang="zh">成员：</span><span data-lang="en">Members:</span> <span class="kv">id · formats · inspect · extract</span></p>
+  <p class="note"><span data-lang="zh"><code>inspect</code> 与 <code>extract</code> 必须对"会写出哪些文件"给出一致的答案——规划用它列落点，安装用它写盘，两者不一致就是"计划里说会装、装完少了文件"。</span><span data-lang="en"><code>inspect</code> and <code>extract</code> must agree about which files exist: planning uses one, installing the other, and a mismatch is an install that silently misses files.</span></p>
+
+  <h2>3. <span data-lang="zh">自己写一个前端</span><span data-lang="en">Your own front end</span></h2>
+  <p><span data-lang="zh">一个前端只做两件事：读注册库（<code>index.yaml</code> + <code>payloads/*/tool.yaml</code>），调 CLI 或复用 core。它不自己判断格式是否合法——那是校验器的职责。</span><span data-lang="en">A front end does two things: read the registry, and call the CLI or reuse the core. It does not decide what is valid - that is the validator’s job.</span></p>
+  <p><span data-lang="zh">契约写在 <a href="../docs/FRONTEND-INTEGRATION.zh-CN.html">前端集成</a>；为什么这样分工写在 <a href="../docs/FRONTEND-DESIGN.zh-CN.html">前端设计</a>。</span><span data-lang="en">The contract is in <a href="../docs/FRONTEND-INTEGRATION.en.html">Front-end integration</a>; the reasoning behind it in <a href="../docs/FRONTEND-DESIGN.en.html">Front-end design</a>.</span></p>
+
+  <h2><span data-lang="zh">三条不变量</span><span data-lang="en">Three invariants</span></h2>
+  <ul>
+    <li><span data-lang="zh"><strong>核心不装引擎</strong>：核心多一个引擎依赖，就是所有人为此付费。</span><span data-lang="en"><strong>No engine in the core</strong>: one such dependency is paid for by everyone.</span></li>
+    <li><span data-lang="zh"><strong>规则只有一份</strong>：页面、CLI、CI 用同一份 schema 与同一个目录生成函数。</span><span data-lang="en"><strong>One copy of the rules</strong>: pages, CLI and CI share the schema and the index builder.</span></li>
+    <li><span data-lang="zh"><strong>写盘只有一处</strong>：<code>install</code> / <code>uninstall</code>。页面能读能算，但不落文件。</span><span data-lang="en"><strong>One writer</strong>: <code>install</code> / <code>uninstall</code>. Pages read and compute; they do not write.</span></li>
+  </ul>
+</main>
+</body>
+</html>
