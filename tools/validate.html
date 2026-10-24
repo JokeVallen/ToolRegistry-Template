@@ -81,9 +81,21 @@
     }
   }
 
-  var theme = stored('toolregistry-theme', systemTheme());
+  // A shared link may pin the language and the theme: "lang=en&theme=light". That is what makes
+  // "here it is in English" a thing you can send someone, and it is also how the screenshot test
+  // asks for the other language without touching localStorage.
+  function fromQuery(key) {
+    try {
+      var value = new URLSearchParams(window.location.search).get(key);
+      return value === 'zh' || value === 'en' || value === 'light' || value === 'dark' ? value : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  var theme = fromQuery('theme') || stored('toolregistry-theme', systemTheme());
   if (theme !== 'light' && theme !== 'dark') theme = 'dark';
-  var lang = stored('toolregistry-lang', 'zh');
+  var lang = fromQuery('lang') || stored('toolregistry-lang', 'zh');
   if (lang !== 'zh' && lang !== 'en') lang = 'zh';
 
   function apply() {
@@ -131,6 +143,7 @@
     --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
     --link: #2b5c83; --link-hover: #17405f;
   }</style>
+<style>html[data-lang="zh"] [data-lang="en"], html[data-lang="en"] [data-lang="zh"] { display: none !important; }</style>
 </head>
 <body>
 <div class="switches">

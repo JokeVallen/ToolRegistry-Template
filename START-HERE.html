@@ -21,6 +21,7 @@
     --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
     --link: #2b5c83; --link-hover: #17405f;
   }
+  html[data-lang="zh"] [data-lang="en"], html[data-lang="en"] [data-lang="zh"] { display: none !important; }
   html { scroll-behavior: smooth; }
   body {
     margin: 0; background: var(--bg); color: var(--fg);
@@ -153,7 +154,7 @@
                   padding: 6px 10px; color: var(--link); text-decoration: none; font-size: 13px; }
   .pin .links a:hover { border-color: var(--link-hover); color: var(--link-hover); }
 
-  .verify { margin: 16px 0; border: 1px dashed var(--line); border-radius: 7px; padding: 12px 14px; background: #1f2227; }
+  .verify { margin: 16px 0; border: 1px dashed var(--line); border-radius: 7px; padding: 12px 14px; background: var(--panel-2); }
   .verify h4 { margin: 0 0 6px; }
   .verify textarea {
     width: 100%; min-height: 62px; background: var(--bg); color: var(--fg); border: 1px solid var(--line);
@@ -193,7 +194,7 @@
     background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 6px;
     padding: 8px 16px; cursor: pointer; font: inherit; font-size: 14px;
   }
-  .stepnav button.next { background: #2c4a68; border-color: #3c6b96; }
+  .stepnav button.next { background: var(--panel-2); border-color: var(--accent); color: var(--fg); }
   .stepnav button:hover { border-color: var(--accent); }
   .stepnav button:disabled { opacity: .4; cursor: default; }
   .stepnav .pos { color: var(--dim); font-size: 12.5px; margin-left: auto; }
@@ -235,9 +236,21 @@
     }
   }
 
-  var theme = stored('toolregistry-theme', systemTheme());
+  // A shared link may pin the language and the theme: "lang=en&theme=light". That is what makes
+  // "here it is in English" a thing you can send someone, and it is also how the screenshot test
+  // asks for the other language without touching localStorage.
+  function fromQuery(key) {
+    try {
+      var value = new URLSearchParams(window.location.search).get(key);
+      return value === 'zh' || value === 'en' || value === 'light' || value === 'dark' ? value : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  var theme = fromQuery('theme') || stored('toolregistry-theme', systemTheme());
   if (theme !== 'light' && theme !== 'dark') theme = 'dark';
-  var lang = stored('toolregistry-lang', 'zh');
+  var lang = fromQuery('lang') || stored('toolregistry-lang', 'zh');
   if (lang !== 'zh' && lang !== 'en') lang = 'zh';
 
   function apply() {
@@ -287,95 +300,104 @@
   </div>
 <div class="layout">
   <nav>
-    <div class="brand"><a href="index.html">← 入口</a> · Registry 起步包</div>
+    <div class="brand"><a href="index.html">← <span data-lang="zh">入口</span><span data-lang="en">Home</span></a> · Registry</div>
     <div class="progress"><i></i></div>
     <div class="progress-text"></div>
-    <div class="track-title">我第一次接触这套东西</div>
-      <a class="step" href="#s-quickstart-env" data-track="quickstart" data-step="env"><span class="dot"><span></span></span><span>先确认这台机器能跑</span></a>
-      <a class="step" href="#s-quickstart-download" data-track="quickstart" data-step="download"><span class="dot"><span></span></span><span>下载配对的导入工具</span></a>
-      <a class="step" href="#s-quickstart-registry" data-track="quickstart" data-step="registry"><span class="dot"><span></span></span><span>拿到一份 Registry</span></a>
-      <a class="step" href="#s-quickstart-validate" data-track="quickstart" data-step="validate"><span class="dot"><span></span></span><span>校验这份注册库</span></a>
-      <a class="step" href="#s-quickstart-install" data-track="quickstart" data-step="install"><span class="dot"><span></span></span><span>把第一个工具装进工程</span></a>
-      <a class="step" href="#s-quickstart-editor" data-track="quickstart" data-step="editor"><span class="dot"><span></span></span><span>在编辑器里打开它</span></a>
-      <a class="step" href="#s-quickstart-done" data-track="quickstart" data-step="done"><span class="dot"><span></span></span><span>到这里你就跑通了</span></a>
-    <div class="track-title">我要开始维护它</div>
-      <a class="step" href="#s-maintain-add-tool" data-track="maintain" data-step="add-tool"><span class="dot"><span></span></span><span>加一个工具</span></a>
-      <a class="step" href="#s-maintain-index" data-track="maintain" data-step="index"><span class="dot"><span></span></span><span>校验与目录</span></a>
-      <a class="step" href="#s-maintain-remote" data-track="maintain" data-step="remote"><span class="dot"><span></span></span><span>建你自己的远程仓库</span></a>
-      <a class="step" href="#s-maintain-update" data-track="maintain" data-step="update"><span class="dot"><span></span></span><span>更新 Registry</span></a>
-      <a class="step" href="#s-maintain-update-tool" data-track="maintain" data-step="update-tool"><span class="dot"><span></span></span><span>更新导入工具</span></a>
-    <div class="track-title">我只想读懂它</div>
-      <a class="step" href="#s-reference-concepts" data-track="reference" data-step="concepts"><span class="dot"><span></span></span><span>三个角色与一条边界</span></a>
-      <a class="step" href="#s-reference-docs" data-track="reference" data-step="docs"><span class="dot"><span></span></span><span>文档索引</span></a>
-      <a class="step" href="#s-reference-problems" data-track="reference" data-step="problems"><span class="dot"><span></span></span><span>排错：最常见的四件事</span></a>
-    <button id="reset" type="button">重置进度</button>
+    <div class="track-title"><span data-lang="zh">我第一次接触这套东西</span><span data-lang="en">I am new to this</span></div>
+      <a class="step" href="#s-quickstart-env" data-track="quickstart" data-step="env"><span class="dot"><span></span></span><span><span data-lang="zh">先确认这台机器能跑</span><span data-lang="en">Make sure this machine can run it</span></span></a>
+      <a class="step" href="#s-quickstart-download" data-track="quickstart" data-step="download"><span class="dot"><span></span></span><span><span data-lang="zh">下载配对的导入工具</span><span data-lang="en">Download the matching import tool</span></span></a>
+      <a class="step" href="#s-quickstart-registry" data-track="quickstart" data-step="registry"><span class="dot"><span></span></span><span><span data-lang="zh">拿到一份 Registry</span><span data-lang="en">Get a registry</span></span></a>
+      <a class="step" href="#s-quickstart-validate" data-track="quickstart" data-step="validate"><span class="dot"><span></span></span><span><span data-lang="zh">校验这份注册库</span><span data-lang="en">Validate the registry</span></span></a>
+      <a class="step" href="#s-quickstart-install" data-track="quickstart" data-step="install"><span class="dot"><span></span></span><span><span data-lang="zh">把第一个工具装进工程</span><span data-lang="en">Install the first tool into your project</span></span></a>
+      <a class="step" href="#s-quickstart-editor" data-track="quickstart" data-step="editor"><span class="dot"><span></span></span><span><span data-lang="zh">在编辑器里打开它</span><span data-lang="en">Open it inside the editor</span></span></a>
+      <a class="step" href="#s-quickstart-done" data-track="quickstart" data-step="done"><span class="dot"><span></span></span><span><span data-lang="zh">到这里你就跑通了</span><span data-lang="en">That is the whole loop</span></span></a>
+    <div class="track-title"><span data-lang="zh">我要开始维护它</span><span data-lang="en">I am going to maintain it</span></div>
+      <a class="step" href="#s-maintain-add-tool" data-track="maintain" data-step="add-tool"><span class="dot"><span></span></span><span><span data-lang="zh">加一个工具</span><span data-lang="en">Add a tool</span></span></a>
+      <a class="step" href="#s-maintain-index" data-track="maintain" data-step="index"><span class="dot"><span></span></span><span><span data-lang="zh">校验与目录</span><span data-lang="en">Validation and the catalog</span></span></a>
+      <a class="step" href="#s-maintain-remote" data-track="maintain" data-step="remote"><span class="dot"><span></span></span><span><span data-lang="zh">建你自己的远程仓库</span><span data-lang="en">Give it your own remote</span></span></a>
+      <a class="step" href="#s-maintain-update" data-track="maintain" data-step="update"><span class="dot"><span></span></span><span><span data-lang="zh">更新 Registry</span><span data-lang="en">Update the registry</span></span></a>
+      <a class="step" href="#s-maintain-update-tool" data-track="maintain" data-step="update-tool"><span class="dot"><span></span></span><span><span data-lang="zh">更新导入工具</span><span data-lang="en">Update the import tool</span></span></a>
+    <div class="track-title"><span data-lang="zh">我只想读懂它</span><span data-lang="en">I just want to understand it</span></div>
+      <a class="step" href="#s-reference-concepts" data-track="reference" data-step="concepts"><span class="dot"><span></span></span><span><span data-lang="zh">三个角色与一条边界</span><span data-lang="en">Three roles and one boundary</span></span></a>
+      <a class="step" href="#s-reference-docs" data-track="reference" data-step="docs"><span class="dot"><span></span></span><span><span data-lang="zh">文档索引</span><span data-lang="en">Which document answers which question</span></span></a>
+      <a class="step" href="#s-reference-problems" data-track="reference" data-step="problems"><span class="dot"><span></span></span><span><span data-lang="zh">排错：最常见的四件事</span><span data-lang="en">Troubleshooting: the four usual suspects</span></span></a>
+    <button id="reset" type="button"><span data-lang="zh">重置进度</span><span data-lang="en">Reset progress</span></button>
   </nav>
   <main>
-    <h1>从这里开始</h1>
-    <p class="sub">选一条路线，跟着点。整页离线可读，不联网也能看完。</p>
+    <h1><span data-lang="zh">从这里开始</span><span data-lang="en">Start here</span></h1>
+    <p class="sub"><span data-lang="zh">选一条路线，跟着点。整页离线可读，不联网也能看完。</span><span data-lang="en">Pick a route and follow it. The page works offline and reads the same without a network.</span></p>
+    <p class="sub" data-lang="en"><em>English mode shows each step's summary, the exact commands, and the check that proves it worked. The long-form prose is Chinese.</em></p>
     <div class="chooser">
-    <button class="route" data-track="quickstart"><b>我第一次接触这套东西</b><span>跟着走，大约 15 分钟，最后你会有一个能装工具的工程</span></button>
-    <button class="route" data-track="maintain"><b>我要开始维护它</b><span>第一次跑通之后，日常就是这些动作</span></button>
-    <button class="route" data-track="reference"><b>我只想读懂它</b><span>概念、文档、排错，不用跟着点</span></button>
+    <button class="route" data-track="quickstart"><b><span data-lang="zh">我第一次接触这套东西</span><span data-lang="en">I am new to this</span></b><span><span data-lang="zh">跟着走，大约 15 分钟，最后你会有一个能装工具的工程</span><span data-lang="en">Follow along: about 15 minutes, ending with a project that has a tool installed</span></span></button>
+    <button class="route" data-track="maintain"><b><span data-lang="zh">我要开始维护它</span><span data-lang="en">I am going to maintain it</span></b><span><span data-lang="zh">第一次跑通之后，日常就是这些动作</span><span data-lang="en">Once it works, these are the everyday moves</span></span></button>
+    <button class="route" data-track="reference"><b><span data-lang="zh">我只想读懂它</span><span data-lang="en">I just want to understand it</span></b><span><span data-lang="zh">概念、文档、排错，不用跟着点</span><span data-lang="en">Concepts, docs, troubleshooting - no clicking required</span></span></button>
     </div>
     <details class="paths" open>
-      <summary>我的路径 <b>（填一次，下面所有命令自动代入）</b></summary>
+      <summary><span data-lang="zh">我的路径 <b>（填一次，下面所有命令自动代入）</b></span><span data-lang="en">My paths <b>(fill once; every command below substitutes them)</b></span></summary>
       <div class="rows">
-        <div class="field"><label for="p-toolimport">ToolImport 路径（解压后的目录）</label>
-          <div class="fieldrow"><input id="p-toolimport" data-path="toolimport" placeholder="例如 C:\Tools\ToolImport" autocomplete="off" spellcheck="false"><button type="button" class="paste" data-paste="toolimport" title="从剪贴板粘贴（资源管理器里 Shift+右键 → 复制文件地址）">粘贴</button></div></div>
-        <div class="field"><label for="p-registry">Registry 路径</label>
-          <div class="fieldrow"><input id="p-registry" data-path="registry" placeholder="例如 D:\GameDev\my-registry" autocomplete="off" spellcheck="false"><button type="button" class="paste" data-paste="registry" title="从剪贴板粘贴（资源管理器里 Shift+右键 → 复制文件地址）">粘贴</button></div></div>
-        <div class="field"><label for="p-project">工程路径</label>
-          <div class="fieldrow"><input id="p-project" data-path="project" placeholder="例如 D:\MyGame" autocomplete="off" spellcheck="false"><button type="button" class="paste" data-paste="project" title="从剪贴板粘贴（资源管理器里 Shift+右键 → 复制文件地址）">粘贴</button></div></div>
-        <div class="field"><label for="p-engine">引擎</label><select id="p-engine" data-path="engine"><option value="unity">Unity</option><option value="godot">Godot</option></select></div>
-        <div class="field"><label for="p-tool">工具 id</label><input id="p-tool" data-path="tool" placeholder="example-hello" autocomplete="off"></div>
+        <div class="field"><label for="p-toolimport"><span data-lang="zh">ToolImport 路径（解压后的目录）</span><span data-lang="en">ToolImport path (the unzipped directory)</span></label>
+          <div class="fieldrow"><input id="p-toolimport" data-path="toolimport" placeholder="例如 C:\Tools\ToolImport" data-placeholder-zh="例如 C:\Tools\ToolImport" data-placeholder-en="e.g. C:\Tools\ToolImport" autocomplete="off" spellcheck="false"><button type="button" class="paste" data-paste="toolimport" title="从剪贴板粘贴（资源管理器里 Shift+右键 → 复制文件地址）"><span data-lang="zh">粘贴</span><span data-lang="en">Paste</span></button></div></div>
+        <div class="field"><label for="p-registry"><span data-lang="zh">Registry 路径</span><span data-lang="en">Registry path</span></label>
+          <div class="fieldrow"><input id="p-registry" data-path="registry" placeholder="例如 D:\GameDev\my-registry" data-placeholder-zh="例如 D:\GameDev\my-registry" data-placeholder-en="e.g. D:\GameDev\my-registry" autocomplete="off" spellcheck="false"><button type="button" class="paste" data-paste="registry" title="从剪贴板粘贴（资源管理器里 Shift+右键 → 复制文件地址）"><span data-lang="zh">粘贴</span><span data-lang="en">Paste</span></button></div></div>
+        <div class="field"><label for="p-project"><span data-lang="zh">工程路径</span><span data-lang="en">Project path</span></label>
+          <div class="fieldrow"><input id="p-project" data-path="project" placeholder="例如 D:\MyGame" data-placeholder-zh="例如 D:\MyGame" data-placeholder-en="e.g. D:\MyGame" autocomplete="off" spellcheck="false"><button type="button" class="paste" data-paste="project" title="从剪贴板粘贴（资源管理器里 Shift+右键 → 复制文件地址）"><span data-lang="zh">粘贴</span><span data-lang="en">Paste</span></button></div></div>
+        <div class="field"><label for="p-engine"><span data-lang="zh">引擎</span><span data-lang="en">Engine</span></label><select id="p-engine" data-path="engine"><option value="unity">Unity</option><option value="godot">Godot</option></select></div>
+        <div class="field"><label for="p-tool"><span data-lang="zh">工具 id</span><span data-lang="en">Tool id</span></label><input id="p-tool" data-path="tool" placeholder="example-hello" autocomplete="off"></div>
       </div>
-      <p class="hint">浏览器不会把文件夹的绝对路径交给网页，所以这里只能输入或粘贴。最快的办法：资源管理器里
-      <strong>Shift + 右键</strong> 目录 →「复制文件地址」，回来点「粘贴」。</p>
+      <p class="hint">
+        <span data-lang="zh">浏览器不会把文件夹的绝对路径交给网页，所以这里只能输入或粘贴。最快的办法：资源管理器里
+        <strong>Shift + 右键</strong> 目录 →「复制文件地址」，回来点「粘贴」。</span>
+        <span data-lang="en">A browser does not hand a page an absolute folder path, so type or paste it.
+        Quickest: in Explorer, <strong>Shift + right-click</strong> the folder → Copy as path, then click Paste.</span>
+      </p>
     </details>
     <section class="step" id="s-quickstart-env" data-track="quickstart" data-step="env">
-    <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">1 / 7</span></div>
-    <h2>先确认这台机器能跑</h2>
-    <p class="en">Two programs have to exist before anything else works: Node.js 22.15 or newer, and git. The import tool is a Node program even when you open it from an editor window, so an editor without Node cannot install anything.</p>
-    <div class="goal"><strong>这一步的目标：</strong>确认 Node.js ≥ 22.15 与 git 都在 PATH 上。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我第一次接触这套东西</span><span data-lang="en">I am new to this</span></span><span class="badge">1 / 7</span></div>
+    <h2><span data-lang="zh">先确认这台机器能跑</span><span data-lang="en">Make sure this machine can run it</span></h2>
+    <p class="en" data-lang="zh">Two programs have to exist before anything else works: Node.js 22.15 or newer, and git. The import tool is a Node program even when you open it from an editor window, so an editor without Node cannot install anything.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">确认 Node.js ≥ 22.15 与 git 都在 PATH 上。</span><span data-lang="en">Node.js 22.15 or newer and git are both on PATH.</span></div>
+    <div data-lang="zh">
 <p>这套工具的后端是一个 Node 程序。<strong>即使你只在 Unity / Godot 的窗口里点按钮，窗口也是去调它</strong>——
 所以没有 Node 就没有安装能力。</p>
 <ol>
   <li>打开终端（PowerShell 即可）。</li>
   <li>依次运行下面两条命令，看版本号。</li>
-</ol>
+</ol></div>
+    <div data-lang="en">Two programs have to exist before anything else works: Node.js 22.15 or newer, and git. The import tool is a Node program even when you open it from an editor window, so an editor without Node cannot install anything.</div>
     <div class="cmd">
-        <div class="label">Node 版本</div>
+        <div class="label"><span data-lang="zh">Node 版本</span><span data-lang="en">Node version</span></div>
         <pre><code data-cmd="node -v">node -v</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">git 版本</div>
+        <div class="label"><span data-lang="zh">git 版本</span><span data-lang="en">git version</span></div>
         <pre><code data-cmd="git --version">git --version</code></pre>
       </div>
     
     <div class="verify" data-kind="node" data-expect="">
-    <h4>怎么算这一步成功</h4>
-    <p class="hint">把 node -v 的输出粘贴到这里</p>
-    <textarea placeholder="粘贴命令输出"></textarea>
-    <button type="button">检查</button>
+    <h4><span data-lang="zh">怎么算这一步成功</span><span data-lang="en">How to tell it worked</span></h4>
+    <p class="hint"><span data-lang="zh">把 node -v 的输出粘贴到这里</span><span data-lang="en">Paste the output of node -v here</span></p>
+    <textarea data-placeholder-zh="粘贴命令输出" data-placeholder-en="Paste the command output" placeholder="粘贴命令输出"></textarea>
+    <button type="button"><span data-lang="zh">检查</span><span data-lang="en">Check</span></button>
     <div class="result"></div>
   </div>
-    <details class="faq"><summary>提示 node 不是内部或外部命令</summary><p>还没装，或者装了没勾选加入 PATH。装 <a href="https://nodejs.org/">Node.js LTS</a>（22.15 以上），装完<strong>重开终端</strong>再试。</p></details>
+    <div data-lang="zh">
+      <details class="faq"><summary>提示 node 不是内部或外部命令</summary><p>还没装，或者装了没勾选加入 PATH。装 <a href="https://nodejs.org/">Node.js LTS</a>（22.15 以上），装完<strong>重开终端</strong>再试。</p></details>
       <details class="faq"><summary>版本是 18.x 可以吗</summary><p>不行。CLI 用了 Node 22.15 起才有的 zstd 能力，低于这个版本会在启动时直接报错，而不是降级运行。</p></details>
       <details class="faq"><summary>我只用 Godot，没有 Unity，需要 Unity 吗</summary><p>不需要。两个前端各自独立，装哪个取决于你用什么引擎。</p></details>
+    </div>
+    <p class="hint" data-lang="en"><em>Step-by-step troubleshooting for this step is in Chinese for now.</em></p>
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">下一步 →</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">下一步 →</span><span data-lang="en">Next →</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <section class="step" id="s-quickstart-download" data-track="quickstart" data-step="download">
-    <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">2 / 7</span></div>
-    <h2>下载配对的导入工具</h2>
-    <p class="en">Registry and import tool are two repositories and they are versioned separately. This page is pinned to one import tool release; using an older one can silently ignore fields it does not know.</p>
-    <div class="goal"><strong>这一步的目标：</strong>拿到 ToolImport，并确认它能启动。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我第一次接触这套东西</span><span data-lang="en">I am new to this</span></span><span class="badge">2 / 7</span></div>
+    <h2><span data-lang="zh">下载配对的导入工具</span><span data-lang="en">Download the matching import tool</span></h2>
+    <p class="en" data-lang="zh">Registry and import tool are two repositories and they are versioned separately. This page is pinned to one import tool release; using an older one can silently ignore fields it does not know.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">拿到 ToolImport，并确认它能启动。</span><span data-lang="en">You have ToolImport, and it starts.</span></div>
+    <div data-lang="zh">
 <div class="pin">
   <div><span class="label">本注册库配对的版本</span><strong>ToolImport 1.2.2</strong></div>
   <div class="links">
@@ -393,38 +415,42 @@
   与 <code>addons/</code>，单独下载不包含 CLI）。</li>
   <li>解压到一个固定位置，例如 <code>C:\Tools\ToolImport</code>。路径里尽量不要有空格。</li>
   <li>在解压后的目录里装唯一的一个依赖。</li>
-</ol>
+</ol></div>
+    <div data-lang="en">Registry and import tool are two repositories and they are versioned separately. This page is pinned to one import tool release; using an older one can silently ignore fields it does not know.</div>
     <div class="cmd">
-        <div class="label">在解压目录里执行</div>
+        <div class="label"><span data-lang="zh">在解压目录里执行</span><span data-lang="en">Check the version before anything else</span></div>
         <pre><code data-cmd="npm install">npm install</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">确认 CLI 能启动</div>
+        <div class="label"><span data-lang="zh">确认 CLI 能启动</span><span data-lang="en">The archive you want, if you only use one engine</span></div>
         <pre><code data-cmd="node apps/cli/bin/utool.js --help">node apps/cli/bin/utool.js --help</code></pre>
       </div>
     
     <div class="verify" data-kind="contains" data-expect="utool">
-    <h4>怎么算这一步成功</h4>
-    <p class="hint">把上一条命令的输出粘贴到这里（应含 utool）</p>
-    <textarea placeholder="粘贴命令输出"></textarea>
-    <button type="button">检查</button>
+    <h4><span data-lang="zh">怎么算这一步成功</span><span data-lang="en">How to tell it worked</span></h4>
+    <p class="hint"><span data-lang="zh">把上一条命令的输出粘贴到这里（应含 utool）</span><span data-lang="en">Paste the version it prints</span></p>
+    <textarea data-placeholder-zh="粘贴命令输出" data-placeholder-en="Paste the command output" placeholder="粘贴命令输出"></textarea>
+    <button type="button"><span data-lang="zh">检查</span><span data-lang="en">Check</span></button>
     <div class="result"></div>
   </div>
-    <details class="faq"><summary>一定要下载整仓库那一包吗</summary><p>要。另外两个包只有前端脚本，CLI 在 <code>apps/</code> 与 <code>packages/</code> 里。整仓库包解压后两个前端也都在。</p></details>
+    <div data-lang="zh">
+      <details class="faq"><summary>一定要下载整仓库那一包吗</summary><p>要。另外两个包只有前端脚本，CLI 在 <code>apps/</code> 与 <code>packages/</code> 里。整仓库包解压后两个前端也都在。</p></details>
       <details class="faq"><summary>公司网络下载不了 GitHub</summary><p>把 zip 拷进内网再解压即可。之后只有“拉取新版本”需要网络，日常安装完全离线。</p></details>
       <details class="faq"><summary>以后更新会不会丢设置</summary><p>不会。设置按用户存在系统里，不在那个目录里。</p></details>
+    </div>
+    <p class="hint" data-lang="en"><em>Step-by-step troubleshooting for this step is in Chinese for now.</em></p>
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">下一步 →</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">下一步 →</span><span data-lang="en">Next →</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <section class="step" id="s-quickstart-registry" data-track="quickstart" data-step="registry">
-    <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">3 / 7</span></div>
-    <h2>拿到一份 Registry</h2>
-    <p class="en">A registry is a directory of payload manifests and sealed artifacts. Either clone the starter template or point at a registry you already have; everything after this step reads whatever you put in the box below.</p>
-    <div class="goal"><strong>这一步的目标：</strong>本地有一份（或指向一份）注册库目录。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我第一次接触这套东西</span><span data-lang="en">I am new to this</span></span><span class="badge">3 / 7</span></div>
+    <h2><span data-lang="zh">拿到一份 Registry</span><span data-lang="en">Get a registry</span></h2>
+    <p class="en" data-lang="zh">A registry is a directory of payload manifests and sealed artifacts. Either clone the starter template or point at a registry you already have; everything after this step reads whatever you put in the box below.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">本地有一份（或指向一份）注册库目录。</span><span data-lang="en">A registry directory exists locally, or you know where it is.</span></div>
+    <div data-lang="zh">
 <p>两种情况，选一个：</p>
 <h4>A. 我没有注册库，用模板起步</h4>
 <ol>
@@ -432,116 +458,128 @@
   <li>放在一个你愿意长期保留的位置，最好与 ToolImport <strong>并列</strong>——两个仓库同级时，后面所有命令都不用再指定路径。</li>
 </ol>
 <h4>B. 我已经有注册库</h4>
-<p>把它的本地路径填进下面的框。填了之后，本页后续所有命令都会自动代入这个路径，不再出现 <code>&lt;registry&gt;</code>。</p>
+<p>把它的本地路径填进下面的框。填了之后，本页后续所有命令都会自动代入这个路径，不再出现 <code>&lt;registry&gt;</code>。</p></div>
+    <div data-lang="en">A registry is a directory of payload manifests and sealed artifacts. Either clone the starter template or point at a registry you already have; everything after this step reads whatever you put in the box below.</div>
     <div class="cmd">
-        <div class="label">A：克隆模板（放到 ToolImport 旁边）</div>
+        <div class="label"><span data-lang="zh">A：克隆模板（放到 ToolImport 旁边）</span><span data-lang="en">Clone the template (recommended)</span></div>
         <pre><code data-cmd="git clone https://github.com/JokeVallen/ToolRegistry-Template.git my-registry">git clone https://github.com/JokeVallen/ToolRegistry-Template.git my-registry</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">看一下目录结构（应该看到 payloads/ 与 schema/）</div>
+        <div class="label"><span data-lang="zh">看一下目录结构（应该看到 payloads/ 与 schema/）</span><span data-lang="en">Or copy an existing one</span></div>
         <pre><code data-cmd="dir {registry}">dir {registry}</code></pre>
       </div>
     
     
-    <details class="faq"><summary>模板仓库和我自己的仓库是什么关系</summary><p>模板只是起点。克隆之后它就是你的，把 <code>origin</code> 改成你自己的远程仓库即可，见“日常维护 → 建自己的远程仓库”。</p></details>
+    <div data-lang="zh">
+      <details class="faq"><summary>模板仓库和我自己的仓库是什么关系</summary><p>模板只是起点。克隆之后它就是你的，把 <code>origin</code> 改成你自己的远程仓库即可，见“日常维护 → 建自己的远程仓库”。</p></details>
       <details class="faq"><summary>可以同时用多个注册库吗</summary><p>可以。命令里的 <code>--registry</code> 指主库，<code>--mirror</code> 可以再给一个同构的库（只在主库完全连不上时才用）。</p></details>
+    </div>
+    <p class="hint" data-lang="en"><em>Step-by-step troubleshooting for this step is in Chinese for now.</em></p>
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">下一步 →</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">下一步 →</span><span data-lang="en">Next →</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <section class="step" id="s-quickstart-validate" data-track="quickstart" data-step="validate">
-    <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">4 / 7</span></div>
-    <h2>校验这份注册库</h2>
-    <p class="en">One command proves the registry is internally consistent: schema, manifests, artifact digests and the generated catalog. It writes nothing.</p>
-    <div class="goal"><strong>这一步的目标：</strong>看到全部通过。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我第一次接触这套东西</span><span data-lang="en">I am new to this</span></span><span class="badge">4 / 7</span></div>
+    <h2><span data-lang="zh">校验这份注册库</span><span data-lang="en">Validate the registry</span></h2>
+    <p class="en" data-lang="zh">One command proves the registry is internally consistent: schema, manifests, artifact digests and the generated catalog. It writes nothing.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">看到全部通过。</span><span data-lang="en">Everything passes.</span></div>
+    <div data-lang="zh">
 <p><strong>先不开终端</strong>：双击 <a href="tools/workbench.html">tools/workbench.html</a>，选注册库那个文件夹。
 它会逐条列出清单问题、制品摘要不符之处，以及 <code>index.yaml</code> 是否过期。</p>
 <p>它不写任何文件，选错文件夹也只是看不到东西。想重来就再选一次。</p>
 <p class="hint">只有一种情况仍需命令行：核对压缩包<strong>内部</strong>结构（<code>contentRoot</code> / <code>files</code> 是否真的存在）。
 流水线里也跑同一条命令，所以 CI 的门槛和页面的判断是同一套规则。</p>
 <h4>用命令行时</h4>
-<p>在注册库目录里运行，期望最后一行类似 <code>PASSED - 4 check(s), 0 errors</code>。</p>
+<p>在注册库目录里运行，期望最后一行类似 <code>PASSED - 4 check(s), 0 errors</code>。</p></div>
+    <div data-lang="en">One command proves the registry is internally consistent: schema, manifests, artifact digests and the generated catalog. It writes nothing.</div>
     <div class="cmd">
-        <div class="label">在 Registry 目录里执行（CI 同款）</div>
+        <div class="label"><span data-lang="zh">在 Registry 目录里执行（CI 同款）</span><span data-lang="en">Run from the registry root (what CI runs)</span></div>
         <pre><code data-cmd="node tools/registry.mjs validate">node tools/registry.mjs validate</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">若报 cannot find the utool-core validator（PowerShell）</div>
+        <div class="label"><span data-lang="zh">若报 cannot find the utool-core validator（PowerShell）</span><span data-lang="en">If it cannot find the utool-core validator (PowerShell)</span></div>
         <pre><code data-cmd="$env:UTOOL_CORE = &quot;C:\Tools\ToolImport\packages\utool-core\src\index.js&quot;">$env:UTOOL_CORE = &quot;C:\Tools\ToolImport\packages\utool-core\src\index.js&quot;</code></pre>
       </div>
     
     <div class="verify" data-kind="contains" data-expect="passed">
-    <h4>怎么算这一步成功</h4>
-    <p class="hint">把 workbench 的结论，或校验输出粘贴到这里（应含 PASSED）</p>
-    <textarea placeholder="粘贴命令输出"></textarea>
-    <button type="button">检查</button>
+    <h4><span data-lang="zh">怎么算这一步成功</span><span data-lang="en">How to tell it worked</span></h4>
+    <p class="hint"><span data-lang="zh">把 workbench 的结论，或校验输出粘贴到这里（应含 PASSED）</span><span data-lang="en">Paste the verdict from the page, or the command output (it should say PASSED)</span></p>
+    <textarea data-placeholder-zh="粘贴命令输出" data-placeholder-en="Paste the command output" placeholder="粘贴命令输出"></textarea>
+    <button type="button"><span data-lang="zh">检查</span><span data-lang="en">Check</span></button>
     <div class="result"></div>
   </div>
-    <details class="faq"><summary>报 index.yaml 过期</summary><p>有人改了 payload 没重新生成目录。运行 <code>node tools/registry.mjs write-index</code>。<strong>不要手改 index.yaml</strong>——它永远由命令生成。</p></details>
+    <div data-lang="zh">
+      <details class="faq"><summary>报 index.yaml 过期</summary><p>有人改了 payload 没重新生成目录。运行 <code>node tools/registry.mjs write-index</code>。<strong>不要手改 index.yaml</strong>——它永远由命令生成。</p></details>
       <details class="faq"><summary>报摘要不符（sha256 mismatch）</summary><p>制品字节被改动过。恢复原文件，或重新打包并更新 <code>tool.yaml</code> 里的 <code>size</code>/<code>sha256</code>；用 <code>utool digest &lt;文件&gt;</code> 拿这两个值。</p></details>
       <details class="faq"><summary>两个仓库不在同级目录会怎样</summary><p>校验器会找不到。把两个目录放成兄弟，或者像上面那样设 <code>UTOOL_CORE</code> 指过去。</p></details>
+    </div>
+    <p class="hint" data-lang="en"><em>Step-by-step troubleshooting for this step is in Chinese for now.</em></p>
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">下一步 →</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">下一步 →</span><span data-lang="en">Next →</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <section class="step" id="s-quickstart-install" data-track="quickstart" data-step="install">
-    <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">5 / 7</span></div>
-    <h2>把第一个工具装进工程</h2>
-    <p class="en">Plan first: it names every destination and writes nothing. Install writes only after the artifact digest matches. The receipt under Library/ToolImport/receipts is what makes uninstall exact.</p>
-    <div class="goal"><strong>这一步的目标：</strong>工程里出现工具文件，并留下回执。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我第一次接触这套东西</span><span data-lang="en">I am new to this</span></span><span class="badge">5 / 7</span></div>
+    <h2><span data-lang="zh">把第一个工具装进工程</span><span data-lang="en">Install the first tool into your project</span></h2>
+    <p class="en" data-lang="zh">Plan first: it names every destination and writes nothing. Install writes only after the artifact digest matches. The receipt under Library/ToolImport/receipts is what makes uninstall exact.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">工程里出现工具文件，并留下回执。</span><span data-lang="en">The tool is in the project, and a receipt was written.</span></div>
+    <div data-lang="zh">
 <p>先在页面顶部的「我的路径」里填好 Registry 与工程路径，下面的命令会立刻变成<strong>可以直接复制执行</strong>的样子。</p>
 <p>这一步是整套流程里<strong>唯一必须开终端</strong>的：安装要解压制品并往工程目录里写文件，
 浏览器做不到。页面负责把路径代进去、把命令拼对，你只负责复制。</p>
 <p class="hint">Godot 工程要注意：CLI 默认目标是 Unity，Godot 要多加 <code>--engine godot --host-godot 4.2</code>。
 页面会根据你选的引擎自动加上。</p>
 <h4>先看计划，再决定装</h4>
-<p><code>plan</code> 会列出：装哪个版本、从哪个制品来、落到工程的哪个路径。<strong>它不写盘。</strong></p>
+<p><code>plan</code> 会列出：装哪个版本、从哪个制品来、落到工程的哪个路径。<strong>它不写盘。</strong></p></div>
+    <div data-lang="en">Plan first: it names every destination and writes nothing. Install writes only after the artifact digest matches. The receipt under Library/ToolImport/receipts is what makes uninstall exact.</div>
     <div class="cmd">
-        <div class="label">只规划，不写任何文件</div>
+        <div class="label"><span data-lang="zh">只规划，不写任何文件</span><span data-lang="en">Plan only - writes nothing</span></div>
         <pre><code data-cmd="node apps/cli/bin/utool.js plan {tool} --registry {registry} --project {project}{engineArgs}">node apps/cli/bin/utool.js plan {tool} --registry {registry} --project {project}{engineArgs}</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">确认无误后安装</div>
+        <div class="label"><span data-lang="zh">确认无误后安装</span><span data-lang="en">Install once the plan looks right</span></div>
         <pre><code data-cmd="node apps/cli/bin/utool.js install {tool} --registry {registry} --project {project}{engineArgs}">node apps/cli/bin/utool.js install {tool} --registry {registry} --project {project}{engineArgs}</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">看看工程里装了什么</div>
+        <div class="label"><span data-lang="zh">看看工程里装了什么</span><span data-lang="en">See what the project has</span></div>
         <pre><code data-cmd="node apps/cli/bin/utool.js status --project {project}">node apps/cli/bin/utool.js status --project {project}</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">不想要了就按回执卸载</div>
+        <div class="label"><span data-lang="zh">不想要了就按回执卸载</span><span data-lang="en">Remove it via its receipt</span></div>
         <pre><code data-cmd="node apps/cli/bin/utool.js uninstall {tool} --project {project}">node apps/cli/bin/utool.js uninstall {tool} --project {project}</code></pre>
       </div>
     
     <div class="verify" data-kind="contains" data-expect="installed">
-    <h4>怎么算这一步成功</h4>
-    <p class="hint">把 install 的输出粘贴到这里（应含 installed）</p>
-    <textarea placeholder="粘贴命令输出"></textarea>
-    <button type="button">检查</button>
+    <h4><span data-lang="zh">怎么算这一步成功</span><span data-lang="en">How to tell it worked</span></h4>
+    <p class="hint"><span data-lang="zh">把 install 的输出粘贴到这里（应含 installed）</span><span data-lang="en">Paste the install output (it should say installed)</span></p>
+    <textarea data-placeholder-zh="粘贴命令输出" data-placeholder-en="Paste the command output" placeholder="粘贴命令输出"></textarea>
+    <button type="button"><span data-lang="zh">检查</span><span data-lang="en">Check</span></button>
     <div class="result"></div>
   </div>
-    <details class="faq"><summary>计划里写 nothing to do</summary><p>多半是引擎没对上。Godot 工程必须带 <code>--engine godot --host-godot 4.2</code>；Unity 工程用默认即可。</p></details>
+    <div data-lang="zh">
+      <details class="faq"><summary>计划里写 nothing to do</summary><p>多半是引擎没对上。Godot 工程必须带 <code>--engine godot --host-godot 4.2</code>；Unity 工程用默认即可。</p></details>
       <details class="faq"><summary>装到哪里由谁决定</summary><p>由 <code>tool.yaml</code> 里的落点决定（<code>contentRoot</code> / <code>targetPath</code>），你可以在命令里用 <code>--into</code> 改工具自己占用的那个目录。</p></details>
       <details class="faq"><summary>回执在哪，能提交吗</summary><p>在 <code>Library/ToolImport/receipts/</code>。<code>Library/</code> 不进版本库——装了什么本来就是本机状态。</p></details>
       <details class="faq"><summary>我的工程不是游戏（没有 Unity / Godot），能用吗</summary><p>能，但要先补一根线。核心不认识引擎：它只做"把声明的文件按落点铺进目录树并留回执"，引擎知识全在 <code>providers/engine-*</code> 里。所以要跑起来，得给 <code>--engine</code> 一个适配器——加一个 <code>providers/engine-generic</code> 再在 <code>apps/cli/lib/adapters.js</code> 里注册一行，不用改核心。这也是它通用的一面：CMake 插件、VS Code 扩展、团队内部脚手架，都是同一形状。</p></details>
+    </div>
+    <p class="hint" data-lang="en"><em>Step-by-step troubleshooting for this step is in Chinese for now.</em></p>
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">下一步 →</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">下一步 →</span><span data-lang="en">Next →</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <section class="step" id="s-quickstart-editor" data-track="quickstart" data-step="editor">
-    <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">6 / 7</span></div>
-    <h2>在编辑器里打开它</h2>
-    <p class="en">Both front ends are thin: they call the same CLI and render the result. Pick your engine below; the window shows its own version in the corner, which is how you confirm the pairing.</p>
-    <div class="goal"><strong>这一步的目标：</strong>编辑器里出现窗口，并显示与命令行一致的内容。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我第一次接触这套东西</span><span data-lang="en">I am new to this</span></span><span class="badge">6 / 7</span></div>
+    <h2><span data-lang="zh">在编辑器里打开它</span><span data-lang="en">Open it inside the editor</span></h2>
+    <p class="en" data-lang="zh">Both front ends are thin: they call the same CLI and render the result. Pick your engine below; the window shows its own version in the corner, which is how you confirm the pairing.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">编辑器里出现窗口，并显示与命令行一致的内容。</span><span data-lang="en">The window appears and shows what the command line showed.</span></div>
+    <div data-lang="zh">
 <p>选你的引擎：</p>
 <div class="tabs" data-tabs="editor">
   <button class="tab active" data-tab="unity">Unity</button>
@@ -566,25 +604,29 @@
   </ol>
 </div>
 <p>窗口里做的事和命令行完全一样：<strong>Verify and plan</strong> 读计划，<strong>Install</strong> 才写盘。
-窗口自己不判版本、不算落点——所以两边结果一定一致。</p>
+窗口自己不判版本、不算落点——所以两边结果一定一致。</p></div>
+    <div data-lang="en">Both front ends are thin: they call the same CLI and render the result. Pick your engine below; the window shows its own version in the corner, which is how you confirm the pairing.</div>
     
     
     
-    <details class="faq"><summary>菜单里没有这一项</summary><p>Godot：插件没启用。Unity：脚本还没编译完，或被 <code>Assets/</code> 之外的目录挡住了。</p></details>
+    <div data-lang="zh">
+      <details class="faq"><summary>菜单里没有这一项</summary><p>Godot：插件没启用。Unity：脚本还没编译完，或被 <code>Assets/</code> 之外的目录挡住了。</p></details>
       <details class="faq"><summary>窗口说找不到 CLI</summary><p>打开窗口里的 <strong>Settings</strong>，把 CLI 与 Node 路径指过去；两个仓库同级时会自动找到，不用配。</p></details>
       <details class="faq"><summary>右下角版本号对不上</summary><p>你解压的是另一个版本的前端。换成与本页一致的 1.2.2。</p></details>
+    </div>
+    <p class="hint" data-lang="en"><em>Step-by-step troubleshooting for this step is in Chinese for now.</em></p>
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">下一步 →</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">下一步 →</span><span data-lang="en">Next →</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <section class="step" id="s-quickstart-done" data-track="quickstart" data-step="done">
-    <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">7 / 7</span></div>
-    <h2>到这里你就跑通了</h2>
-    <p class="en">You now have: a validating registry, an import tool that installs into a project, and an editor window that does the same thing. What remains is your own tools and your own repository.</p>
-    <div class="goal"><strong>这一步的目标：</strong>确认三件事都成立，然后选一个方向继续。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我第一次接触这套东西</span><span data-lang="en">I am new to this</span></span><span class="badge">7 / 7</span></div>
+    <h2><span data-lang="zh">到这里你就跑通了</span><span data-lang="en">That is the whole loop</span></h2>
+    <p class="en" data-lang="zh">You now have: a validating registry, an import tool that installs into a project, and an editor window that does the same thing. What remains is your own tools and your own repository.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">确认三件事都成立，然后选一个方向继续。</span><span data-lang="en">Three things are true, then pick a direction.</span></div>
+    <div data-lang="zh">
 <ul class="checklist">
   <li>一份通过校验的注册库：<code>node tools/registry.mjs validate</code> 是 PASSED。</li>
   <li>一个装过工具的工程：<code>utool status</code> 列得出东西，<code>Library/ToolImport/receipts/</code> 里有回执。</li>
@@ -595,23 +637,24 @@
   <li><strong>把自己的代码变成工具</strong> → 切到「日常维护」的第一步。</li>
   <li><strong>把注册库放到自己的远程仓库</strong> → 切到「日常维护」的第三步。</li>
 </ul>
-<p>如果只是想读懂这套东西为什么这么设计，切到「参考」。</p>
+<p>如果只是想读懂这套东西为什么这么设计，切到「参考」。</p></div>
+    <div data-lang="en">You now have: a validating registry, an import tool that installs into a project, and an editor window that does the same thing. What remains is your own tools and your own repository.</div>
     
     
     
     
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">完成 ✓</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">完成 ✓</span><span data-lang="en">Done ✓</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <section class="step" id="s-maintain-add-tool" data-track="maintain" data-step="add-tool">
-    <div class="stephead"><span class="badge">我要开始维护它</span><span class="badge">1 / 5</span></div>
-    <h2>加一个工具</h2>
-    <p class="en">Six actions per tool: build the artifact, place it, describe it, regenerate the catalog, validate, commit. The manifest and its artifact change together or not at all.</p>
-    <div class="goal"><strong>这一步的目标：</strong>payloads/ 下多一个能通过校验的工具。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我要开始维护它</span><span data-lang="en">I am going to maintain it</span></span><span class="badge">1 / 5</span></div>
+    <h2><span data-lang="zh">加一个工具</span><span data-lang="en">Add a tool</span></h2>
+    <p class="en" data-lang="zh">Six actions per tool: build the artifact, place it, describe it, regenerate the catalog, validate, commit. The manifest and its artifact change together or not at all.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">payloads/ 下多一个能通过校验的工具。</span><span data-lang="en">A new tool under payloads/ that passes validation.</span></div>
+    <div data-lang="zh">
 <p>最省事的起点是复制示例：</p>
 <pre><code>cp -r payloads/example-hello payloads/my-tool</code></pre>
 <ol class="steps">
@@ -624,21 +667,22 @@
   二选一，取决于制品形态。</li>
   <li><strong>重新生成目录</strong>：<code>write-index</code>。</li>
   <li><strong>校验并提交</strong>：<code>tool.yaml</code>、制品、<code>index.yaml</code> 必须同一次提交。</li>
-</ol>
+</ol></div>
+    <div data-lang="en">Six actions per tool: build the artifact, place it, describe it, regenerate the catalog, validate, commit. The manifest and its artifact change together or not at all.</div>
     <div class="cmd">
-        <div class="label">打一个 Godot addon 制品</div>
+        <div class="label"><span data-lang="zh">打一个 Godot addon 制品</span><span data-lang="en">Copy the template</span></div>
         <pre><code data-cmd="node tools/build-godot-addon.mjs &lt;源目录&gt; payloads/my-tool/artifacts/my-tool-1.0.0.tgz">node tools/build-godot-addon.mjs &lt;源目录&gt; payloads/my-tool/artifacts/my-tool-1.0.0.tgz</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">量出 size 与 sha256（直接粘进 tool.yaml）</div>
+        <div class="label"><span data-lang="zh">量出 size 与 sha256（直接粘进 tool.yaml）</span><span data-lang="en">Drop the artifact in</span></div>
         <pre><code data-cmd="node {toolimport}/apps/cli/bin/utool.js digest payloads/my-tool/artifacts/my-tool-1.0.0.tgz">node {toolimport}/apps/cli/bin/utool.js digest payloads/my-tool/artifacts/my-tool-1.0.0.tgz</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">重新生成目录并校验</div>
+        <div class="label"><span data-lang="zh">重新生成目录并校验</span><span data-lang="en">Compute size and sha256</span></div>
         <pre><code data-cmd="node tools/registry.mjs write-index">node tools/registry.mjs write-index</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">提交</div>
+        <div class="label"><span data-lang="zh">提交</span><span data-lang="en">Validate</span></div>
         <pre><code data-cmd="git add payloads index.yaml">git add payloads index.yaml</code></pre>
       </div>
     <div class="digest" id="digest">
@@ -656,21 +700,24 @@
       <div class="actions"><button type="button" data-digest-copy>复制片段</button><span class="hint" data-out="note"></span></div>
     </div>
     
-    <details class="faq"><summary>不想写 YAML</summary><p>双击 <code>tools/editor.html</code>：按表填，把制品拖进去自动算 size / sha256，生成的内容与 CLI 用同一个校验器。</p></details>
+    <div data-lang="zh">
+      <details class="faq"><summary>不想写 YAML</summary><p>双击 <code>tools/editor.html</code>：按表填，把制品拖进去自动算 size / sha256，生成的内容与 CLI 用同一个校验器。</p></details>
       <details class="faq"><summary>一个工具能同时给 Unity 和 Godot 吗</summary><p>能。<code>versions[].targets</code> 下同时写 <code>unity</code> 与 <code>godot</code> 即可，各自有自己的制品与落点。</p></details>
       <details class="faq"><summary>发出去的版本能改吗</summary><p>不能。要改就发新版本；确实要撤回用 <code>yanked: true</code>，字节仍然保留。</p></details>
+    </div>
+    <p class="hint" data-lang="en"><em>Step-by-step troubleshooting for this step is in Chinese for now.</em></p>
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">下一步 →</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">下一步 →</span><span data-lang="en">Next →</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <section class="step" id="s-maintain-index" data-track="maintain" data-step="index">
-    <div class="stephead"><span class="badge">我要开始维护它</span><span class="badge">2 / 5</span></div>
-    <h2>校验与目录</h2>
-    <p class="en">validate is the gate; write-index rebuilds the catalog from the payloads; check-index is the CI form that fails when the catalog is stale.</p>
-    <div class="goal"><strong>这一步的目标：</strong>知道这三个命令各自负责什么。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我要开始维护它</span><span data-lang="en">I am going to maintain it</span></span><span class="badge">2 / 5</span></div>
+    <h2><span data-lang="zh">校验与目录</span><span data-lang="en">Validation and the catalog</span></h2>
+    <p class="en" data-lang="zh">validate is the gate; write-index rebuilds the catalog from the payloads; check-index is the CI form that fails when the catalog is stale.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">知道这三个命令各自负责什么。</span><span data-lang="en">You know which of the three commands does what.</span></div>
+    <div data-lang="zh">
 <table>
   <tr><th>命令</th><th>作用</th><th>什么时候用</th></tr>
   <tr><td><code>validate</code></td><td>校验 schema、每份元信息、每个摘要、目录是否最新</td><td>每次提交前；CI</td></tr>
@@ -680,34 +727,38 @@
 <p>校验器在导入工具里。两个仓库同级时自动发现，否则用 <code>UTOOL_CORE</code> 指过去。</p>
 <p>不想开终端时，双击 <a href="tools/workbench.html">tools/workbench.html</a>：选一次文件夹，
 清单问题、制品摘要、<code>index.yaml</code> 是否最新一次看完，过期的目录还能直接下载覆盖。
-它和这里的命令用同一套规则（校验器与目录生成函数来自同一个源），区别只是不需要 Node 与终端。</p>
+它和这里的命令用同一套规则（校验器与目录生成函数来自同一个源），区别只是不需要 Node 与终端。</p></div>
+    <div data-lang="en">validate is the gate; write-index rebuilds the catalog from the payloads; check-index is the CI form that fails when the catalog is stale.</div>
     <div class="cmd">
-        <div class="label">全量校验</div>
+        <div class="label"><span data-lang="zh">全量校验</span><span data-lang="en">The gate</span></div>
         <pre><code data-cmd="node tools/registry.mjs validate">node tools/registry.mjs validate</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">CI 用的安静模式</div>
+        <div class="label"><span data-lang="zh">CI 用的安静模式</span><span data-lang="en">Rebuild the catalog after changing payloads</span></div>
         <pre><code data-cmd="node tools/registry.mjs validate --quiet">node tools/registry.mjs validate --quiet</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">重新生成目录</div>
+        <div class="label"><span data-lang="zh">重新生成目录</span><span data-lang="en">Only check whether the catalog is stale</span></div>
         <pre><code data-cmd="node tools/registry.mjs write-index">node tools/registry.mjs write-index</code></pre>
       </div>
     
     
-    <details class="faq"><summary>为什么目录不让手改</summary><p>它是派生物。手改的结果是下一次生成时被覆盖，而你以为是缓存或编辑器的问题。</p></details>
+    <div data-lang="zh">
+      <details class="faq"><summary>为什么目录不让手改</summary><p>它是派生物。手改的结果是下一次生成时被覆盖，而你以为是缓存或编辑器的问题。</p></details>
+    </div>
+    <p class="hint" data-lang="en"><em>Step-by-step troubleshooting for this step is in Chinese for now.</em></p>
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">下一步 →</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">下一步 →</span><span data-lang="en">Next →</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <section class="step" id="s-maintain-remote" data-track="maintain" data-step="remote">
-    <div class="stephead"><span class="badge">我要开始维护它</span><span class="badge">3 / 5</span></div>
-    <h2>建你自己的远程仓库</h2>
-    <p class="en">The template is a starting point, not a shared registry. Copy it into your own repository and version it like code: consumers pin a commit.</p>
-    <div class="goal"><strong>这一步的目标：</strong>这份注册库有自己的 origin，别人可以按 tag 拉取。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我要开始维护它</span><span data-lang="en">I am going to maintain it</span></span><span class="badge">3 / 5</span></div>
+    <h2><span data-lang="zh">建你自己的远程仓库</span><span data-lang="en">Give it your own remote</span></h2>
+    <p class="en" data-lang="zh">The template is a starting point, not a shared registry. Copy it into your own repository and version it like code: consumers pin a commit.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">这份注册库有自己的 origin，别人可以按 tag 拉取。</span><span data-lang="en">This registry has an origin, and others can pull it by tag.</span></div>
+    <div data-lang="zh">
 <h4>方式 A：保留模板作为上游（以后能拉取改进）</h4>
 <ol>
   <li>克隆模板 → 重命名 origin 为 <code>template</code> → 加自己的远程。</li>
@@ -721,102 +772,114 @@
   <li><strong>可钉住</strong>：使用者可以按 tag / commit 取，装出来的东西是确定的。</li>
   <li><strong>可追溯</strong>：<code>git log payloads/my-tool/tool.yaml</code> 就是一条时间线。</li>
   <li><strong>可分离</strong>：内部工具放私有仓库、公开工具放公开仓库，导入工具两个都支持。</li>
-</ul>
+</ul></div>
+    <div data-lang="en">The template is a starting point, not a shared registry. Copy it into your own repository and version it like code: consumers pin a commit.</div>
     <div class="cmd">
-        <div class="label">方式 A：保留上游</div>
+        <div class="label"><span data-lang="zh">方式 A：保留上游</span><span data-lang="en">Option A: keep the template as upstream</span></div>
         <pre><code data-cmd="git remote rename origin template">git remote rename origin template</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">方式 A：换成你自己的远程</div>
+        <div class="label"><span data-lang="zh">方式 A：换成你自己的远程</span><span data-lang="en">Option A: point origin at your own repository</span></div>
         <pre><code data-cmd="git remote add origin git@github.com:&lt;你&gt;/my-registry.git">git remote add origin git@github.com:&lt;你&gt;/my-registry.git</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">方式 B：删掉 origin 再换</div>
+        <div class="label"><span data-lang="zh">方式 B：删掉 origin 再换</span><span data-lang="en">Option B: drop origin and start fresh</span></div>
         <pre><code data-cmd="git remote remove origin">git remote remove origin</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">推上去并打一个 tag</div>
+        <div class="label"><span data-lang="zh">推上去并打一个 tag</span><span data-lang="en">First commit and push</span></div>
         <pre><code data-cmd="git push -u origin main">git push -u origin main</code></pre>
       </div>
     
     
-    <details class="faq"><summary>必须打 tag 吗</summary><p>不必须，但使用者要“钉住某次发布”时只有 tag 好用。建议用日期做 tag 名，例如 <code>2026.10</code>。</p></details>
+    <div data-lang="zh">
+      <details class="faq"><summary>必须打 tag 吗</summary><p>不必须，但使用者要“钉住某次发布”时只有 tag 好用。建议用日期做 tag 名，例如 <code>2026.10</code>。</p></details>
+    </div>
+    <p class="hint" data-lang="en"><em>Step-by-step troubleshooting for this step is in Chinese for now.</em></p>
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">下一步 →</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">下一步 →</span><span data-lang="en">Next →</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <section class="step" id="s-maintain-update" data-track="maintain" data-step="update">
-    <div class="stephead"><span class="badge">我要开始维护它</span><span class="badge">4 / 5</span></div>
-    <h2>更新 Registry</h2>
-    <p class="en">Publishing an update and pulling one are the same three commands: fetch, validate, regenerate. Consumers see a new version only after you push and they pull.</p>
-    <div class="goal"><strong>这一步的目标：</strong>知道“我改了东西之后”与“上游改了之后”分别跑什么。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我要开始维护它</span><span data-lang="en">I am going to maintain it</span></span><span class="badge">4 / 5</span></div>
+    <h2><span data-lang="zh">更新 Registry</span><span data-lang="en">Update the registry</span></h2>
+    <p class="en" data-lang="zh">Publishing an update and pulling one are the same three commands: fetch, validate, regenerate. Consumers see a new version only after you push and they pull.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">知道“我改了东西之后”与“上游改了之后”分别跑什么。</span><span data-lang="en">You know what to run after you changed something, and after upstream changed.</span></div>
+    <div data-lang="zh">
 <h4>我自己加了工具之后</h4>
 <p>生成目录 → 校验 → 提交 → 推送。四步固定顺序，校验不过不要提交。</p>
 <h4>从模板拉取改进（方式 A）</h4>
 <p><code>fetch</code> → <code>merge</code> → <strong>重新生成目录</strong> → 校验。冲突通常只在
 <code>index.yaml</code>，它的正确解法永远是重新生成，而不是手工合并。</p>
 <h4>使用者那一侧</h4>
-<p>在注册库目录里 <code>git pull</code> 就够了。导入工具不缓存“你以为是它缓存了”的东西：计划里显示的永远是它这次读到的。</p>
+<p>在注册库目录里 <code>git pull</code> 就够了。导入工具不缓存“你以为是它缓存了”的东西：计划里显示的永远是它这次读到的。</p></div>
+    <div data-lang="en">Publishing an update and pulling one are the same three commands: fetch, validate, regenerate. Consumers see a new version only after you push and they pull.</div>
     <div class="cmd">
-        <div class="label">发布：生成 + 校验 + 提交</div>
+        <div class="label"><span data-lang="zh">发布：生成 + 校验 + 提交</span><span data-lang="en">After you changed payloads</span></div>
         <pre><code data-cmd="node tools/registry.mjs write-index">node tools/registry.mjs write-index</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">拉取上游后重新生成</div>
+        <div class="label"><span data-lang="zh">拉取上游后重新生成</span><span data-lang="en">After upstream moved</span></div>
         <pre><code data-cmd="git fetch template">git fetch template</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">合并上游</div>
+        <div class="label"><span data-lang="zh">合并上游</span><span data-lang="en">What CI will do on the pull request</span></div>
         <pre><code data-cmd="git merge template/main">git merge template/main</code></pre>
       </div>
     
     
-    <details class="faq"><summary>合并后 index.yaml 冲突了</summary><p>把冲突标记整个丢掉，运行 <code>write-index</code> 重新生成，再 <code>validate</code>。</p></details>
+    <div data-lang="zh">
+      <details class="faq"><summary>合并后 index.yaml 冲突了</summary><p>把冲突标记整个丢掉，运行 <code>write-index</code> 重新生成，再 <code>validate</code>。</p></details>
+    </div>
+    <p class="hint" data-lang="en"><em>Step-by-step troubleshooting for this step is in Chinese for now.</em></p>
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">下一步 →</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">下一步 →</span><span data-lang="en">Next →</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <section class="step" id="s-maintain-update-tool" data-track="maintain" data-step="update-tool">
-    <div class="stephead"><span class="badge">我要开始维护它</span><span class="badge">5 / 5</span></div>
-    <h2>更新导入工具</h2>
-    <p class="en">Replace the folder, run npm install, keep the settings. Receipts in a project are data, not cache, so an update does not require reinstalling anything.</p>
-    <div class="goal"><strong>这一步的目标：</strong>换到新版本且内容不丢。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我要开始维护它</span><span data-lang="en">I am going to maintain it</span></span><span class="badge">5 / 5</span></div>
+    <h2><span data-lang="zh">更新导入工具</span><span data-lang="en">Update the import tool</span></h2>
+    <p class="en" data-lang="zh">Replace the folder, run npm install, keep the settings. Receipts in a project are data, not cache, so an update does not require reinstalling anything.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">换到新版本且内容不丢。</span><span data-lang="en">New version in place, nothing lost.</span></div>
+    <div data-lang="zh">
 <ol class="steps">
   <li>下载新版本 zip，<strong>整个目录替换</strong>（不要两个版本混着覆盖部分文件）。</li>
   <li><code>npm install</code>——依赖可能变过。</li>
   <li>前端：Unity 覆盖 <code>Assets/ToolImport/Editor</code>；Godot 覆盖 <code>res://addons/tool_import/</code>。</li>
   <li>确认版本：Godot 窗口右下角、Unity 状态行右端。</li>
 </ol>
-<p>已装内容不受影响：回执是数据记录，不是代码缓存。确实需要“先卸再装”的工具，会在计划里写明。</p>
+<p>已装内容不受影响：回执是数据记录，不是代码缓存。确实需要“先卸再装”的工具，会在计划里写明。</p></div>
+    <div data-lang="en">Replace the folder, run npm install, keep the settings. Receipts in a project are data, not cache, so an update does not require reinstalling anything.</div>
     <div class="cmd">
-        <div class="label">更新后在解压目录里重装依赖</div>
+        <div class="label"><span data-lang="zh">更新后在解压目录里重装依赖</span><span data-lang="en">Check what the registry expects</span></div>
         <pre><code data-cmd="npm install">npm install</code></pre>
       </div>
       <div class="cmd">
-        <div class="label">确认版本</div>
+        <div class="label"><span data-lang="zh">确认版本</span><span data-lang="en">Replace only the program, keep your registries</span></div>
         <pre><code data-cmd="node apps/cli/bin/utool.js --help">node apps/cli/bin/utool.js --help</code></pre>
       </div>
     
     
-    <details class="faq"><summary>能只更新前端吗</summary><p>能，但版本号就对不上了。前端与 CLI 是同一次发布构建的，一起换。</p></details>
+    <div data-lang="zh">
+      <details class="faq"><summary>能只更新前端吗</summary><p>能，但版本号就对不上了。前端与 CLI 是同一次发布构建的，一起换。</p></details>
+    </div>
+    <p class="hint" data-lang="en"><em>Step-by-step troubleshooting for this step is in Chinese for now.</em></p>
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">完成 ✓</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">完成 ✓</span><span data-lang="en">Done ✓</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <section class="step" id="s-reference-concepts" data-track="reference" data-step="concepts">
-    <div class="stephead"><span class="badge">我只想读懂它</span><span class="badge">1 / 3</span></div>
-    <h2>三个角色与一条边界</h2>
-    <p class="en">A registry of data, an import tool of logic, and a project that is the only thing written to. There is no install logic in the registry and no tool knowledge in the importer.</p>
-    <div class="goal"><strong>这一步的目标：</strong>说清 Registry / 导入工具 / 工程各自负责什么。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我只想读懂它</span><span data-lang="en">I just want to understand it</span></span><span class="badge">1 / 3</span></div>
+    <h2><span data-lang="zh">三个角色与一条边界</span><span data-lang="en">Three roles and one boundary</span></h2>
+    <p class="en" data-lang="zh">A registry of data, an import tool of logic, and a project that is the only thing written to. There is no install logic in the registry and no tool knowledge in the importer.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">说清 Registry / 导入工具 / 工程各自负责什么。</span><span data-lang="en">You can say what the registry, the import tool and the project each own.</span></div>
+    <div data-lang="zh">
 <div class="grid">
   <div class="card"><h4>Registry（数据）</h4><p>每个工具一个 <code>payloads/&lt;id&gt;/tool.yaml</code>，加它指向的不可变制品。<strong>没有安装逻辑。</strong></p></div>
   <div class="card"><h4>ToolImport（逻辑）</h4><p>解析、校验、依赖求解、写盘、回执、卸载。它不知道具体有哪些工具。</p></div>
@@ -837,23 +900,24 @@
   <li>一个工作区多个工程共用同一批库，升级只改一处版本号。</li>
   <li>交付一包带依赖关系的能力，而不是一个巨大的 <code>.unitypackage</code>。</li>
   <li>CI 里校验“这份清单还能不能装”，不需要启动编辑器。</li>
-</ul>
+</ul></div>
+    <div data-lang="en">A registry of data, an import tool of logic, and a project that is the only thing written to. There is no install logic in the registry and no tool knowledge in the importer.</div>
     
     
     
     
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">下一步 →</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">下一步 →</span><span data-lang="en">Next →</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <section class="step" id="s-reference-docs" data-track="reference" data-step="docs">
-    <div class="stephead"><span class="badge">我只想读懂它</span><span class="badge">2 / 3</span></div>
-    <h2>文档索引</h2>
-    <p class="en">Two sets: the registry format lives in docs/ here; the import tool lives in its own repository. Each entry says who it is for.</p>
-    <div class="goal"><strong>这一步的目标：</strong>知道遇到什么问题翻哪一份。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我只想读懂它</span><span data-lang="en">I just want to understand it</span></span><span class="badge">2 / 3</span></div>
+    <h2><span data-lang="zh">文档索引</span><span data-lang="en">Which document answers which question</span></h2>
+    <p class="en" data-lang="zh">Two sets: the registry format lives in docs/ here; the import tool lives in its own repository. Each entry says who it is for.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">知道遇到什么问题翻哪一份。</span><span data-lang="en">You know where to look.</span></div>
+    <div data-lang="zh">
 <h4>本仓库（Registry）</h4>
 <ul class="docs">
   <li><a href="docs/SPEC.zh-CN.html">格式规范</a>：合法数据长什么样（规范性文件），含迁移规则。</li>
@@ -870,23 +934,24 @@
   <li>CHANGELOG：每一次改动（在那个仓库里，不在本仓库）。</li>
   <li><code>docs/release-notes-*.md</code>：每个发行版的说明。</li>
   <li>发布页：<a href="https://github.com/JokeVallen/ToolImport/releases">https://github.com/JokeVallen/ToolImport/releases</a></li>
-</ul>
+</ul></div>
+    <div data-lang="en">Two sets: the registry format lives in docs/ here; the import tool lives in its own repository. Each entry says who it is for.</div>
     
     
     
     
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">下一步 →</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">下一步 →</span><span data-lang="en">Next →</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <section class="step" id="s-reference-problems" data-track="reference" data-step="problems">
-    <div class="stephead"><span class="badge">我只想读懂它</span><span class="badge">3 / 3</span></div>
-    <h2>排错：最常见的四件事</h2>
-    <p class="en">Version mismatch, missing Node, the validator not finding utool-core, and a stale index. Each has one command that says which one it is.</p>
-    <div class="goal"><strong>这一步的目标：</strong>遇到问题时先看这张表。</div>
-    
+    <div class="stephead"><span class="badge"><span data-lang="zh">我只想读懂它</span><span data-lang="en">I just want to understand it</span></span><span class="badge">3 / 3</span></div>
+    <h2><span data-lang="zh">排错：最常见的四件事</span><span data-lang="en">Troubleshooting: the four usual suspects</span></h2>
+    <p class="en" data-lang="zh">Version mismatch, missing Node, the validator not finding utool-core, and a stale index. Each has one command that says which one it is.</p>
+    <div class="goal"><strong><span data-lang="zh">这一步的目标：</span><span data-lang="en">Goal of this step: </span></strong><span data-lang="zh">遇到问题时先看这张表。</span><span data-lang="en">Check this table first.</span></div>
+    <div data-lang="zh">
 <table>
   <tr><th>症状</th><th>原因</th><th>怎么办</th></tr>
   <tr><td><code>cannot find the utool-core validator</code></td><td>Registry 脚本找不到导入工具</td><td>两个仓库放成同级，或设 <code>UTOOL_CORE</code> 指向 <code>packages/utool-core/src/index.js</code></td></tr>
@@ -894,19 +959,20 @@
   <tr><td>编辑器窗口提示找不到 CLI</td><td>Node 或 CLI 路径不在自动查找范围</td><td>窗口里的 Settings，或环境变量 <code>UTOOL_CLI</code> / <code>UTOOL_NODE</code></td></tr>
   <tr><td>计划里写“摘要不符”</td><td>制品被改动过</td><td>不要改 <code>artifacts/</code> 里的字节；重新打包并更新 <code>size</code> / <code>sha256</code></td></tr>
 </table>
-<div class="note">顺序永远是：先跑 <code>node tools/registry.mjs validate</code>。它绿了，问题基本在导入工具一侧（版本或路径），不在这份数据里。</div>
+<div class="note">顺序永远是：先跑 <code>node tools/registry.mjs validate</code>。它绿了，问题基本在导入工具一侧（版本或路径），不在这份数据里。</div></div>
+    <div data-lang="en">Version mismatch, missing Node, the validator not finding utool-core, and a stale index. Each has one command that says which one it is.</div>
     
     
     
     
     <div class="stepnav">
-      <button type="button" data-go="prev">← 上一步</button>
-      <button type="button" class="next" data-go="next">完成 ✓</button>
+      <button type="button" data-go="prev"><span data-lang="zh">← 上一步</span><span data-lang="en">← Previous</span></button>
+      <button type="button" class="next" data-go="next"><span data-lang="zh">完成 ✓</span><span data-lang="en">Done ✓</span></button>
       <span class="pos"></span>
     </div>
   </section>
     <div class="footer">
-      本文档由 <code>tools/build-registry-template.mjs</code> 生成 ·
+      <span data-lang="zh">本文档由</span><span data-lang="en">Generated by</span> <code>tools/build-registry-template.mjs</code> ·
       对应 ToolImport 1.2.2 ·
       仓库 JokeVallen/ToolRegistry-Template
     </div>
@@ -915,6 +981,22 @@
 <script>
 (function () {
   var KEY = 'registry-starter-v2';
+
+  /** Two languages for text the script produces, hidden by the same rule as the static markup. */
+  function langSpan(zhText, enText) {
+    return '<span data-lang="zh">' + zhText + '</span><span data-lang="en">' + enText + '</span>';
+  }
+
+  /** Placeholders cannot hold markup, so the language switch sets the attribute directly. */
+  function applyPlaceholders() {
+    var lang = document.documentElement.getAttribute('data-lang') === 'en' ? 'en' : 'zh';
+    Array.prototype.forEach.call(document.querySelectorAll('[data-placeholder-zh]'), function (field) {
+      field.setAttribute('placeholder', field.getAttribute('data-placeholder-' + lang) || '');
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', applyPlaceholders);
+
   var state = { track: 'quickstart', step: 0, done: {}, paths: { toolimport: '', registry: '', project: '', engine: 'unity', tool: "example-hello" } };
   try {
     var saved = JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -975,7 +1057,7 @@
     var bar = document.querySelector('.progress > i');
     var text = document.querySelector('.progress-text');
     if (bar) bar.style.width = (strip2.length === 0 ? 0 : Math.round(done * 100 / strip2.length)) + '%';
-    if (text) text.textContent = '本路线：' + done + ' / ' + strip2.length + ' 步已完成';
+    if (text) text.innerHTML = langSpan('本路线：' + done + ' / ' + strip2.length + ' 步已完成', done + ' / ' + strip2.length + ' steps done');
   }
 
   function showStep() {
@@ -996,12 +1078,12 @@
     Array.prototype.forEach.call(active.querySelectorAll('.stepnav button'), function (button) {
       if (button.dataset.go === 'prev') button.disabled = state.step === 0;
       if (button.dataset.go === 'next') {
-        button.textContent = state.step === strip.length - 1 ? '完成 ✓' : '下一步 →';
+        button.innerHTML = state.step === strip.length - 1 ? langSpan('完成 ✓', 'Done ✓') : langSpan('下一步 →', 'Next →');
       }
     });
 
     var counter = active.querySelector('.stepnav .pos');
-    if (counter) counter.textContent = '第 ' + (state.step + 1) + ' / ' + strip.length + ' 步';
+    if (counter) counter.innerHTML = langSpan('第 ' + (state.step + 1) + ' / ' + strip.length + ' 步', 'Step ' + (state.step + 1) + ' / ' + strip.length);
 
     refreshNav();
     refreshCommands();
@@ -1047,11 +1129,11 @@
       if (!code || block.querySelector('.copy')) return;
       var button = document.createElement('button');
       button.className = 'copy';
-      button.textContent = '复制';
+      button.innerHTML = langSpan('复制', 'Copy');
       button.addEventListener('click', function () {
         copyText(code.textContent).then(function () {
           button.textContent = '已复制';
-          setTimeout(function () { button.textContent = '复制'; }, 1400);
+          setTimeout(function () { button.innerHTML = langSpan('复制', 'Copy'); }, 1400);
         });
       });
       block.querySelector('pre').appendChild(button);
