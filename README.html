@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registry 起步包 / Registry starter</title>
+<!--
+  GENERATED PAGE - do not edit.
+  Source: README.md · rebuild with: node tools/build-registry-template.mjs
+-->
+<style>:root {
+    --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
+    --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
+    --link: #9dbdd4; --link-hover: #c6dbe9;
+  }
+  /* Light is a second palette, not a filter: the accent and the two signal colours have to keep
+     their contrast against a light panel, so they are darkened rather than reused. */
+  :root[data-theme="light"] {
+    --bg: #f6f7f9; --panel: #ffffff; --panel-2: #eceff4; --line: #d6dbe3; --fg: #1b2027;
+    --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
+    --link: #2b5c83; --link-hover: #17405f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.75 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  main a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(127,166,196,.45); text-underline-offset: 2px; }
+  main a:hover { color: var(--link-hover); text-decoration-color: var(--link-hover); }
+  code {
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px;
+    font-variant-ligatures: none; background: var(--panel-2); padding: 1px 5px; border-radius: 4px;
+  }
+  .switches {
+    position: fixed; top: 12px; right: 14px; z-index: 50; display: flex; gap: 6px;
+  }
+  .switches button {
+    background: var(--panel); color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 9px; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
+  }
+  .switches button:hover { color: var(--fg); border-color: var(--accent); }
+  html[data-lang="zh"] [data-lang="en"], html[data-lang="en"] [data-lang="zh"] { display: none !important; }
+  .layout { display: flex; align-items: flex-start; max-width: 1180px; margin: 0 auto; }
+  nav.docs {
+    position: sticky; top: 0; flex: 0 0 232px; max-height: 100vh; overflow: auto;
+    padding: 26px 14px 30px 18px; border-right: 1px solid var(--line);
+  }
+  nav.docs .home { display: block; color: var(--dim); font-size: 12px; text-decoration: none; margin-bottom: 14px; }
+  nav.docs .home:hover { color: var(--link-hover); }
+  nav.docs a.topic {
+    display: block; padding: 5px 9px; border-radius: 5px; color: var(--dim);
+    text-decoration: none; font-size: 13.5px;
+  }
+  nav.docs a.topic:hover { background: var(--panel); color: var(--fg); }
+  nav.docs a.topic.current { background: var(--panel); color: var(--fg); font-weight: 600; }
+  main.doc { flex: 1 1 auto; min-width: 0; padding: 30px 30px 90px; max-width: 870px; }
+  main.doc > h1:first-child { margin-top: 0; }
+  main.doc h1 { font-size: 24px; margin: 26px 0 10px; }
+  main.doc h2 { font-size: 19px; margin: 30px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  main.doc h3 { font-size: 16px; margin: 22px 0 6px; }
+  main.doc h4 { font-size: 14.5px; margin: 18px 0 4px; color: var(--dim); }
+  main.doc p, main.doc li { font-size: 14.5px; }
+  main.doc ul, main.doc ol { padding-left: 22px; }
+  main.doc li { margin: 3px 0; }
+  main.doc pre.code {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 12px 14px;
+    overflow: auto; font-size: 12.5px; line-height: 1.55;
+  }
+  main.doc pre.code code {
+    background: none; padding: 0; font-size: 12.5px; white-space: pre; font-variant-ligatures: none;
+  }
+  main.doc table.doc { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+  main.doc table.doc th, main.doc table.doc td {
+    border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top;
+  }
+  main.doc table.doc th { background: var(--panel-2); font-weight: 600; }
+  main.doc blockquote {
+    margin: 12px 0; padding: 4px 0 4px 14px; border-left: 3px solid var(--line); color: var(--dim);
+  }
+  main.doc hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+  .langswitch { position: fixed; top: 14px; right: 96px; z-index: 50; font-size: 12px; color: var(--dim); }
+  .langswitch a { color: var(--dim); text-decoration: none; }
+  .langswitch a.current { color: var(--fg); font-weight: 600; }
+  .langswitch a:hover { color: var(--link-hover); }
+  .source { color: var(--dim); font-size: 12px; margin-top: 40px; border-top: 1px solid var(--line); padding-top: 10px; }
+  ul.topics { list-style: none; padding: 0; }
+  ul.topics li {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+    border-bottom: 1px solid var(--line); padding: 10px 2px;
+  }
+  ul.topics .pair a { margin-left: 14px; font-size: 12.5px; }
+</style>
+<script>(function () {
+  var META = {"languages":false};
+  var root = typeof document !== 'undefined' ? document.documentElement : null;
+
+  function stored(key, fallback) {
+    try {
+      var value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (error) { /* private mode */ }
+  }
+
+  function systemTheme() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark';
+    } catch (error) {
+      return 'dark';
+    }
+  }
+
+  var theme = stored('toolregistry-theme', systemTheme());
+  if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+  var lang = stored('toolregistry-lang', 'zh');
+  if (lang !== 'zh' && lang !== 'en') lang = 'zh';
+
+  function apply() {
+    // Defensive: this script is also loaded by the test harness, which has no documentElement.
+    if (!root || typeof root.setAttribute !== 'function') return;
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang === 'en' ? 'en' : 'zh-CN');
+  }
+
+  apply();
+
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', function () {
+    var themeButton = document.getElementById('theme-toggle');
+    if (themeButton) {
+      themeButton.textContent = theme === 'light' ? '☀' : '☾';
+      themeButton.addEventListener('click', function () {
+        theme = theme === 'light' ? 'dark' : 'light';
+        apply();
+        themeButton.textContent = theme === 'light' ? '☀' : '☾';
+        save('toolregistry-theme', theme);
+      });
+    }
+
+    var langButton = document.getElementById('lang-toggle');
+    if (langButton) {
+      // A page without the other language gets no switch: an inert button is worse than none.
+      var bilingual = document.querySelector('[data-lang]') !== null;
+      if (!bilingual) {
+        langButton.style.display = 'none';
+      } else {
+        langButton.textContent = lang === 'en' ? '中' : 'EN';
+        langButton.addEventListener('click', function () {
+          lang = lang === 'en' ? 'zh' : 'en';
+          apply();
+          langButton.textContent = lang === 'en' ? '中' : 'EN';
+          save('toolregistry-lang', lang);
+        });
+      }
+    }
+  });
+})();</script>
+</head>
+<body>
+<div class="switches">
+    <button id="theme-toggle" type="button" title="切换明暗 / Toggle theme">☾</button>
+  </div>
+<div class="langswitch">
+  <a href="README.en.html">EN</a> /
+  <a href="README.en.html" class="current">中文</a>
+</div>
+<div class="layout">
+    <nav class="docs">
+      <a class="home" href="index.html">← 入口</a>
+      <a class="topic" href="docs/SPEC.zh-CN.html">格式规范</a>
+      <a class="topic" href="docs/ATTRIBUTES.zh-CN.html">属性速查</a>
+      <a class="topic" href="docs/CONTRIBUTING.zh-CN.html">贡献指南</a>
+      <a class="topic" href="docs/ERRORS.zh-CN.html">错误码</a>
+      <a class="topic" href="docs/GLOSSARY.zh-CN.html">术语表</a>
+      <a class="topic" href="docs/FRONTEND-DESIGN.zh-CN.html">前端设计</a>
+      <a class="topic" href="docs/FRONTEND-INTEGRATION.zh-CN.html">前端集成</a>
+      <a class="topic" href="docs/index.html">全部文档</a>
+    </nav>
+  <main class="doc">
+<h1>Registry 起步包 / Registry starter</h1>
+<p>这是 <a href="https://github.com/JokeVallen/ToolImport">ToolRegistry</a> 数据格式的<strong>模板仓库</strong>：一份可以直接用、也可以直接改成你自己 Registry 的最小集合。<strong>先双击 <code>index.html</code></strong>：它是唯一入口，按&quot;你来做哪件事&quot;分四扇门—— 第一次跟走、校验整库、写新清单、只验一份清单。</p>
+<p>A starter registry for the ToolRegistry format. <strong>Open <code>index.html</code> first</strong>: one entry point with four doors - start from zero, validate the registry, write a manifest, or check a single one.</p>
+<h2>开始用 / Start from this template</h2>
+<ul><li><strong>在线看</strong>：<a href="https://jokevallen.github.io/ToolRegistry-Template/">https://jokevallen.github.io/ToolRegistry-Template/</a>（不用下载）</li><li><strong>用模板建自己的仓库</strong>：仓库页右上角 <strong>Use this template → Create a new repository</strong></li><li><strong>只想本地跑一遍</strong>：<code>git clone https://github.com/JokeVallen/ToolRegistry-Template.git my-registry</code></li></ul>
+<p>&lt;!-- --&gt;</p>
+<ul><li><strong>Read it online</strong>: <a href="https://jokevallen.github.io/ToolRegistry-Template/">https://jokevallen.github.io/ToolRegistry-Template/</a></li><li><strong>Make it yours</strong>: <strong>Use this template → Create a new repository</strong></li><li><strong>Just try it locally</strong>: <code>git clone https://github.com/JokeVallen/ToolRegistry-Template.git my-registry</code></li></ul>
+<h2>这里有什么 / What is here</h2>
+<pre class="code" data-lang-name="text"><code>index.yaml              目录（自动生成，不手改）
+payloads/example-hello/ 一个可校验、可规划、可安装的示例工具
+schema/                 校验依据
+tools/                  registry.mjs 与四个离线页面（validate / editor / guide / workbench）
+template/               骨架 yaml
+docs/                   格式规范等文档
+index.html              唯一入口：四扇门（引导 / 整库校验 / 写清单 / 单份校验）
+START-HERE.html         七步引导（从入口页进入，或直接打开）</code></pre>
+<h2>三条命令 / Three commands</h2>
+<pre class="code" data-lang-name="pwsh"><code>node tools/registry.mjs validate        # 校验整份注册库
+node tools/registry.mjs write-index     # 改过 payload 之后重新生成 index.yaml
+node tools/registry.mjs check-index     # CI：只检查目录是否过期</code></pre>
+<p>需要 <strong>Node.js 22.15 以上</strong>（导入工具用了 22.15 才有的 zstd 解压）与 git。校验器在导入工具里。 两个仓库放成同级目录即可自动发现；否则设 <code>UTOOL_CORE</code>。</p>
+<p>Requires <strong>Node.js 22.15 or newer</strong> (the import tool uses the zstd support added in 22.15) and git. The validator lives in the import tool: keep the two repositories side by side, or set <code>UTOOL_CORE</code>.</p>
+<h2>配对的导入工具 / Matching import tool</h2>
+<p>本模板对应 <strong>ToolImport 1.2.2</strong>：<a href="https://github.com/JokeVallen/ToolImport/releases/tag/v1.2.2">https://github.com/JokeVallen/ToolImport/releases/tag/v1.2.2</a></p>
+<p>This template is written for <strong>ToolImport 1.2.2</strong>.</p>
+<h2>示例工具 / The example tool</h2>
+<p><code>payloads/example-hello</code> 是一个真的能装进 Godot 工程的单文件工具。第一次跑通之后，复制它、改掉 id 与内容，就是你的第一个工具。</p>
+<p><code>payloads/example-hello</code> is a real one-file Godot tool. Copy it, rename it, replace the contents.</p>
+<h2>许可 / License</h2>
+<p>MIT。见 <code>LICENSE</code>。</p>
+    <p class="source">由 <code>README.md</code> 生成 · <a href="docs/index.html">全部文档</a></p>
+  </main>
+</div>
+</body>
+</html>

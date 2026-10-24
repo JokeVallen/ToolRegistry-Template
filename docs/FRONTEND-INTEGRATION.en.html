@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tool-Library Import Tool — Integration Contract</title>
+<!--
+  GENERATED PAGE - do not edit.
+  Source: docs/FRONTEND-INTEGRATION.en.md · rebuild with: node tools/build-registry-template.mjs
+-->
+<style>:root {
+    --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
+    --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
+    --link: #9dbdd4; --link-hover: #c6dbe9;
+  }
+  /* Light is a second palette, not a filter: the accent and the two signal colours have to keep
+     their contrast against a light panel, so they are darkened rather than reused. */
+  :root[data-theme="light"] {
+    --bg: #f6f7f9; --panel: #ffffff; --panel-2: #eceff4; --line: #d6dbe3; --fg: #1b2027;
+    --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
+    --link: #2b5c83; --link-hover: #17405f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.75 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  main a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(127,166,196,.45); text-underline-offset: 2px; }
+  main a:hover { color: var(--link-hover); text-decoration-color: var(--link-hover); }
+  code {
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px;
+    font-variant-ligatures: none; background: var(--panel-2); padding: 1px 5px; border-radius: 4px;
+  }
+  .switches {
+    position: fixed; top: 12px; right: 14px; z-index: 50; display: flex; gap: 6px;
+  }
+  .switches button {
+    background: var(--panel); color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 9px; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
+  }
+  .switches button:hover { color: var(--fg); border-color: var(--accent); }
+  html[data-lang="zh"] [data-lang="en"], html[data-lang="en"] [data-lang="zh"] { display: none !important; }
+  .layout { display: flex; align-items: flex-start; max-width: 1180px; margin: 0 auto; }
+  nav.docs {
+    position: sticky; top: 0; flex: 0 0 232px; max-height: 100vh; overflow: auto;
+    padding: 26px 14px 30px 18px; border-right: 1px solid var(--line);
+  }
+  nav.docs .home { display: block; color: var(--dim); font-size: 12px; text-decoration: none; margin-bottom: 14px; }
+  nav.docs .home:hover { color: var(--link-hover); }
+  nav.docs a.topic {
+    display: block; padding: 5px 9px; border-radius: 5px; color: var(--dim);
+    text-decoration: none; font-size: 13.5px;
+  }
+  nav.docs a.topic:hover { background: var(--panel); color: var(--fg); }
+  nav.docs a.topic.current { background: var(--panel); color: var(--fg); font-weight: 600; }
+  main.doc { flex: 1 1 auto; min-width: 0; padding: 30px 30px 90px; max-width: 870px; }
+  main.doc > h1:first-child { margin-top: 0; }
+  main.doc h1 { font-size: 24px; margin: 26px 0 10px; }
+  main.doc h2 { font-size: 19px; margin: 30px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  main.doc h3 { font-size: 16px; margin: 22px 0 6px; }
+  main.doc h4 { font-size: 14.5px; margin: 18px 0 4px; color: var(--dim); }
+  main.doc p, main.doc li { font-size: 14.5px; }
+  main.doc ul, main.doc ol { padding-left: 22px; }
+  main.doc li { margin: 3px 0; }
+  main.doc pre.code {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 12px 14px;
+    overflow: auto; font-size: 12.5px; line-height: 1.55;
+  }
+  main.doc pre.code code {
+    background: none; padding: 0; font-size: 12.5px; white-space: pre; font-variant-ligatures: none;
+  }
+  main.doc table.doc { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+  main.doc table.doc th, main.doc table.doc td {
+    border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top;
+  }
+  main.doc table.doc th { background: var(--panel-2); font-weight: 600; }
+  main.doc blockquote {
+    margin: 12px 0; padding: 4px 0 4px 14px; border-left: 3px solid var(--line); color: var(--dim);
+  }
+  main.doc hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+  .langswitch { position: fixed; top: 14px; right: 96px; z-index: 50; font-size: 12px; color: var(--dim); }
+  .langswitch a { color: var(--dim); text-decoration: none; }
+  .langswitch a.current { color: var(--fg); font-weight: 600; }
+  .langswitch a:hover { color: var(--link-hover); }
+  .source { color: var(--dim); font-size: 12px; margin-top: 40px; border-top: 1px solid var(--line); padding-top: 10px; }
+  ul.topics { list-style: none; padding: 0; }
+  ul.topics li {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+    border-bottom: 1px solid var(--line); padding: 10px 2px;
+  }
+  ul.topics .pair a { margin-left: 14px; font-size: 12.5px; }
+</style>
+<script>(function () {
+  var META = {"languages":false};
+  var root = typeof document !== 'undefined' ? document.documentElement : null;
+
+  function stored(key, fallback) {
+    try {
+      var value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (error) { /* private mode */ }
+  }
+
+  function systemTheme() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark';
+    } catch (error) {
+      return 'dark';
+    }
+  }
+
+  var theme = stored('toolregistry-theme', systemTheme());
+  if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+  var lang = stored('toolregistry-lang', 'zh');
+  if (lang !== 'zh' && lang !== 'en') lang = 'zh';
+
+  function apply() {
+    // Defensive: this script is also loaded by the test harness, which has no documentElement.
+    if (!root || typeof root.setAttribute !== 'function') return;
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang === 'en' ? 'en' : 'zh-CN');
+  }
+
+  apply();
+
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', function () {
+    var themeButton = document.getElementById('theme-toggle');
+    if (themeButton) {
+      themeButton.textContent = theme === 'light' ? '☀' : '☾';
+      themeButton.addEventListener('click', function () {
+        theme = theme === 'light' ? 'dark' : 'light';
+        apply();
+        themeButton.textContent = theme === 'light' ? '☀' : '☾';
+        save('toolregistry-theme', theme);
+      });
+    }
+
+    var langButton = document.getElementById('lang-toggle');
+    if (langButton) {
+      // A page without the other language gets no switch: an inert button is worse than none.
+      var bilingual = document.querySelector('[data-lang]') !== null;
+      if (!bilingual) {
+        langButton.style.display = 'none';
+      } else {
+        langButton.textContent = lang === 'en' ? '中' : 'EN';
+        langButton.addEventListener('click', function () {
+          lang = lang === 'en' ? 'zh' : 'en';
+          apply();
+          langButton.textContent = lang === 'en' ? '中' : 'EN';
+          save('toolregistry-lang', lang);
+        });
+      }
+    }
+  });
+})();</script>
+</head>
+<body>
+<div class="switches">
+    <button id="theme-toggle" type="button" title="切换明暗 / Toggle theme">☾</button>
+  </div>
+<div class="langswitch">
+  <a href="FRONTEND-INTEGRATION.zh-CN.html" class="current">EN</a> /
+  <a href="FRONTEND-INTEGRATION.zh-CN.html">中文</a>
+</div>
+<div class="layout">
+    <nav class="docs">
+      <a class="home" href="../index.html">← Home</a>
+      <a class="topic" href="SPEC.en.html">Specification</a>
+      <a class="topic" href="ATTRIBUTES.en.html">Field reference</a>
+      <a class="topic" href="CONTRIBUTING.en.html">Contributing</a>
+      <a class="topic" href="ERRORS.en.html">Error codes</a>
+      <a class="topic" href="GLOSSARY.en.html">Glossary</a>
+      <a class="topic" href="FRONTEND-DESIGN.en.html">Front-end design</a>
+      <a class="topic current" href="FRONTEND-INTEGRATION.en.html">Front-end integration</a>
+      <a class="topic" href="index.html">All docs</a>
+    </nav>
+  <main class="doc">
+<h1>Tool-Library Import Tool — Integration Contract</h1>
+<p><strong>Language</strong>: <a href="FRONTEND-INTEGRATION.en.html">English</a> · <a href="FRONTEND-INTEGRATION.zh-CN.html">中文</a> · <a href="../README.html">back to index</a></p>
+<p>This document is the interface agreement between ToolRegistry (this repository) and <strong>ToolImport</strong> (the tool-library import tool).</p>
+<p>The import tool is the <strong>only</strong> component that writes files into a user's project. This repository only supplies data; parsing, validation, installation and rollback are entirely the import tool's responsibility.</p>
+<p>For the Chinese version see <a href="FRONTEND-INTEGRATION.zh-CN.html"><code>FRONTEND-INTEGRATION.zh-CN.md</code></a>.</p>
+<hr>
+<h2>1. Architecture: backend and interface separated</h2>
+<p>The import tool is <strong>not</strong> a Unity package; it is two layers, and the backend itself splits into an engine-neutral core plus per-engine adapters:</p>
+<pre class="code" data-lang-name="text"><code>  ┌─────────────────────── engine-independent ───────────────────────┐
+  │  packages/utool-core — the engine-neutral core (Node / npm)      │
+  │    * .yaml parsing, kind / formatVersion header checks          │
+  │    * index reading, dependency solving, capability (provides /   │
+  │      injects) checks                                             │
+  │    * version constraints, requirement comparison                 │
+  │    * artifact verification (size / sha256 / container magic      │
+  │      bytes / archive path safety)                                │
+  │    * install plan, writing to disk, receipts, rollback pointer,   │
+  │      uninstall plan                                              │
+  │    The core knows no engine: container formats and version        │
+  │    comparisons are registered by adapters                        │
+  ├──────────────────────────────────────────────────────────────────┤
+  │  providers/engine-unity — the Unity adapter                      │
+  │    * the unitypackage container (GUID folders, pathname entries) │
+  │    * Unity version and .NET API level (minRuntimeVersion)        │
+  │    An engine with no adapter is still valid data; it simply       │
+  │    cannot be planned for installation.                           │
+  ├──────────────────────────────────────────────────────────────────┤
+  │  apps/cli — `utool`, the backend's only external interface,       │
+  │  runs standalone without Unity                                   │
+  └──────────────────────────────────────────────────────────────────┘
+                               ▲
+                               │ subprocess invocation + record stream (--records) / JSON
+                               │
+  ┌───────────────────────────┴──────────────────────────────────────┐
+  │  frontends/unity-editor — the Unity editor front end             │
+  │    * lists importable items, shows details and file lists        │
+  │    * shows the install plan, executes it after confirmation      │
+  │    * shows installed items and uninstall entry points            │
+  └──────────────────────────────────────────────────────────────────┘</code></pre>
+<h3>1.1 Why it is layered this way</h3>
+<table class="doc"><thead><tr><th>Reason</th><th>Explanation</th></tr></thead><tbody><tr><td><strong>Still actionable while compilation is broken</strong></td><td>When a project has compilation errors, Unity loads no editor assemblies at all and the interface layer cannot execute anything. With the core logic in Node, the CLI still works at that moment — this is the most practical benefit.</td></tr><tr><td><strong>Cross-engine</strong></td><td>The core only understands <code>.yaml</code> documents and artifact bytes; it does not even know what a <code>unitypackage</code> is. Unity support comes from <code>providers/engine-unity</code>. Attaching Godot / Unreal means adding an adapter and a front end, not rewriting the core.</td></tr><tr><td><strong>Testable</strong></td><td>Parsing, dependency and capability solving, and verification can all be unit-tested with no Editor and no network.</td></tr><tr><td><strong>Reusable</strong></td><td>CI can use the very same CLI to validate or install, without starting Unity.</td></tr></tbody></table>
+<p><strong>The cost</strong>: one extra process boundary. The interface layer cannot hold backend objects directly and must communicate over the <code>--records</code> stream or JSON.</p>
+<hr>
+<h2>2. Data flow</h2>
+<pre class="code" data-lang-name="text"><code>  index.yaml           (1 request, flat catalog)      -&gt; builds the selectable list (id, engines, provides, injects)
+     |
+     v
+  each tool's tool.yaml  (1 request per tool viewed)   -&gt; dependencies, capabilities, per-engine requirements and artifact
+     |
+     v
+  artifact bytes        (1 request per target per install) -&gt; imported after size + sha256 + container verification</code></pre>
+<p>The import tool does not need to clone the whole repository; it fetches one file at a time. <strong>The engine choice happens after the manifest is read</strong>: <code>index.yaml</code> only tells you which engines a tool targets; the actual floors and artifact paths live in the manifest's <code>targets</code>.</p>
+<h3>2.1 Ways to fetch without cloning</h3>
+<table class="doc"><thead><tr><th>Method</th><th>Request form</th><th>Explanation</th></tr></thead><tbody><tr><td>GitHub raw</td><td><code>https://raw.githubusercontent.com/JokeVallen/ToolRegistry/&lt;ref&gt;/index.yaml</code></td><td>simplest; pin <code>&lt;ref&gt;</code> to a tag for reproducibility</td></tr><tr><td><code>git</code> CLI</td><td><code>git clone --depth 1 --filter=blob:none &lt;url&gt;</code> then read the working tree</td><td>the fallback when raw is unavailable or when going through a mirror</td></tr><tr><td>Local path</td><td>read a directory directly (found automatically when <code>--registry</code> is omitted)</td><td>for development and testing, with no network</td></tr></tbody></table>
+<p><code>index.yaml</code> and the metadata should be cached. Artifacts are content-addressed by <code>sha256</code>, so a cache keyed by digest never needs to be invalidated.</p>
+<hr>
+<h2>3. Data model</h2>
+<pre class="code" data-lang-name="csharp"><code>// one row of index.yaml -&gt; tools[] (engine names only, no per-engine detail)
+sealed class RegistryToolSummary
+{
+    public string Id;
+    public string DisplayName;
+    public string Type;              // editor-tool | tool-library | framework | asset-pack | template
+    public string Description;
+    public string Version;
+    public string[] Engines;         // engine names, e.g. [&quot;godot&quot;, &quot;unity&quot;]
+    public string[] Provides;
+    public string[] Injects;
+    public DependencyRef[] Dependencies;
+    public string[] Tags;
+    public string ManifestPath;      // repository-relative path to the authoritative tool.yaml
+}
+
+// the complete tool.yaml
+sealed class ToolManifest
+{
+    public string Kind;              // must be &quot;tool&quot;
+    public string FormatVersion;     // only &quot;2&quot; is accepted
+    public string Id;
+    public string DisplayName;
+    public string Type;
+    public string Description;
+    public string Version;
+    public string License;
+    public string Author;
+    public string Homepage;
+    public string[] Tags;
+    public string[] Provides;        // capabilities this tool offers
+    public string[] Injects;         // capabilities any provider may satisfy
+    public DependencyRef[] Dependencies;
+    public Dictionary&lt;string, ToolTarget&gt; Targets;   // engine name -&gt; target
+    public string ReleasedAt;
+    public bool Deprecated;
+}
+
+sealed class ToolTarget
+{
+    public string Engine;                            // the key in the map
+    public Dictionary&lt;string, string&gt; Requirements;  // minEngineVersion mandatory, rest adapter-defined
+    public string MinEngineVersion;                  // requirements.minEngineVersion
+    public Dictionary&lt;string, string&gt; ExtraRequirements;  // remaining keys, handed to the adapter
+    public ArtifactRef Artifact;                     // exactly one
+}
+
+sealed class DependencyRef
+{
+    public string Id;
+    public string Version;           // constraint; omitted means any version
+    public bool Optional;
+    public string Reason;
+    public string[] Engines;         // empty means all engines
+}
+
+sealed class ArtifactRef
+{
+    public string Type;              // archive | package | file | external
+    public string Format;            // required unless external
+    public string Path;              // required unless external, payloads/&lt;id&gt;/artifacts/...
+    public long Size;                // required unless external
+    public string Sha256;            // required unless external
+    public string Source;            // external: git | http | npm
+    public string Url;               // external
+    public string Ref;               // external: a tag or a commit
+    public string Subdirectory;      // external
+    public string UpmPackageName;    // external
+    public string Unpack;            // none | auto
+    public string TargetPath;        // required for type: file
+    public string ContentRoot;       // extraction target for an unpacked archive
+    public string[] Files;           // human-readable install inventory
+    public bool EditorOnly;
+    public bool RestartRequired;
+}</code></pre>
+<p><strong>Rejection rules that must run before anything is displayed:</strong></p>
+<ul><li><code>kind</code> is not <code>tool</code>, or <code>formatVersion</code> is not <code>2</code> → reject the tool and report &quot;the import tool</li></ul>
+<p>  version is too old&quot; (a v1 document is never read as v2);</p>
+<ul><li>the <code>id</code> in the metadata disagrees with the directory it sits in → reject;</li><li><code>targets</code> is missing, or a target lacks <code>requirements</code> / <code>artifact</code> → reject;</li><li><code>artifact.type == &quot;external&quot;</code> while <code>url</code> or <code>ref</code> is missing → reject;</li><li><code>artifact.type</code> is not one of the four, or <code>type: file</code> has no <code>targetPath</code> → reject;</li><li>a non-external artifact's <code>path</code> is not</li></ul>
+<p>  <code>payloads/&lt;id&gt;/artifacts/&lt;id&gt;-&lt;version&gt;[-&lt;engine&gt;].&lt;ext&gt;</code> → reject.</p>
+<hr>
+<h2>4. Version constraint solving</h2>
+<p>Comparison uses only the numeric triple; the pre-release suffix is ignored in ordering (see SPEC §4.1).</p>
+<pre class="code" data-lang-name="text"><code>satisfies(version, constraint):
+    no constraint      -&gt; true
+    ^1.2.3             -&gt; version &gt;= 1.2.3 and the same major
+    ~1.2.3             -&gt; version &gt;= 1.2.3 and the same major.minor
+    &gt;=, &gt;, &lt;=, &lt;       -&gt; numeric comparison of the triple
+    1.4.2 / =1.4.2     -&gt; exact equality of the triple</code></pre>
+<p>Conflict policy: most tools publish only one version, so conflicts usually surface only at <strong>validation time</strong>, as <code>E-DEP-VERSION</code>, and never at install time. If a future <code>formatVersion</code> introduces multi-version metadata, the import tool should choose the <strong>highest version that satisfies all constraints on that id</strong>; if none satisfies them, report &quot;unresolvable conflict&quot; and <strong>MUST NOT</strong> guess.</p>
+<p><strong>Engine floors are not version constraints</strong>: <code>requirements.minEngineVersion</code>, <code>minRuntimeVersion</code> and friends are compared by the adapter, and a failure must state &quot;what was required, what the host is, and which tool's target raised it&quot;.</p>
+<hr>
+<h2>5. Dependency and capability solving</h2>
+<pre class="code" data-lang-name="text"><code>Resolve(requestedIds, engine, alsoEngines):
+    resolved = {}                      # id -&gt; manifest
+    queue    = requestedIds
+
+    while queue is not empty:
+        id = queue.pop()
+        if id already in resolved: continue
+        manifest = FetchManifest(id)   # not found -&gt; hard error &quot;unknown tool&quot;
+        resolved[id] = manifest
+
+        CheckRequirements(manifest, engine)   # no target for the engine, or a floor unmet -&gt; hard error
+        for dep in manifest.Dependencies:
+            if dep.Engines is non-empty and engine not in it: continue
+            if dep.Optional and dep.Id not in requestedIds: continue
+            if dep.Id already in resolved: continue
+            CheckConstraint(dep, registryLookup(dep.Id))   # not satisfied -&gt; hard error
+            queue.push(dep.Id)
+
+    CheckCapabilities(resolved)   # see 5.2
+    if HasCycle(resolved): throw CycleError(cycle path)
+    return TopologicalOrder(resolved)  # dependencies before dependents</code></pre>
+<p>Rules:</p>
+<ul><li><strong>Required</strong> dependencies are always pulled in recursively; a dependency that lists <code>engines</code> only</li></ul>
+<p>  appears in the plan for those engines.</p>
+<ul><li><strong>Optional</strong> dependencies are resolved only when the user has already selected them; never pull</li></ul>
+<p>  them in proactively, and never let the install plan fail because of them.</p>
+<ul><li>A cycle is a hard error and <strong>MUST NOT</strong> be broken automatically.</li><li>The installation order is the topological order: dependencies before the tools that depend on them.</li><li>A tool <strong>MUST</strong> have a target for the requested engine, otherwise report &quot;this tool does not</li></ul>
+<p>  support &lt;engine&gt;&quot;. <code>--also-engine</code> may add another engine's target (installing one cross-engine   tool into two engines at once), but the <strong>primary</strong> engine must be supported: installing another   engine's bytes would be worse than refusing.</p>
+<h3>5.1 Requirement (engine floor) gating</h3>
+<pre class="code" data-lang-name="text"><code>CheckRequirements(manifest, engine):
+    target = manifest.Targets[engine]        # missing -&gt; hard error
+    adapter = adapters[engine]               # missing -&gt; hard error &quot;no adapter for this engine&quot;
+    if !adapter.meets(target.Requirements, host[engine])   -&gt; PlatformMismatch(...)</code></pre>
+<p>The core compares no versions at all; comparison belongs to the adapter (on the Unity side it compares <code>minEngineVersion</code> and <code>minRuntimeVersion</code>, the latter against the project's API compatibility level). Host facts are declared by the caller: <code>--host-unity</code> / <code>--host-dotnet</code>, or read from <code>&lt;project&gt;/ProjectSettings/ProjectVersion.txt</code> for the Unity version. When neither is given, <strong>floors are not enforced</strong>, and the human-readable output says so explicitly.</p>
+<h3>5.2 Capabilities (<code>provides</code> / <code>injects</code>)</h3>
+<p>Dependency edges and capability edges are two separate accounts:</p>
+<ul><li>a dependency edge pins an id and is solved recursively per §5;</li><li>a capability edge only says &quot;I need this name&quot;. <strong>Any</strong> tool in the plan that provides it</li></ul>
+<p>  satisfies it, so <code>installedBecause</code> records who provides for whom rather than a fixed dependency.</p>
+<p>Note that the unit of conflict is <strong>one install plan</strong>, not the whole registry: a registry may contain several tools providing one capability (they are alternatives, and <code>tools/registry.mjs</code> only raises the <code>W-CAP-MULTIPLE</code> warning, which the front end should surface as a hint rather than an error); only two providers inside one plan are a hard error.</p>
+<pre class="code" data-lang-name="text"><code>CheckCapabilities(resolved):
+    for cap in every provides:
+        if two tools in the plan provide the same cap -&gt; hard error E-CAP-CONFLICT
+    for cap in every injects:
+        if nothing in the plan provides cap -&gt; hard error E-CAP-UNSATISFIED
+            (tell the user to select a provider too)</code></pre>
+<p>A malformed capability name (fewer than two segments, upper case, underscores, ...) is reported at <strong>validation time</strong> as <code>E-CAP-FORMAT</code>.</p>
+<hr>
+<h2>6. Install plan and receipt</h2>
+<h3>6.1 The plan (before anything is written)</h3>
+<pre class="code" data-lang-name="csharp"><code>sealed class InstallPlan       { public PlannedTool[] Steps; }   // topological order
+sealed class PlannedTool
+{
+    public string Id, Version;
+    public string Engine;            // which engine this plan installs for
+    public string ArtifactType;      // archive | package | file | external
+    public string ArtifactFormat;    // engine or core container
+    public string ArtifactPath;
+    public long Size;
+    public string Sha256;
+    public string[] Files;           // shown in the confirmation panel
+    public string ContentRoot;       // when an archive is unpacked
+    public string TargetPath;        // for type: file
+    public bool EditorOnly;
+    public string[] InstalledBecause;  // the ids that need it, or &quot;user&quot;
+}</code></pre>
+<p>The plan must be shown before execution, including the file list, so that anything unwanted is stopped before it is written. <code>--dry-run</code> is the same computation with execution skipped.</p>
+<h3>6.2 Verification</h3>
+<p>For every step, before unpacking:</p>
+<ol><li>retrieve the artifact bytes;</li><li><code>sha256(bytes) == artifact.sha256</code> — on mismatch, abort the entire plan and write nothing;</li><li><code>len(bytes) == artifact.size</code> — same as above;</li><li>format check: <code>zip</code> must be <code>50 4b 03 04</code>, a gzip container (<code>tgz</code> / <code>tar.gz</code> / <code>unitypackage</code>)</li></ol>
+<p>   must be <code>1f 8b</code>, <code>tar.zst</code> must be <code>28 b5 2f fd</code>;</p>
+<ol><li>reject any archive entry that is an absolute path or contains <code>..</code> (zip-slip / tar-slip);</li><li><code>file</code> has no container: only the digest and whether <code>targetPath</code> stays inside the project root</li></ol>
+<p>   are checked;</p>
+<ol><li>a <code>unitypackage</code> is opened by <code>providers/engine-unity</code>, which requires a <code>pathname</code> entry in</li></ol>
+<p>   every GUID folder and treats <code>asset</code>, <code>asset.meta</code> and <code>pathname</code> as a single unit.</p>
+<p>A container declared with <code>unpack: none</code> is placed as-is at its <code>targetPath</code> instead of being opened: one file is written, and its entries exist only after the engine's own asset pipeline imports it. A <code>unitypackage</code> normally takes <code>auto</code> - the adapter opens it, so the tool is installed by the import tool itself rather than by a manual import afterwards.</p>
+<h3>6.3 Receipt</h3>
+<p>Written after a successful install, so that uninstallation is exact; a cross-engine install writes <strong>one</strong> receipt (a tool is one decision, and <code>installedEngines</code> records which engines were touched):</p>
+<pre class="code" data-lang-name="yaml"><code># &lt;ProjectRoot&gt;/Library/ToolImport/receipts/editor-tool-selection-history.yaml
+kind: receipt
+formatVersion: '3'
+toolId: editor-tool-selection-history
+version: 1.0.0
+artifactSha256: 6cb13d4a15d6a72345cf5232e61458a7194e97dc41a03056dfe248ae39f59ad5
+artifactFormat: unitypackage
+installedAtUtc: '2026-02-22T10:14:03Z'
+registryRef: main
+registryCommit: 073345b
+installedEngines:
+  - unity
+installedFiles:
+  - Assets/SelectionHistory/SelectionHistoryWindow.cs
+installedByTools:
+  - user
+previousSha256: null        # version pointer: the digest this install replaced; null on a first install</code></pre>
+<p>Receipts live under <code>Library/</code>, a directory Unity never commits, so by construction they are local state only.</p>
+<p>Uninstall rules, decided by <strong>directory ownership</strong>:</p>
+<ul><li>a file recorded in a receipt may be deleted only when <strong>no other receipt still claims it</strong>;</li><li>a shared file (installed by a dependency) goes when the last dependent leaves;</li><li><strong>the tool owns the directories it installed into</strong>: everything written during an install is</li></ul>
+<p>  removed on uninstall, whether or not the user edited it since. That is not indifference - whether   a change &quot;counts as the user's&quot; cannot be decided from the data, and a file left behind is   residue, which a tool promising no pollution must not leave.</p>
+<p>Damage from a user's own edits is the user's to own, and the tool does not take on repairing it, but it <strong>does provide the way back</strong>: reinstalling overwrites with the original bytes, and install is idempotent because it re-verifies the digest. So before removing anything, edited files are <strong>listed separately and confirmed once</strong> - not to refuse the deletion, but so a destructive action does not happen unseen. To keep a change, move it outside the tool's directories first.   modification and ask for confirmation.</p>
+<p><strong>Uninstall now executes, with these bounds:</strong></p>
+<ul><li><strong>Uninstall really deletes.</strong> <code>utool uninstall</code> prints the <code>delete</code> / <code>keep</code> (claimed by another</li></ul>
+<p>  receipt) lists and then removes the files (<code>--dry-run</code> prints the plan only). Three rules keep it   from overreaching: a path must resolve inside the project, a file still claimed by another receipt   is never removed, and a directory is removed <strong>only when it is empty</strong> — never <code>Assets</code> or   <code>Assets/Editor</code>. Receipts are cleared last, so an interrupted run still leaves a record describing   what is on disk.</p>
+<ul><li><strong>A tool another installed tool depends on is refused by default.</strong> If a tool that is *still</li></ul>
+<p>  installed* needs it, the uninstall is refused (exit code 2) and the dependents are named; <code>--force</code>   proceeds anyway. The check reads <code>installedByTools</code> from the receipts — the relationship in <em>this</em>   project — not the registry's &quot;who might depend on this&quot;. A dependent that has already been removed   no longer blocks, or the dependency would become permanently unremovable.</p>
+<ul><li><strong>An orphaned dependency is reported, never removed automatically.</strong> When the last tool needing a</li></ul>
+<p>  dependency goes, the tool prints &quot;no longer needed by anything installed&quot; with the command to remove   it. A tool the user did not name never disappears because of an uninstall they did ask for.   <code>utool status</code> also shows where each tool came from.</p>
+<ul><li><strong>Rollback only reports the pointer; it does not execute.</strong> <code>utool rollback</code> reads</li></ul>
+<p>  <code>previousSha256</code> and tells you &quot;currently X, recorded previous Y&quot; plus which bytes would have to be   re-published. A superseded artifact is not guaranteed to still be published - a maintainer may   delete it once nothing pins it - so the tool cannot assume it can fetch it: naming the exact   digest is more honest than pretending the rollback is complete. The replaced artifact is   normally no longer in the registry at all, so the tool <strong>cannot</strong> fetch it — reporting the exact   digest is more honest than pretending to roll back.</p>
+<ul><li><strong>An external source is never actually resolved.</strong> The backend reports a <code>type: external</code> target as</li></ul>
+<p>  &quot;resolved by the caller&quot; and records <code>url</code> / <code>ref</code>; it does not clone or shallow-fetch anything.   That step is likewise not implemented.</p>
+<hr>
+<h2>7. Obligations of the import tool</h2>
+<table class="doc"><thead><tr><th>#</th><th>Obligation</th></tr></thead><tbody><tr><td>1</td><td>Never import a loose tree of files; import only sealed artifacts (<code>archive</code> / <code>package</code> / <code>file</code>)</td></tr><tr><td>2</td><td>Verify <code>sha256</code> and <code>size</code> of every non-external artifact, and check container magic bytes, before writing anything</td></tr><tr><td>3</td><td>Reject unsafe archive entries</td></tr><tr><td>4</td><td>Enforce the requested engine's target <code>requirements</code> (<code>minEngineVersion</code> is mandatory)</td></tr><tr><td>5</td><td>Resolve required dependencies recursively; never break cycles automatically</td></tr><tr><td>6</td><td>Solve <code>injects</code>: report a missing provider, never pretend it is satisfied</td></tr><tr><td>7</td><td>Show the install plan before executing (files, size, why each tool is included)</td></tr><tr><td>8</td><td>Write one receipt per installed tool; never delete another tool's files</td></tr><tr><td>9</td><td>Reject any <code>kind</code> / <code>formatVersion</code> / <code>artifact.type</code> it has not implemented, and say why</td></tr><tr><td>10</td><td>Surface a validation failure rather than working around it</td></tr></tbody></table>
+<hr>
+<h2>8. Backend CLI contract</h2>
+<p>The CLI is the backend's only external interface; the interface layer invokes it as a subprocess. The default output is a human-readable table, <code>--json</code> emits a single JSON document, and <code>--records</code> emits line-oriented TAB-separated records for the Unity front end. On failure it exits with a non-zero code; in <code>--records</code> mode errors go to the record stream rather than stderr.</p>
+<pre class="code" data-lang-name="text"><code>utool list      [--registry &lt;path|url&gt;] [--json|--records] [--quiet]
+utool show      &lt;id&gt; [--registry ...] [--json|--records]
+utool plan      &lt;id...&gt; [--engine &lt;name&gt;] [--also-engine &lt;name&gt;]... [--host-unity &lt;ver&gt;] [--host-dotnet &lt;ver&gt;] [--registry ...] [--json|--records]
+utool verify    &lt;id...&gt;  as above, verifying only, no writes
+utool install   &lt;id...&gt; [--project &lt;dir&gt;] [--dry-run]   otherwise as above
+utool uninstall &lt;id...&gt; --project &lt;dir&gt; [--dry-run] [--json]
+utool rollback  &lt;id...&gt; --project &lt;dir&gt; [--json]
+utool status    --project &lt;dir&gt; [--json|--records]
+utool validate  [&lt;registry&gt;] [--no-hash] [--write-index] [--quiet] [--json|--records]</code></pre>
+<table class="doc"><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody><tr><td>`--registry &lt;path\</td><td>url&gt;`</td><td>registry location. When omitted it is <strong>found</strong>: the conventional <code>ToolRegistry/</code> near the working directory, or any directory holding both <code>index.yaml</code> and <code>payloads/</code></td></tr><tr><td><code>--mirror &lt;url&gt;</code></td><td>add a <strong>homogeneous mirror</strong> host, repeatable, tried in the order given after <code>--registry</code>; also settable through <code>UTOOL_MIRROR</code> (comma or semicolon separated). See &quot;Mirror hosts&quot; below</td></tr><tr><td><code>--project &lt;dir&gt;</code></td><td>project root, default the current directory</td></tr><tr><td><code>--engine &lt;name&gt;</code></td><td>target engine, default <code>unity</code></td></tr><tr><td><code>--also-engine &lt;name&gt;</code></td><td>additionally plan this engine's target; repeatable, for installing one cross-engine tool into two engines</td></tr><tr><td><code>--host-unity &lt;ver&gt;</code></td><td>declare the host Unity version (e.g. <code>2021.3.5f1</code>), enabling the floor gate</td></tr><tr><td><code>--host-dotnet &lt;ver&gt;</code></td><td>declare the host .NET API level (e.g. <code>4.6</code>, <code>6.0</code>), enabling the floor gate</td></tr><tr><td><code>--auto-provider</code></td><td>when a tool <code>injects</code> a capability nothing in the plan provides, select a provider for it. Off by <strong>default</strong>: silently adding a tool the user did not ask for is worse than explaining the gap. When enabled the choice is deterministic (lowest id wins) and the alternatives are listed</td></tr><tr><td><code>--no-hash</code></td><td>skip sha256 verification, comparing only size and container format. For constrained networks or debugging large artifacts; it must <strong>not</strong> be used for a production install</td></tr><tr><td><code>--dry-run</code></td><td>plan and verify only, write nothing</td></tr><tr><td><code>--no-hash</code></td><td>skip sha256 verification (size and format are still checked)</td></tr><tr><td><code>--write-index</code></td><td>regenerate <code>index.yaml</code> (validate only)</td></tr><tr><td><code>--json</code></td><td>one JSON document</td></tr><tr><td><code>--records</code></td><td>line-oriented records (TAB separated), for embedders</td></tr><tr><td><code>--quiet</code></td><td>suppress per-check output</td></tr></tbody></table>
+<h3>Mirror hosts</h3>
+<p>A mirror is a <strong>homogeneous</strong> mirror: another host serving exactly the same directory layout. It addresses &quot;I cannot reach that address from here&quot;, not &quot;that file is not there&quot;.</p>
+<pre class="code" data-lang-name="text"><code>utool install my-tool --registry https://primary.example/registry \
+                      --mirror https://gitee.example/registry</code></pre>
+<pre class="code" data-lang-name="bash"><code># Less typing in CI: the environment variable. Comma or semicolon separated, order is priority
+UTOOL_MIRROR=https://gitee.example/registry,https://backup.example/registry</code></pre>
+<p>There are three rules, and each one changes what you see while debugging:</p>
+<ol><li><strong>The next host is tried only when the previous one cannot be reached at all</strong> (<code>E-NETWORK</code>: DNS</li></ol>
+<p>   failure, refused connection, timeout). A 404 and a malformed document are <strong>not</strong> outages — the    registry answered, and asking a second host the same question cannot change the answer. Failing    over anyway would turn a clear &quot;missing file&quot; into a slow, vague failure.</p>
+<ol><li><strong><code>--registry</code> first, then each <code>--mirror</code> in the order given.</strong> When both <code>--mirror</code> and</li></ol>
+<p>   <code>UTOOL_MIRROR</code> are set, <code>--mirror</code> wins: the environment does not quietly extend what the command    line asked for.</p>
+<ol><li><strong>When every host is unreachable the error lists each host and its own reason</strong>, rather than</li></ol>
+<p>   reporting only the first.</p>
+<p>Mirrors are <strong>not</strong> declared in <code>index.yaml</code>. Which host you can reach is a property of your network, not of the registry's data, and a registry able to nominate its own mirrors could redirect its readers anywhere. For the same reason mirrors must be <strong>explicit</strong>: they are never tried automatically, so an unreachable host is reported rather than silently swapped for a source the user never named.</p>
+<p>When <code>--registry</code> is a local directory, supplying <code>--mirror</code> fails outright with <code>E-MIRROR-LOCAL</code>. A directory is already reachable and exact; accepting a mirror here would imply the tool might substitute remote content for a path the caller named deliberately.</p>
+<p><strong><code>--records</code> record types</strong>: <code>META</code>, <code>TOOL</code>, <code>TARGET</code>, <code>DETAIL</code>, <code>DEPENDENCY</code>, <code>WILLINSTALL</code>, <code>PROBLEM</code>, <code>PLANTOOL</code>, <code>PLANFILE</code>, <code>PLAN</code>, <code>INSTALLED</code>, <code>INSTALLEDFILE</code>, <code>SKIPPED</code>, <code>RESULT</code>, <code>RECEIPT</code>, <code>WARNING</code>, <code>ERROR</code>. TAB / CR / LF inside a value are escaped, so a record is always exactly one line.</p>
+<p>The <strong><code>TARGET</code> record</strong> (one per engine on <code>show</code>, so a multi-engine tool's floors and artifacts are never flattened into one another):</p>
+<pre class="code" data-lang-name="text"><code>TARGET  &lt;engine&gt;  &lt;minEngineVersion&gt;  &lt;other requirement keys as k=v, comma separated&gt;  &lt;type&gt;  &lt;format&gt;
+        &lt;artifactPath&gt;  &lt;contentRoot&gt;  &lt;targetPath&gt;  &lt;editorOnly true|false&gt;
+        &lt;external.url&gt;  &lt;external.ref&gt;</code></pre>
+<p>Other key records:</p>
+<pre class="code" data-lang-name="text"><code>TOOL        &lt;id&gt; &lt;version&gt; &lt;type&gt; &lt;engines csv&gt; &lt;provides csv&gt; &lt;injects csv&gt;
+            &lt;displayName&gt; &lt;tags csv&gt; &lt;dependencies as id@version csv&gt; &lt;manifestPath&gt;
+DETAIL      id &lt;id&gt; / engines &lt;csv&gt; / provides &lt;csv&gt; / injects &lt;csv&gt; / ...
+WILLINSTALL &lt;file&gt; &lt;engine&gt;
+PROBLEM     &lt;code&gt; &lt;message&gt;
+PLAN        tools &lt;n&gt; bytes &lt;n&gt; ok &lt;true|false&gt; dryRun &lt;true|false&gt;</code></pre>
+<p><code>WILLINSTALL</code> reports the artifact's <strong>declared</strong> inventory (<code>versions[].targets.&lt;engine&gt;.artifact.files</code>), one file per record. The file is field 0 and the engine is an <strong>appended</strong> field: a reader that only ever looked at field 0 is unaffected, while a front end that installs into one engine can show that engine's files alone instead of concatenating two engines' lists - which would tell a Unity user that a Godot payload is about to be written into <code>Assets</code>. An empty engine field means the inventory is not tied to one engine (an older backend, or a caller that resolved no version); it is shown for any engine.</p>
+<h3>The <code>--records</code> contract version</h3>
+<p>Every record stream begins with a <code>META</code> record declaring the contract version:</p>
+<pre class="code" data-lang-name="text"><code>META  recordsVersion  2
+META  registry  &lt;registry location&gt;</code></pre>
+<p><strong>A reader should check the version before parsing anything else.</strong> Putting it first means an unrecognised stream can be rejected before a single value is interpreted out of it - which is what turns &quot;the format changed&quot; from silently wrong data into a clear error.</p>
+<table class="doc"><thead><tr><th>Version</th><th>Change</th></tr></thead><tbody><tr><td>1</td><td>the original record set: <code>META</code>, <code>TOOL</code>, <code>TARGET</code>, <code>DETAIL</code>, <code>DEPENDENCY</code>, <code>WILLINSTALL</code>, <code>PROBLEM</code>, <code>PLANTOOL</code>, <code>PLANFILE</code>, <code>PLAN</code>, <code>INSTALLED</code>, <code>INSTALLEDFILE</code>, <code>SKIPPED</code>, <code>RESULT</code>, <code>RECEIPT</code>, <code>WARNING</code>, <code>ERROR</code></td></tr><tr><td>2</td><td>adds <code>VERSIONS</code>: a tool may publish several versions, so each gets a record</td></tr></tbody></table>
+<p><strong>Bump it for:</strong> removing a record type, reordering fields, or changing what a field means - anything a reader could misread. <strong>Do not bump it for:</strong> adding a new record type, or appending a field at the end; a reader that keys on the types it knows is unaffected.</p>
+<p>A missing version (an older backend) is <strong>not an error</strong>: versioning only ever added records, so a reader keying on known types still works.</p>
+<p>Exit code contract:</p>
+<table class="doc"><thead><tr><th>Code</th><th>Meaning</th></tr></thead><tbody><tr><td>0</td><td>success</td></tr><tr><td>1</td><td>general failure (validation failed, artifact hash mismatch, etc.)</td></tr><tr><td>2</td><td>usage error</td></tr><tr><td>3</td><td>resolution failure (unknown tool, unsatisfiable constraint, cycle, no capability provider)</td></tr><tr><td>4</td><td>engine floor not met (Unity / .NET, or another adapter-defined requirement)</td></tr></tbody></table>
+<p>Backend-side tooling codes (the backend's own codes, complementing those of <code>tools/registry.mjs</code>): <code>E-TARGETS-MISSING</code>, <code>E-TARGET-REQUIREMENTS</code>, <code>E-ARTIFACT-TYPE</code>, <code>E-ARTIFACT-TARGETPATH</code>, <code>E-ARTIFACT-FORMAT</code>, <code>E-ARTIFACT-FORMAT-UNSUPPORTED</code> (no adapter handles the container), <code>E-CAP-FORMAT</code>, <code>E-CAP-CONFLICT</code>, <code>E-CAP-UNSATISFIED</code>, <code>E-UNINSTALL-FILE</code>. Note the capability-name shape: the validator reports it as <code>E-SCHEMA</code>, while the Node backend reports <code>E-CAP-FORMAT</code> — both enforce the same rule (SPEC R-CAP-2).</p>
+<hr>
+<h2>9. Error codes</h2>
+<p>Every code is in <a href="ERRORS.en.html"><code>ERRORS.en.md</code></a> - <strong>the only place</strong>, checked against the source one by one. It is grouped by how you meet each code, and marks which ones appear only when implementing an importer.</p>
+<p>The one thing to remember while implementing: <strong>an engine adapter returns <code>undefined</code> for a requirement key it does not understand, never <code>false</code></strong>. The core reads <code>undefined</code> as &quot;cannot judge&quot;, so it <strong>reports</strong> the floor without enforcing it.</p>
+<h2>10. Portability</h2>
+<p>Nothing here is bound to a particular repository name, Git host or machine, because locations are discovered at run time rather than hardcoded. The table states each guarantee and what makes it hold:</p>
+<table class="doc"><thead><tr><th>Situation</th><th>Works?</th><th>Why</th></tr></thead><tbody><tr><td>The repository is renamed</td><td>yes</td><td>the registry tooling <strong>scans sibling directories</strong> for the importer rather than naming one, and the CLI's default registry is likewise found, not hardcoded</td></tr><tr><td>The Git host changes (GitHub to Gitee to self-hosted)</td><td>yes</td><td>the only place a host appears is inside <code>--registry &lt;url&gt;</code>; the GitHub URLs in the documentation are <strong>examples</strong>, not configuration</td></tr><tr><td>Local only, never pushed</td><td>yes</td><td><code>--registry &lt;local directory&gt;</code> is a first-class use; a <code>git</code> remote is recognised in exactly one place and refused there (<code>E-SOURCE-GIT</code>)</td></tr><tr><td>Another machine or OS</td><td>yes</td><td>no absolute paths, drive letters or user directories in the code; receipts record only <strong>project-relative paths</strong></td></tr><tr><td>The whole workspace moves to another drive</td><td>yes</td><td>as above; workspace links are rebuilt by <code>npm install</code></td></tr><tr><td>The directory layout changes (no longer siblings)</td><td>yes, with one explicit setting</td><td>set <code>UTOOL_CORE</code> (registry tooling) or <code>--registry</code> (CLI)</td></tr></tbody></table>
+<p><strong>One thing that is not guaranteed</strong>: the <code>url</code> of an <code>external</code> artifact. It points at an <em>upstream</em> repository, which is data rather than configuration for this tool. If upstream is renamed or disappears that tool genuinely stops working, and that is worth saying plainly - but nothing here quietly substitutes a different source.</p>
+<p><strong>Why the defaults are discovered rather than named.</strong> A directory name is not part of the contract. The CLI's default was once hardcoded as <code>UnityDevCommonLib</code>, which had already been renamed to <code>ToolRegistry</code>, so every command without an explicit <code>--registry</code> failed with a missing-index error that had nothing to do with the real cause. Discovery has its own trap: <code>template/</code> also contains an <code>index.yaml</code>, so a candidate directory must hold <strong>both</strong> <code>index.yaml</code> and <code>payloads/</code>.</p>
+<h2>11. Directory and repository boundary</h2>
+<p><code>ToolImport/</code> is a sibling directory <strong>alongside</strong> this repository, located outside it, with its own independent local git history.</p>
+<table class="doc"><thead><tr><th></th><th>ToolRegistry</th><th>ToolImport</th></tr></thead><tbody><tr><td>Responsibility</td><td>payload format and registry entries</td><td>the interface and backend for parsing, validation and installation</td></tr><tr><td>Backend layout</td><td><code>schema/</code>, <code>payloads/</code>, <code>index.yaml</code></td><td><code>packages/utool-core</code> (engine-neutral), <code>providers/engine-unity</code> (the Unity adapter), <code>apps/cli</code>, <code>frontends/unity-editor</code></td></tr><tr><td>Version control</td><td>any Git host; the address below is merely where it currently lives, not configuration this tool depends on</td><td>local git is enough; no remote required</td></tr><tr><td>When it changes</td><td>when a tool is released</td><td>while the tool is iterated on continuously</td></tr></tbody></table>
+<p>The two sides communicate only through this file and <code>schema/tool.schema.json</code>, so either side can be replaced as long as the contract does not change.</p>
+    <p class="source">Generated from <code>docs/FRONTEND-INTEGRATION.en.md</code> · <a href="index.html">All docs</a></p>
+  </main>
+</div>
+</body>
+</html>

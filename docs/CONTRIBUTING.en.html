@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contributing Guide</title>
+<!--
+  GENERATED PAGE - do not edit.
+  Source: docs/CONTRIBUTING.en.md · rebuild with: node tools/build-registry-template.mjs
+-->
+<style>:root {
+    --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
+    --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
+    --link: #9dbdd4; --link-hover: #c6dbe9;
+  }
+  /* Light is a second palette, not a filter: the accent and the two signal colours have to keep
+     their contrast against a light panel, so they are darkened rather than reused. */
+  :root[data-theme="light"] {
+    --bg: #f6f7f9; --panel: #ffffff; --panel-2: #eceff4; --line: #d6dbe3; --fg: #1b2027;
+    --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
+    --link: #2b5c83; --link-hover: #17405f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.75 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  main a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(127,166,196,.45); text-underline-offset: 2px; }
+  main a:hover { color: var(--link-hover); text-decoration-color: var(--link-hover); }
+  code {
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px;
+    font-variant-ligatures: none; background: var(--panel-2); padding: 1px 5px; border-radius: 4px;
+  }
+  .switches {
+    position: fixed; top: 12px; right: 14px; z-index: 50; display: flex; gap: 6px;
+  }
+  .switches button {
+    background: var(--panel); color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 9px; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
+  }
+  .switches button:hover { color: var(--fg); border-color: var(--accent); }
+  html[data-lang="zh"] [data-lang="en"], html[data-lang="en"] [data-lang="zh"] { display: none !important; }
+  .layout { display: flex; align-items: flex-start; max-width: 1180px; margin: 0 auto; }
+  nav.docs {
+    position: sticky; top: 0; flex: 0 0 232px; max-height: 100vh; overflow: auto;
+    padding: 26px 14px 30px 18px; border-right: 1px solid var(--line);
+  }
+  nav.docs .home { display: block; color: var(--dim); font-size: 12px; text-decoration: none; margin-bottom: 14px; }
+  nav.docs .home:hover { color: var(--link-hover); }
+  nav.docs a.topic {
+    display: block; padding: 5px 9px; border-radius: 5px; color: var(--dim);
+    text-decoration: none; font-size: 13.5px;
+  }
+  nav.docs a.topic:hover { background: var(--panel); color: var(--fg); }
+  nav.docs a.topic.current { background: var(--panel); color: var(--fg); font-weight: 600; }
+  main.doc { flex: 1 1 auto; min-width: 0; padding: 30px 30px 90px; max-width: 870px; }
+  main.doc > h1:first-child { margin-top: 0; }
+  main.doc h1 { font-size: 24px; margin: 26px 0 10px; }
+  main.doc h2 { font-size: 19px; margin: 30px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  main.doc h3 { font-size: 16px; margin: 22px 0 6px; }
+  main.doc h4 { font-size: 14.5px; margin: 18px 0 4px; color: var(--dim); }
+  main.doc p, main.doc li { font-size: 14.5px; }
+  main.doc ul, main.doc ol { padding-left: 22px; }
+  main.doc li { margin: 3px 0; }
+  main.doc pre.code {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 12px 14px;
+    overflow: auto; font-size: 12.5px; line-height: 1.55;
+  }
+  main.doc pre.code code {
+    background: none; padding: 0; font-size: 12.5px; white-space: pre; font-variant-ligatures: none;
+  }
+  main.doc table.doc { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+  main.doc table.doc th, main.doc table.doc td {
+    border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top;
+  }
+  main.doc table.doc th { background: var(--panel-2); font-weight: 600; }
+  main.doc blockquote {
+    margin: 12px 0; padding: 4px 0 4px 14px; border-left: 3px solid var(--line); color: var(--dim);
+  }
+  main.doc hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+  .langswitch { position: fixed; top: 14px; right: 96px; z-index: 50; font-size: 12px; color: var(--dim); }
+  .langswitch a { color: var(--dim); text-decoration: none; }
+  .langswitch a.current { color: var(--fg); font-weight: 600; }
+  .langswitch a:hover { color: var(--link-hover); }
+  .source { color: var(--dim); font-size: 12px; margin-top: 40px; border-top: 1px solid var(--line); padding-top: 10px; }
+  ul.topics { list-style: none; padding: 0; }
+  ul.topics li {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+    border-bottom: 1px solid var(--line); padding: 10px 2px;
+  }
+  ul.topics .pair a { margin-left: 14px; font-size: 12.5px; }
+</style>
+<script>(function () {
+  var META = {"languages":false};
+  var root = typeof document !== 'undefined' ? document.documentElement : null;
+
+  function stored(key, fallback) {
+    try {
+      var value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (error) { /* private mode */ }
+  }
+
+  function systemTheme() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark';
+    } catch (error) {
+      return 'dark';
+    }
+  }
+
+  var theme = stored('toolregistry-theme', systemTheme());
+  if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+  var lang = stored('toolregistry-lang', 'zh');
+  if (lang !== 'zh' && lang !== 'en') lang = 'zh';
+
+  function apply() {
+    // Defensive: this script is also loaded by the test harness, which has no documentElement.
+    if (!root || typeof root.setAttribute !== 'function') return;
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang === 'en' ? 'en' : 'zh-CN');
+  }
+
+  apply();
+
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', function () {
+    var themeButton = document.getElementById('theme-toggle');
+    if (themeButton) {
+      themeButton.textContent = theme === 'light' ? '☀' : '☾';
+      themeButton.addEventListener('click', function () {
+        theme = theme === 'light' ? 'dark' : 'light';
+        apply();
+        themeButton.textContent = theme === 'light' ? '☀' : '☾';
+        save('toolregistry-theme', theme);
+      });
+    }
+
+    var langButton = document.getElementById('lang-toggle');
+    if (langButton) {
+      // A page without the other language gets no switch: an inert button is worse than none.
+      var bilingual = document.querySelector('[data-lang]') !== null;
+      if (!bilingual) {
+        langButton.style.display = 'none';
+      } else {
+        langButton.textContent = lang === 'en' ? '中' : 'EN';
+        langButton.addEventListener('click', function () {
+          lang = lang === 'en' ? 'zh' : 'en';
+          apply();
+          langButton.textContent = lang === 'en' ? '中' : 'EN';
+          save('toolregistry-lang', lang);
+        });
+      }
+    }
+  });
+})();</script>
+</head>
+<body>
+<div class="switches">
+    <button id="theme-toggle" type="button" title="切换明暗 / Toggle theme">☾</button>
+  </div>
+<div class="langswitch">
+  <a href="CONTRIBUTING.zh-CN.html" class="current">EN</a> /
+  <a href="CONTRIBUTING.zh-CN.html">中文</a>
+</div>
+<div class="layout">
+    <nav class="docs">
+      <a class="home" href="../index.html">← Home</a>
+      <a class="topic" href="SPEC.en.html">Specification</a>
+      <a class="topic" href="ATTRIBUTES.en.html">Field reference</a>
+      <a class="topic current" href="CONTRIBUTING.en.html">Contributing</a>
+      <a class="topic" href="ERRORS.en.html">Error codes</a>
+      <a class="topic" href="GLOSSARY.en.html">Glossary</a>
+      <a class="topic" href="FRONTEND-DESIGN.en.html">Front-end design</a>
+      <a class="topic" href="FRONTEND-INTEGRATION.en.html">Front-end integration</a>
+      <a class="topic" href="index.html">All docs</a>
+    </nav>
+  <main class="doc">
+<h1>Contributing Guide</h1>
+<p><strong>Language</strong>: <a href="CONTRIBUTING.en.html">English</a> · <a href="CONTRIBUTING.zh-CN.html">中文</a> · <a href="../README.html">back to index</a></p>
+<p>This registry is deliberately strict: the import tool trusts it, so anything admitted must be verifiable, pluggable and removable. The good news is that adding a tool takes <strong>one directory, one artifact per engine, and one command</strong>.</p>
+<hr>
+<h2>What you can contribute</h2>
+<table class="doc"><thead><tr><th>What you want to do</th><th>What changes</th><th>How</th></tr></thead><tbody><tr><td><strong>Add a new tool</strong></td><td><code>payloads/&lt;new id&gt;/</code></td><td>Start from the template, fill the manifest in, add the artifact. By far the most common.</td></tr><tr><td><strong>Publish a new version</strong></td><td><code>payloads/&lt;existing id&gt;/</code></td><td>Produce a new artifact and add a <code>versions</code> entry.</td></tr><tr><td><strong>Change metadata only</strong></td><td><code>payloads/&lt;id&gt;/tool.yaml</code></td><td>Description, tags, dependencies, floors. The artifact bytes do not move.</td></tr><tr><td><strong>Point at a package that lives elsewhere</strong></td><td><code>payloads/&lt;id&gt;/tool.yaml</code></td><td><code>type: external</code>: no bytes are stored here, only where they are.</td></tr><tr><td><strong>Change the format or the toolchain</strong></td><td><code>schema/</code>, <code>tools/</code></td><td>Read the <a href="SPEC.en.html">format specification</a> first; this is a breaking change and needs a format revision.</td></tr></tbody></table>
+<p>Documentation fixes and typo corrections are just as welcome — open a pull request.</p>
+<p><strong>Not sure what a field takes?</strong> The <a href="ATTRIBUTES.en.html">attribute reference</a> has a section per field, with what each value means and a snippet you can copy.</p>
+<h2>The flow</h2>
+<pre class="code" data-lang-name="text"><code>1. Create the directory and copy the skeleton from template/
+2. Fill the manifest in, making the id match the directory name
+3. Produce one artifact per engine
+4. Run utool digest and paste size and sha256 back in
+5. Regenerate the index and validate
+6. Commit</code></pre>
+<p>Each step is detailed below. <strong>Doing this for the first time</strong>, read them in order; <strong>just adding a version</strong>, jump to <a href="#publishing-a-new-version">Publishing a new version</a>.</p>
+<blockquote><p><strong>Rather not read a document?</strong> Double-click <code>tools/guide.html</code>. It lists those six steps in order with the commands already filled in for the id and engine you type, so they can be copied straight out. Each step links to the document that explains it - <strong>do the step first, click through only when you get stuck.</strong> What follows is for anyone who wants to know <em>why</em> it works this way, or who is staring at an error.</p></blockquote>
+<p><strong>Start by filling the manifest in with <code>tools/editor.html</code>.</strong> Double-click it — no Node needed. Fill the form, drop the artifact in and <code>size</code> and <code>sha256</code> are computed for you, fields with a precondition (<code>targetPath</code>, <code>contentRoot</code>) appear only when it holds, and generating runs the same validator over the result. Save the generated YAML as <code>payloads/&lt;id&gt;/tool.yaml</code>.</p>
+<p>You can re-check any existing manifest at any time with <code>tools/validate.html</code>: drop a <code>tool.yaml</code> on it, or click &quot;choose a file&quot;. It is a <strong>generated</strong> single file (<code>npm run build:validator</code>) embedding the <strong>same</strong> validator and the same schema, so its verdict matches the CLI; nothing is uploaded and it makes no network access. It checks the manifest's shape only — hashes, dependency resolution and installation need the whole registry, which is <code>utool validate</code>'s job.</p>
+<hr>
+<h2>Adding a bundled tool</h2>
+<h3>1. Start from the template</h3>
+<pre class="code" data-lang-name="pwsh"><code>New-Item -ItemType Directory -Force payloads/my-tool/artifacts
+Copy-Item template/tool.bundled.yaml payloads/my-tool/tool.yaml</code></pre>
+<p>First make <code>id</code> agree with the directory name (lowercase kebab-case), then decide which engines the tool supports: <strong>delete the targets you do not need</strong>.</p>
+<p>The template comments each field. To look up <strong>what a particular field accepts</strong>, read <a href="ATTRIBUTES.en.html"><code>ATTRIBUTES.en.md</code></a> — that file is generated from the schema, so it cannot disagree with the validator.</p>
+<h3>2. Produce one artifact per engine</h3>
+<p><strong>Unity editor tools / scripts / assets → <code>.unitypackage</code></strong> (preserving GUIDs and import settings):</p>
+<pre class="code" data-lang-name="text"><code>Unity: select the assets &gt; Assets &gt; Export Package... &gt; uncheck &quot;Include dependencies&quot;
+       &gt; save as &lt;id&gt;-&lt;version&gt;[-unity].unitypackage</code></pre>
+<p>Export only the files the tool actually needs. <strong>If it needs files from another tool in this registry, do not export them a second time — declare a dependency.</strong></p>
+<blockquote><p><strong>Every tool must occupy one directory of its own.</strong> Install to <code>Assets/&lt;Tool&gt;/...</code> and nothing else, e.g. <code>Assets/CoreEditorUtils/</code>. Do <strong>not</strong> scatter by category (<code>Assets/Runtime/Core/</code>, <code>Assets/Editor/</code>): that spreads one tool into folders shared with the whole project, so &quot;the files this tool owns&quot; stops being definable and uninstall loses its clean boundary.</p>
+<p>This is not a path dependency Unity imposes — a unitypackage installs wherever it was built to install, so it is a <strong>packaging choice</strong>. <code>tools/check-payload-code.mjs</code> enforces the rule and fails on a scattered payload.</p></blockquote>
+<p><strong>Engine-independent source / documentation / a Godot addon → an archive</strong>: build it so its entries already look the way they should appear under <code>contentRoot</code>:</p>
+<pre class="code" data-lang-name="pwsh"><code>Compress-Archive -Path .\MyTool\* -DestinationPath my-tool-1.0.0.zip
+tar -czf my-tool-1.0.0-godot.tgz -C MyTool .</code></pre>
+<p><strong>A single file → <code>type: file</code></strong>: no container, but it must declare <code>targetPath</code> and set <code>unpack: none</code>.</p>
+<blockquote><p><strong>One <code>file</code> artifact is exactly one file.</strong> This is widely misread, so it is worth stating plainly: <code>file</code> means &quot;these bytes land at <code>targetPath</code> unchanged&quot;. It has no notion of entries, and there is no way to write one artifact that carries two files.</p>
+<p><strong>A dll plus its xml doc comments must be packed as an archive</strong>, not as two <code>file</code> artifacts — a target holds a single <code>artifact</code>, so a second file has nowhere to be declared. Build the archive so its entry paths are already where the files belong, and they land side by side:</p>
+<pre class="code" data-lang-name="pwsh"><code># Lay the tree out the way it should end up, then archive the whole thing
+#   Assets/MyLib/MyLib.dll
+#   Assets/MyLib/MyLib.xml
+tar -czf my-lib-1.0.0-unity.tgz -C . Assets</code></pre>
+<pre class="code" data-lang-name="yaml"><code>artifact:
+  type: archive
+  format: tgz
+  path: payloads/my-lib/artifacts/my-lib-1.0.0-unity.tgz
+  size: 277
+  sha256: '8890b28a...'
+  unpack: extract
+  contentRoot: Assets        # the archive's Assets/ unpacks under the project's Assets/</code></pre>
+<p>Keep the <code>.xml</code> beside its <code>.dll</code>. That is how Unity and IDEs associate the documentation with the assembly; installing them to different locations still works, but the comments will not be picked up.</p></blockquote>
+<h3>3. Name it per the rule and put it in place</h3>
+<pre class="code" data-lang-name="pwsh"><code># exactly one target
+Copy-Item my-tool.unitypackage payloads/my-tool/artifacts/my-tool-1.0.0.unitypackage
+# with several targets the engine segment is mandatory, or the two engines collide
+Copy-Item my-tool.unitypackage payloads/my-tool/artifacts/my-tool-1.0.0-unity.unitypackage
+Copy-Item my-tool.tgz         payloads/my-tool/artifacts/my-tool-1.0.0-godot.tgz</code></pre>
+<p><strong>Never modify an artifact that has already been committed.</strong> Changed bytes mean a new <code>version</code> and a new file.</p>
+<h3>4. Fill in <code>size</code> and <code>sha256</code> for every target from the real bytes</h3>
+<pre class="code" data-lang-name="pwsh"><code>node ../ToolImport/apps/cli/bin/utool.js digest payloads/my-tool/artifacts/my-tool-1.0.0-unity.unitypackage</code></pre>
+<p>Run it once per target and write each result into that target's <code>artifact</code>; <code>artifact.path</code> must point at the same file.</p>
+<h3>5. Declare capabilities</h3>
+<p><code>provides</code> lists what this tool offers others; <code>injects</code> lists what it needs and <strong>any</strong> provider may satisfy. Both are dot-separated lowercase names of at least two segments (<code>script.api.argument-guards</code>), never a bare word:</p>
+<pre class="code" data-lang-name="yaml"><code>provides:
+  - my-tool.window.main
+injects:
+  - script.api.argument-guards
+dependencies:
+  - id: core-editor-utils
+    version: ^1.1.0
+    reason: Uses Guard for argument validation.</code></pre>
+<p>Check first whether something already provides what you are about to <code>injects</code>, or validation fails with <code>E-CAP-UNSATISFIED</code>. <code>provides</code>-ing a capability someone else already provides is <strong>not an error</strong>: several providers are alternatives and registry-level validation only raises a <code>W-CAP-MULTIPLE</code> warning — but a single install containing two providers of the same capability is refused by the import tool (<code>E-CAP-CONFLICT</code>), so do not depend on two tools that offer the same capability in one plan. Write <code>dependencies</code> only when you genuinely need one specific tool (a specific version, a specific API).</p>
+<blockquote><p>Manual-packaging pitfall with <code>.unitypackage</code>: the <code>pathname</code> entry of each GUID directory inside the archive <strong>must</strong> be a path <strong>relative to the project root</strong> (starting with <code>Assets/</code>), not a path relative to the repository root. Getting it wrong puts files in the wrong place.</p></blockquote>
+<h3>6. Rebuild the index and validate</h3>
+<pre class="code" data-lang-name="pwsh"><code>node tools/registry.mjs write-index
+node tools/registry.mjs validate</code></pre>
+<p><code>--write-index</code> rewrites <code>index.yaml</code>; <code>validate</code> must finish with <code>PASSED</code>.</p>
+<hr>
+<h2>Adding an external-reference tool</h2>
+<p>Use this when upstream already publishes a usable package, or when bundled source would bloat this repository. In that case <strong>no artifact is stored</strong>: <code>artifact.type</code> is <code>external</code>, and <code>path</code> / <code>size</code> / <code>sha256</code> <strong>must not</strong> appear. Copy from <code>template/tool.external.yaml</code>.</p>
+<pre class="code" data-lang-name="yaml"><code>targets:
+  unity:
+    requirements:
+      minEngineVersion: '2019.4'
+      minRuntimeVersion: '4.6'
+    artifact:
+      type: external
+      source: git
+      url: https://github.com/owner/repo.git
+      ref: v2.3.1
+      subdirectory: Packages/com.owner.something
+      upmPackageName: com.owner.something
+      unpack: none</code></pre>
+<p><code>ref</code> <strong>MUST</strong> be a tag or a commit SHA. Using a branch head means two imports a week apart could pick up different code under the same version number, which destroys the receipt model.</p>
+<p>Please add a <code>README.md</code> in that payload directory explaining where the source actually lives — otherwise the directory looks empty on GitHub.</p>
+<p>Note: <strong>resolving an external source is not implemented on the import-tool side yet.</strong> The backend currently reports it as caller-resolved and records <code>url</code> / <code>ref</code>; it does not clone or shallow-fetch anything itself. So today this form is verifiable metadata only.</p>
+<hr>
+<h2>Releasing a new version of an existing tool</h2>
+<ol><li>Produce the new artifact, named <code>&lt;id&gt;-&lt;new version&gt;.&lt;ext&gt;</code> (with an engine segment when there are</li></ol>
+<p>   several targets).</p>
+<ol><li>Put it into <code>payloads/&lt;id&gt;/artifacts/</code>, and delete the old file only once you have confirmed that</li></ol>
+<p>   nothing still needs to pin the old version.</p>
+<ol><li>Update <code>version</code>, each target's <code>artifact</code> (path/format/size/sha256), and the floors, capability</li></ol>
+<p>   declarations and <code>dependencies</code> if they changed.</p>
+<ol><li>Rebuild the index, validate, commit.</li></ol>
+<p>If you want the old version to remain retrievable, the old file may be kept; validation only requires that the <strong>declared</strong> artifacts exist and that there are no <strong>undeclared</strong> files in <code>artifacts/</code>. If you keep the old file, it must be declared — otherwise delete it.</p>
+<p>Note: adding a target for a new engine to an existing tool changes the artifact file names (from <code>&lt;id&gt;-&lt;version&gt;.&lt;ext&gt;</code> to <code>&lt;id&gt;-&lt;version&gt;-&lt;engine&gt;.&lt;ext&gt;</code>), because the rule looks only at the number of targets. That is a version bump.</p>
+<hr>
+<h2>Version bump guidance</h2>
+<table class="doc"><thead><tr><th>Change</th><th>Bump</th></tr></thead><tbody><tr><td>bug fix, API unchanged</td><td>patch</td></tr><tr><td>new feature, backwards compatible</td><td>minor</td></tr><tr><td>breaking API change, or raising any target's <code>minEngineVersion</code> / adapter requirement key</td><td>major</td></tr><tr><td>adding a target for a new engine (adding capability, leaving existing engines alone)</td><td>minor</td></tr><tr><td>metadata-only correction (<code>description</code> typo)</td><td>patch, artifact bytes unchanged</td></tr></tbody></table>
+<p>Only raise the floors when the code genuinely requires it: raising <code>minEngineVersion</code> is a breaking change for everyone below the new floor. Floors are <strong>per target</strong>, so raising the Unity side does not affect the Godot side.</p>
+<hr>
+<h2>Pre-push checklist</h2>
+<p>Every item is enforced by <code>tools/registry.mjs</code>. Run it before you push; CI runs it too.</p>
+<p><strong>Install the local hook once, and skip a round trip:</strong></p>
+<pre class="code" data-lang-name="pwsh"><code>git config core.hooksPath .githooks</code></pre>
+<p>After that, a commit touching <code>payloads/</code>, <code>schema/</code>, <code>tools/</code> or <code>index.yaml</code> is stopped locally when <code>index.yaml</code> has not kept up, and told which command to run — rather than discovered after the push, when CI fails and the fix is a second round trip. It <strong>checks and does not rewrite</strong>: silently editing a staged file during a commit is the kind of surprise that makes people distrust hooks. Skip it once with <code>git commit --no-verify</code>.</p>
+<ul><li>[ ] <code>payloads/&lt;id&gt;/tool.yaml</code> exists and satisfies <code>schema/tool.schema.json</code></li><li>[ ] <code>&lt;id&gt;</code> is lowercase kebab-case and equals the directory name</li><li>[ ] both <code>kind: tool</code> and the current <code>formatVersion</code> are present (see the <a href="ATTRIBUTES.en.html#formatversion">attribute reference</a> for the value; migration from a past revision is <a href="SPEC.en.html"><code>SPEC.en.md</code></a> R-MIG-4)</li><li>[ ] <code>displayName</code>, <code>description</code>, <code>type</code>, <code>latest</code>, <code>versions</code> are filled in</li><li>[ ] <code>versions</code> is non-empty, with one target per engine in each version</li></ul>
+<p>      (see <a href="SPEC.en.html"><code>SPEC.en.md</code></a> §5)</p>
+<ul><li>[ ] every target's <code>requirements.minEngineVersion</code> reflects the real floor (never guess, never omit)</li><li>[ ] every target's <code>artifact.type</code> is one of <code>archive</code> / <code>package</code> / <code>file</code> / <code>external</code>, and a</li></ul>
+<p>      non-external artifact has <code>format</code> / <code>path</code> / <code>size</code> / <code>sha256</code> matching the bytes on disk</p>
+<ul><li>[ ] artifact file names follow the rule: <code>&lt;id&gt;-&lt;version&gt;.&lt;ext&gt;</code> with one target,</li></ul>
+<p>      <code>&lt;id&gt;-&lt;version&gt;-&lt;engine&gt;.&lt;ext&gt;</code> with several</p>
+<ul><li>[ ] <code>latest</code> names a version that exists in <code>versions</code> and is not withdrawn</li><li>[ ] for <code>external</code>: <code>source</code> + <code>url</code> + <code>ref</code> are pinned (tag or commit, <strong>not</strong> a branch) and there</li></ul>
+<p>      is no <code>path</code> / <code>size</code> / <code>sha256</code></p>
+<ul><li>[ ] <code>provides</code> / <code>injects</code> capability names have at least two dot-separated lowercase segments, and</li></ul>
+<p>      every <code>injects</code> entry is provided by something in the registry</p>
+<ul><li>[ ] the <code>id</code>s referenced by <code>dependencies</code> all exist, the constraints are satisfiable, and there</li></ul>
+<p>      are no cycles</p>
+<ul><li>[ ] the payload directory contains <strong>no</strong> source files, DLLs or stray artifacts</li><li>[ ] <code>node tools/registry.mjs write-index</code> has been run and committed</li><li>[ ] <code>node tools/registry.mjs validate</code> passes</li></ul>
+<p><code>template/</code> holds the current skeletons: <code>tool.bundled.yaml</code> (a two-engine example with step-by-step filling instructions), <code>tool.external.yaml</code>, <code>index.yaml</code> and <code>receipt.yaml</code>. Read the template before the spec.</p>
+<h2>When you hit an error code</h2>
+<p>Every code and its remedy is in <a href="ERRORS.en.html"><code>ERRORS.en.md</code></a> (<strong>the only place</strong>).</p>
+<p>The one a contributor meets most is <code>E-DEP-VERSION</code>: raising a dependency's major version without relaxing the constraint fails immediately. Next is <code>E-CAP-UNSATISFIED</code>, easiest to hit when the consumer is written before the provider.</p>
+<p>The single code the validator only warns about, without failing the build, is <code>W-CAP-MULTIPLE</code>: several tools providing one capability. That is legal - they are alternatives. What is refused is two providers of one capability inside <strong>a single install plan</strong> (<code>E-CAP-CONFLICT</code>, decided by the import tool's resolver, not by this validator).</p>
+<h2>Style</h2>
+<ul><li><code>description</code>: one paragraph, present tense, no marketing adjectives. The import tool displays it</li></ul>
+<p>  verbatim.</p>
+<ul><li><code>displayName</code>: title case, short enough to fit on one line of a list.</li><li><code>tags</code>: lowercase kebab-case, ≤ 12.</li><li>Capability names: at least two segments with the namespace first</li></ul>
+<p>  (<code>script.api.argument-guards</code>, <code>unity.window.selection-history</code>), lowercase kebab-case, ≤ 96   characters.</p>
+<ul><li>Non-ASCII text in <code>displayName</code> / <code>description</code> is fine; all files are <strong>UTF-8 without BOM</strong>.</li><li>Use <code>&quot;license&quot;: &quot;MIT&quot;</code> unless the payload genuinely carries another license — the repository's</li></ul>
+<p>  LICENSE does not override a payload's own field.</p>
+<ul><li>Comments: <code>.yaml</code> is YAML, so comments can be written. Use them to explain <strong>why</strong> this tool</li></ul>
+<p>  exists and what the pitfalls are, rather than restating field names.</p>
+<h2>Commit messages</h2>
+<pre class="code" data-lang-name="text"><code>add: &lt;id&gt; &lt;version&gt;            new tool
+update: &lt;id&gt; &lt;old&gt; -&gt; &lt;new&gt;    a new version of an existing tool
+meta: &lt;id&gt; ...                 metadata-only change, artifact bytes unchanged
+remove: &lt;id&gt;                   delete the payload (update the index in the same commit)
+docs: ...                      documentation or tooling only</code></pre>
+    <p class="source">Generated from <code>docs/CONTRIBUTING.en.md</code> · <a href="index.html">All docs</a></p>
+  </main>
+</div>
+</body>
+</html>

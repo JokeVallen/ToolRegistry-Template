@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Error code reference</title>
+<!--
+  GENERATED PAGE - do not edit.
+  Source: docs/ERRORS.en.md · rebuild with: node tools/build-registry-template.mjs
+-->
+<style>:root {
+    --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
+    --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
+    --link: #9dbdd4; --link-hover: #c6dbe9;
+  }
+  /* Light is a second palette, not a filter: the accent and the two signal colours have to keep
+     their contrast against a light panel, so they are darkened rather than reused. */
+  :root[data-theme="light"] {
+    --bg: #f6f7f9; --panel: #ffffff; --panel-2: #eceff4; --line: #d6dbe3; --fg: #1b2027;
+    --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
+    --link: #2b5c83; --link-hover: #17405f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.75 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  main a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(127,166,196,.45); text-underline-offset: 2px; }
+  main a:hover { color: var(--link-hover); text-decoration-color: var(--link-hover); }
+  code {
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px;
+    font-variant-ligatures: none; background: var(--panel-2); padding: 1px 5px; border-radius: 4px;
+  }
+  .switches {
+    position: fixed; top: 12px; right: 14px; z-index: 50; display: flex; gap: 6px;
+  }
+  .switches button {
+    background: var(--panel); color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 9px; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
+  }
+  .switches button:hover { color: var(--fg); border-color: var(--accent); }
+  html[data-lang="zh"] [data-lang="en"], html[data-lang="en"] [data-lang="zh"] { display: none !important; }
+  .layout { display: flex; align-items: flex-start; max-width: 1180px; margin: 0 auto; }
+  nav.docs {
+    position: sticky; top: 0; flex: 0 0 232px; max-height: 100vh; overflow: auto;
+    padding: 26px 14px 30px 18px; border-right: 1px solid var(--line);
+  }
+  nav.docs .home { display: block; color: var(--dim); font-size: 12px; text-decoration: none; margin-bottom: 14px; }
+  nav.docs .home:hover { color: var(--link-hover); }
+  nav.docs a.topic {
+    display: block; padding: 5px 9px; border-radius: 5px; color: var(--dim);
+    text-decoration: none; font-size: 13.5px;
+  }
+  nav.docs a.topic:hover { background: var(--panel); color: var(--fg); }
+  nav.docs a.topic.current { background: var(--panel); color: var(--fg); font-weight: 600; }
+  main.doc { flex: 1 1 auto; min-width: 0; padding: 30px 30px 90px; max-width: 870px; }
+  main.doc > h1:first-child { margin-top: 0; }
+  main.doc h1 { font-size: 24px; margin: 26px 0 10px; }
+  main.doc h2 { font-size: 19px; margin: 30px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  main.doc h3 { font-size: 16px; margin: 22px 0 6px; }
+  main.doc h4 { font-size: 14.5px; margin: 18px 0 4px; color: var(--dim); }
+  main.doc p, main.doc li { font-size: 14.5px; }
+  main.doc ul, main.doc ol { padding-left: 22px; }
+  main.doc li { margin: 3px 0; }
+  main.doc pre.code {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 12px 14px;
+    overflow: auto; font-size: 12.5px; line-height: 1.55;
+  }
+  main.doc pre.code code {
+    background: none; padding: 0; font-size: 12.5px; white-space: pre; font-variant-ligatures: none;
+  }
+  main.doc table.doc { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+  main.doc table.doc th, main.doc table.doc td {
+    border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top;
+  }
+  main.doc table.doc th { background: var(--panel-2); font-weight: 600; }
+  main.doc blockquote {
+    margin: 12px 0; padding: 4px 0 4px 14px; border-left: 3px solid var(--line); color: var(--dim);
+  }
+  main.doc hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+  .langswitch { position: fixed; top: 14px; right: 96px; z-index: 50; font-size: 12px; color: var(--dim); }
+  .langswitch a { color: var(--dim); text-decoration: none; }
+  .langswitch a.current { color: var(--fg); font-weight: 600; }
+  .langswitch a:hover { color: var(--link-hover); }
+  .source { color: var(--dim); font-size: 12px; margin-top: 40px; border-top: 1px solid var(--line); padding-top: 10px; }
+  ul.topics { list-style: none; padding: 0; }
+  ul.topics li {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+    border-bottom: 1px solid var(--line); padding: 10px 2px;
+  }
+  ul.topics .pair a { margin-left: 14px; font-size: 12.5px; }
+</style>
+<script>(function () {
+  var META = {"languages":false};
+  var root = typeof document !== 'undefined' ? document.documentElement : null;
+
+  function stored(key, fallback) {
+    try {
+      var value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (error) { /* private mode */ }
+  }
+
+  function systemTheme() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark';
+    } catch (error) {
+      return 'dark';
+    }
+  }
+
+  var theme = stored('toolregistry-theme', systemTheme());
+  if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+  var lang = stored('toolregistry-lang', 'zh');
+  if (lang !== 'zh' && lang !== 'en') lang = 'zh';
+
+  function apply() {
+    // Defensive: this script is also loaded by the test harness, which has no documentElement.
+    if (!root || typeof root.setAttribute !== 'function') return;
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang === 'en' ? 'en' : 'zh-CN');
+  }
+
+  apply();
+
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', function () {
+    var themeButton = document.getElementById('theme-toggle');
+    if (themeButton) {
+      themeButton.textContent = theme === 'light' ? '☀' : '☾';
+      themeButton.addEventListener('click', function () {
+        theme = theme === 'light' ? 'dark' : 'light';
+        apply();
+        themeButton.textContent = theme === 'light' ? '☀' : '☾';
+        save('toolregistry-theme', theme);
+      });
+    }
+
+    var langButton = document.getElementById('lang-toggle');
+    if (langButton) {
+      // A page without the other language gets no switch: an inert button is worse than none.
+      var bilingual = document.querySelector('[data-lang]') !== null;
+      if (!bilingual) {
+        langButton.style.display = 'none';
+      } else {
+        langButton.textContent = lang === 'en' ? '中' : 'EN';
+        langButton.addEventListener('click', function () {
+          lang = lang === 'en' ? 'zh' : 'en';
+          apply();
+          langButton.textContent = lang === 'en' ? '中' : 'EN';
+          save('toolregistry-lang', lang);
+        });
+      }
+    }
+  });
+})();</script>
+</head>
+<body>
+<div class="switches">
+    <button id="theme-toggle" type="button" title="切换明暗 / Toggle theme">☾</button>
+  </div>
+<div class="langswitch">
+  <a href="ERRORS.zh-CN.html" class="current">EN</a> /
+  <a href="ERRORS.zh-CN.html">中文</a>
+</div>
+<div class="layout">
+    <nav class="docs">
+      <a class="home" href="../index.html">← Home</a>
+      <a class="topic" href="SPEC.en.html">Specification</a>
+      <a class="topic" href="ATTRIBUTES.en.html">Field reference</a>
+      <a class="topic" href="CONTRIBUTING.en.html">Contributing</a>
+      <a class="topic current" href="ERRORS.en.html">Error codes</a>
+      <a class="topic" href="GLOSSARY.en.html">Glossary</a>
+      <a class="topic" href="FRONTEND-DESIGN.en.html">Front-end design</a>
+      <a class="topic" href="FRONTEND-INTEGRATION.en.html">Front-end integration</a>
+      <a class="topic" href="index.html">All docs</a>
+    </nav>
+  <main class="doc">
+<h1>Error code reference</h1>
+<p>Every code the toolchain can emit, in <strong>one place</strong>. Grouped by how you meet it, not by which module raises it.</p>
+<p>Prefix: <code>E-</code> is a failure, <code>W-</code> is a warning (blocks nothing).</p>
+<p><strong>Language</strong>: <a href="ERRORS.en.html">English</a> · <a href="ERRORS.zh-CN.html">中文</a> · <a href="../README.html">back to index</a></p>
+<hr>
+<h2>Contributing a tool? This is the only section you need</h2>
+<p>Codes you can see from <code>node tools/registry.mjs validate</code>. Left is what you see, right is what to change.</p>
+<h3>The manifest itself</h3>
+<table class="doc"><thead><tr><th>Code</th><th>Meaning</th><th>How to fix</th></tr></thead><tbody><tr><td><code>E-LAYOUT</code></td><td>the repository root has no <code>payloads/</code></td><td>run from the repository root</td></tr><tr><td><code>E-UTOOL-BOM</code></td><td>the file starts with a UTF-8 BOM</td><td>re-save as UTF-8 without BOM. The BOM turns the first key into <code>\uFEFFkind</code></td></tr><tr><td><code>E-MANIFEST-MISSING</code></td><td>the payload directory has no <code>tool.yaml</code></td><td>copy one from <code>template/</code></td></tr><tr><td><code>E-MANIFEST</code></td><td><code>tool.yaml</code> could not be read — not valid YAML, several documents, or a non-mapping root</td><td>check indentation; tabs are not allowed for indentation; one document per file</td></tr><tr><td><code>E-SCHEMA</code></td><td>schema violation: missing required field, unknown field, wrong value</td><td>change what the reported field path points at; malformed capability names are reported here too</td></tr></tbody></table>
+<h3>Identity and structure</h3>
+<table class="doc"><thead><tr><th>Code</th><th>Meaning</th><th>How to fix</th></tr></thead><tbody><tr><td><code>E-ID-FORMAT</code></td><td><code>id</code> is not lowercase kebab-case</td><td>lowercase letters, digits and single hyphens; 3-64 characters</td></tr><tr><td><code>E-ID-DIR</code></td><td>the directory name differs from <code>id</code></td><td>make them identical</td></tr><tr><td><code>E-PAYLOAD-EXTRA</code></td><td>the payload holds stray files (sources, DLLs, backups)</td><td>see <a href="#what-may-live-here">what may live here</a></td></tr><tr><td><code>E-TARGETS-MISSING</code></td><td><code>targets</code> is missing or empty</td><td>declare at least one engine</td></tr><tr><td><code>E-TARGET-REQUIREMENTS</code></td><td>a target lacks <code>requirements</code> or <code>minEngineVersion</code></td><td><code>minEngineVersion</code> is required: do not guess, do not omit</td></tr></tbody></table>
+<h3>Artifacts</h3>
+<table class="doc"><thead><tr><th>Code</th><th>Meaning</th><th>How to fix</th></tr></thead><tbody><tr><td><code>E-ARTIFACT-TYPE</code></td><td><code>type</code> is not one of the four, or <code>file</code> lacks <code>unpack: none</code></td><td>see the <a href="ATTRIBUTES.en.html#artifact-type">attribute reference</a></td></tr><tr><td><code>E-ARTIFACT-NAME</code></td><td>the file name or its directory breaks the convention: it must be <code>payloads/&lt;id&gt;/artifacts/&lt;id&gt;-&lt;version&gt;[-&lt;engine&gt;].&lt;ext&gt;</code></td><td>drop the engine segment with one target, require it with several; location and name are checked together</td></tr><tr><td><code>E-ARTIFACT-MISSING</code></td><td>a target has no <code>artifact</code>, or the declared artifact does not exist</td><td>exactly one artifact per target, and the file must be on disk</td></tr><tr><td><code>E-ARTIFACT-PATHNAME</code></td><td>a unitypackage's <code>pathname</code> is not relative to the project root</td><td>it must start with <code>Assets/</code></td></tr><tr><td><code>E-ARTIFACT-SIZE</code></td><td><code>size</code> differs from the real byte count</td><td>run <code>utool digest</code> and refill</td></tr><tr><td><code>E-ARTIFACT-HASH</code></td><td><code>sha256</code> differs from the real digest</td><td>run <code>utool digest</code> and refill</td></tr><tr><td><code>E-ARTIFACT-TARGETPATH</code></td><td>a <code>file</code> artifact, or any artifact with <code>unpack: none</code>, has no <code>targetPath</code></td><td>give it a destination, or drop <code>unpack: none</code> so its handler extracts it</td></tr><tr><td><code>E-ARTIFACT-FORMAT</code></td><td>the bytes do not match the declared <code>format</code></td><td>renaming the extension without repacking is the usual cause</td></tr><tr><td><code>E-ARTIFACT-FORMAT-UNSUPPORTED</code></td><td>no handler is registered for that format</td><td><code>unitypackage</code> needs the Unity adapter loaded</td></tr><tr><td><code>E-ARTIFACT-EMPTY</code></td><td>the archive holds no entries</td><td>repack it</td></tr><tr><td><code>E-ARTIFACT-UNSAFE</code></td><td>an entry escapes the destination root (tar-slip / zip-slip)</td><td>repack without absolute paths or <code>..</code></td></tr><tr><td><code>E-ARTIFACT-STRAY</code></td><td><code>artifacts/</code> holds an undeclared file</td><td>delete it, or declare it under <code>versions</code></td></tr><tr><td><code>E-EXTERNAL-INCOMPLETE</code></td><td><code>external</code> lacks <code>source</code> / <code>url</code> / <code>ref</code></td><td>supply all three, and <strong>no</strong> <code>path</code>/<code>size</code>/<code>sha256</code></td></tr></tbody></table>
+<h3>Versions and dependencies</h3>
+<table class="doc"><thead><tr><th>Code</th><th>Meaning</th><th>How to fix</th></tr></thead><tbody><tr><td><code>E-VERSIONS-MISSING</code></td><td><code>versions</code> is missing or empty</td><td>publish at least one version</td></tr><tr><td><code>E-LATEST-UNKNOWN</code></td><td><code>latest</code> names no entry in <code>versions</code></td><td>make them match exactly</td></tr><tr><td><code>E-VERSIONS-DUPLICATE</code></td><td>the same version number appears twice</td><td>merge or renumber</td></tr><tr><td><code>E-YANKED-LATEST</code></td><td><code>latest</code> points at a withdrawn release</td><td>move <code>latest</code> to a release that is not withdrawn</td></tr><tr><td><code>E-DEP-MISSING</code></td><td>a dependency names an <code>id</code> that does not exist</td><td>check the spelling, or land the dependency first</td></tr><tr><td><code>E-DEP-VERSION</code></td><td>no published version satisfies the constraint</td><td>raising a dependency's major without relaxing the constraint is the usual cause</td></tr><tr><td><code>E-DEP-CONSTRAINT</code></td><td>the constraint expression itself is malformed</td><td>see the <a href="ATTRIBUTES.en.html#dependencies">attribute reference</a></td></tr><tr><td><code>E-VERSION-NOT-FOUND</code></td><td>an explicitly pinned version is not published</td><td>check the available versions; run <code>utool show &lt;id&gt;</code> to list them</td></tr><tr><td><code>E-DEP-SELF</code></td><td>the tool depends on itself</td><td>remove it</td></tr><tr><td><code>E-DEP-CYCLE</code></td><td>the dependency graph has a cycle</td><td>break it; automatic breaking is <strong>forbidden</strong></td></tr><tr><td><code>E-CAP-FORMAT</code></td><td>an invalid capability name</td><td>at least two dot-separated lowercase segments, e.g. <code>script.api.argument-guards</code></td></tr><tr><td><code>E-CAP-UNSATISFIED</code></td><td>nothing provides an injected capability</td><td>write the provider first, or use <code>dependencies</code></td></tr><tr><td><code>W-CAP-MULTIPLE</code></td><td>several tools provide one capability</td><td><strong>legal</strong>, informational only: they are alternatives</td></tr></tbody></table>
+<h3>Index</h3>
+<table class="doc"><thead><tr><th>Code</th><th>Meaning</th><th>How to fix</th></tr></thead><tbody><tr><td><code>E-INDEX-MISSING</code></td><td><code>index.yaml</code> is missing</td><td>run <code>node tools/registry.mjs write-index</code></td></tr><tr><td><code>E-INDEX</code></td><td><code>index.yaml</code> could not be read (not valid YAML, <code>kind</code> is not <code>index</code>, ...)</td><td>it is generated: regenerate rather than hand-edit</td></tr><tr><td><code>E-INDEX-STALE</code></td><td>the index disagrees with the payloads</td><td>run <code>write-index</code> and commit it; the local hook catches this earlier</td></tr></tbody></table>
+<p>A missing or unparseable <code>schema/tool.schema.json</code> has no code of its own: it surfaces as a raw read error. That is a broken checkout, not a mistake in your manifest.</p>
+<h2>What may live here</h2>
+<p>Under <code>payloads/&lt;id&gt;/</code>, <strong>only</strong>:</p>
+<pre class="code" data-lang-name="text"><code>payloads/&lt;id&gt;/
+├─ tool.yaml            required
+├─ artifacts/           required (may be absent for an external type)
+│  └─ &lt;id&gt;-&lt;version&gt;[-&lt;engine&gt;].&lt;ext&gt;
+└─ README.md            optional, only to say where an external source lives</code></pre>
+<p>Sources, DLLs, archives and backup files are not allowed — they would defeat the rule that only sealed artifacts are imported. Every file referenced by <code>artifacts/</code> must be declared under <code>versions</code>, and <code>artifacts/</code> must hold nothing undeclared.</p>
+<h2>Codes you meet only when implementing an importer</h2>
+<p>Grouped by stage. These never appear during <code>utool validate</code>.</p>
+<h3>Loading documents</h3>
+<table class="doc"><thead><tr><th>Code</th><th>Meaning</th></tr></thead><tbody><tr><td><code>E-UTOOL-READ</code></td><td>the file cannot be read</td></tr><tr><td><code>E-UTOOL-YAML</code></td><td>not valid YAML, or it holds several documents</td></tr><tr><td><code>E-UTOOL-EMPTY</code></td><td>the document is empty</td></tr><tr><td><code>E-UTOOL-ROOT</code></td><td>the root node is not a mapping</td></tr><tr><td><code>E-UTOOL-KIND-MISSING</code></td><td>no <code>kind</code> discriminator</td></tr><tr><td><code>E-UTOOL-KIND-UNKNOWN</code></td><td><code>kind</code> is unrecognised; a reader <strong>must</strong> reject rather than guess</td></tr><tr><td><code>E-UTOOL-KIND-MISMATCH</code></td><td><code>kind</code> is not what was expected (an <code>index</code> where a <code>tool</code> was due)</td></tr><tr><td><code>E-UTOOL-VERSION-MISSING</code></td><td>no <code>formatVersion</code></td></tr><tr><td><code>E-UTOOL-VERSION-UNSUPPORTED</code></td><td><code>formatVersion</code> is not one this implementation supports</td></tr><tr><td><code>E-ID-MISMATCH</code></td><td>the requested id differs from the one the document declares</td></tr><tr><td><code>E-MANIFEST</code></td><td>the manifest could not be read and no more specific code applies</td></tr></tbody></table>
+<h3>Resolution</h3>
+<table class="doc"><thead><tr><th>Code</th><th>Meaning</th></tr></thead><tbody><tr><td><code>E-DEP-FETCH</code></td><td>a dependency's manifest could not be fetched</td></tr><tr><td><code>E-CAP-CONFLICT</code></td><td><strong>within one install plan</strong> several tools provide one capability; the consumer cannot tell which it got</td></tr><tr><td><code>E-CAP-PROVIDER</code></td><td>the selected provider's manifest could not be loaded</td></tr><tr><td><code>E-CAP-PROVIDER-ENGINE</code></td><td>the only provider does not support the requested engine</td></tr><tr><td><code>E-CAP-PROVIDER-DEP</code></td><td>the provider's own dependencies are not in the plan, so it is refused rather than added halfway</td></tr><tr><td><code>E-PLATFORM</code></td><td>the host is below a declared floor; the error names the requirement and the tool that imposed it</td></tr><tr><td><code>E-PLATFORM-PARSE</code></td><td>a floor cannot be compared (malformed value)</td></tr></tbody></table>
+<p>An engine adapter returns <strong><code>undefined</code></strong> for a requirement key it does not understand, never <code>false</code>. The core reads <code>undefined</code> as &quot;this adapter cannot judge that&quot;, so it <strong>reports</strong> the floor without enforcing it. Returning <code>false</code> would block installs the moment someone adds a requirement key, which is exactly the coupling the adapter split exists to prevent.</p>
+<h3>Artifacts and containers</h3>
+<table class="doc"><thead><tr><th>Code</th><th>Meaning</th></tr></thead><tbody><tr><td><code>E-ARTIFACT</code></td><td>artifact handling failed and no more specific code applies</td></tr><tr><td><code>E-ARTIFACT-GZIP</code></td><td>not readable gzip data</td></tr><tr><td><code>E-ARTIFACT-ZSTD</code></td><td>not a readable zstd frame</td></tr><tr><td><code>E-ARTIFACT-CODEC</code></td><td>this Node build lacks the codec (zstd needs Node 22 or newer)</td></tr><tr><td><code>E-ARTIFACT-ZIP</code></td><td>the zip central directory is malformed</td></tr><tr><td><code>E-ARTIFACT-ZIP-METHOD</code></td><td>the zip uses an unsupported compression method (only stored and deflate)</td></tr><tr><td><code>E-ARTIFACT-TAR</code></td><td>a tar header is malformed</td></tr><tr><td><code>E-HANDLER-CONTRACT</code></td><td>a container handler broke its contract, returning an item with neither bytes nor a way to read them</td></tr><tr><td><code>E-INSTALL-INTO</code></td><td>the destination passed to <code>--into</code> is not a usable project-relative directory (empty, absolute, a drive letter, or containing <code>..</code>)</td></tr><tr><td><code>E-INSTALL-ROOT</code></td><td>a planned path is not inside the directory the tool installs into, so it cannot be moved as a unit; nothing is written</td></tr></tbody></table>
+<h3>Sources and network</h3>
+<table class="doc"><thead><tr><th>Code</th><th>Meaning</th></tr></thead><tbody><tr><td><code>E-SOURCE-GIT</code></td><td>a git remote was passed; this backend does not shell out to git, so clone it and pass the directory</td></tr><tr><td><code>E-NETWORK</code></td><td>the registry location is unreachable. With mirrors configured, only this code triggers a switch</td></tr><tr><td><code>E-HTTP</code></td><td>a non-2xx response</td></tr><tr><td><code>E-NOT-FOUND</code></td><td>the requested file is not in the registry. This does <strong>not</strong> trigger a mirror switch: the registry answered</td></tr><tr><td><code>E-NO-FETCH</code></td><td>no fetch implementation is available in this runtime</td></tr><tr><td><code>E-MIRROR-LOCAL</code></td><td>a mirror was given for a local directory registry, which does not take mirrors</td></tr></tbody></table>
+<h3>Receipts</h3>
+<table class="doc"><thead><tr><th>Code</th><th>Meaning</th></tr></thead><tbody><tr><td><code>E-RECEIPT-INVALID</code></td><td>a receipt is unreadable and must be repaired or removed</td></tr><tr><td><code>E-RECEIPT-MISSING</code></td><td>no receipt for that tool, so there is no rollback target</td></tr></tbody></table>
+<h3>The toolchain itself</h3>
+<table class="doc"><thead><tr><th>Code</th><th>Meaning</th></tr></thead><tbody><tr><td><code>E-UNINSTALL-FILE</code></td><td>a file could not be removed during uninstall (typically held by the editor or version control)</td></tr><tr><td><code>E-DEP-REQUIRED</code></td><td>another installed tool still depends on this one; the uninstall is refused unless <code>--force</code></td></tr><tr><td><code>E-DIGEST-READ</code></td><td><code>utool digest</code> could not read the given file</td></tr><tr><td><code>E-UNEXPECTED</code></td><td>an unanticipated internal error; this is a defect, please report it</td></tr><tr><td><code>E-UNKNOWN</code></td><td>a failure that fits no other category</td></tr></tbody></table>
+    <p class="source">Generated from <code>docs/ERRORS.en.md</code> · <a href="index.html">All docs</a></p>
+  </main>
+</div>
+</body>
+</html>

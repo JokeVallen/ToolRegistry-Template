@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工具库导入工具 —— 对接契约</title>
+<!--
+  GENERATED PAGE - do not edit.
+  Source: docs/FRONTEND-INTEGRATION.zh-CN.md · rebuild with: node tools/build-registry-template.mjs
+-->
+<style>:root {
+    --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
+    --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
+    --link: #9dbdd4; --link-hover: #c6dbe9;
+  }
+  /* Light is a second palette, not a filter: the accent and the two signal colours have to keep
+     their contrast against a light panel, so they are darkened rather than reused. */
+  :root[data-theme="light"] {
+    --bg: #f6f7f9; --panel: #ffffff; --panel-2: #eceff4; --line: #d6dbe3; --fg: #1b2027;
+    --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
+    --link: #2b5c83; --link-hover: #17405f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.75 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  main a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(127,166,196,.45); text-underline-offset: 2px; }
+  main a:hover { color: var(--link-hover); text-decoration-color: var(--link-hover); }
+  code {
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px;
+    font-variant-ligatures: none; background: var(--panel-2); padding: 1px 5px; border-radius: 4px;
+  }
+  .switches {
+    position: fixed; top: 12px; right: 14px; z-index: 50; display: flex; gap: 6px;
+  }
+  .switches button {
+    background: var(--panel); color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 9px; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
+  }
+  .switches button:hover { color: var(--fg); border-color: var(--accent); }
+  html[data-lang="zh"] [data-lang="en"], html[data-lang="en"] [data-lang="zh"] { display: none !important; }
+  .layout { display: flex; align-items: flex-start; max-width: 1180px; margin: 0 auto; }
+  nav.docs {
+    position: sticky; top: 0; flex: 0 0 232px; max-height: 100vh; overflow: auto;
+    padding: 26px 14px 30px 18px; border-right: 1px solid var(--line);
+  }
+  nav.docs .home { display: block; color: var(--dim); font-size: 12px; text-decoration: none; margin-bottom: 14px; }
+  nav.docs .home:hover { color: var(--link-hover); }
+  nav.docs a.topic {
+    display: block; padding: 5px 9px; border-radius: 5px; color: var(--dim);
+    text-decoration: none; font-size: 13.5px;
+  }
+  nav.docs a.topic:hover { background: var(--panel); color: var(--fg); }
+  nav.docs a.topic.current { background: var(--panel); color: var(--fg); font-weight: 600; }
+  main.doc { flex: 1 1 auto; min-width: 0; padding: 30px 30px 90px; max-width: 870px; }
+  main.doc > h1:first-child { margin-top: 0; }
+  main.doc h1 { font-size: 24px; margin: 26px 0 10px; }
+  main.doc h2 { font-size: 19px; margin: 30px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  main.doc h3 { font-size: 16px; margin: 22px 0 6px; }
+  main.doc h4 { font-size: 14.5px; margin: 18px 0 4px; color: var(--dim); }
+  main.doc p, main.doc li { font-size: 14.5px; }
+  main.doc ul, main.doc ol { padding-left: 22px; }
+  main.doc li { margin: 3px 0; }
+  main.doc pre.code {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 12px 14px;
+    overflow: auto; font-size: 12.5px; line-height: 1.55;
+  }
+  main.doc pre.code code {
+    background: none; padding: 0; font-size: 12.5px; white-space: pre; font-variant-ligatures: none;
+  }
+  main.doc table.doc { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+  main.doc table.doc th, main.doc table.doc td {
+    border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top;
+  }
+  main.doc table.doc th { background: var(--panel-2); font-weight: 600; }
+  main.doc blockquote {
+    margin: 12px 0; padding: 4px 0 4px 14px; border-left: 3px solid var(--line); color: var(--dim);
+  }
+  main.doc hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+  .langswitch { position: fixed; top: 14px; right: 96px; z-index: 50; font-size: 12px; color: var(--dim); }
+  .langswitch a { color: var(--dim); text-decoration: none; }
+  .langswitch a.current { color: var(--fg); font-weight: 600; }
+  .langswitch a:hover { color: var(--link-hover); }
+  .source { color: var(--dim); font-size: 12px; margin-top: 40px; border-top: 1px solid var(--line); padding-top: 10px; }
+  ul.topics { list-style: none; padding: 0; }
+  ul.topics li {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+    border-bottom: 1px solid var(--line); padding: 10px 2px;
+  }
+  ul.topics .pair a { margin-left: 14px; font-size: 12.5px; }
+</style>
+<script>(function () {
+  var META = {"languages":false};
+  var root = typeof document !== 'undefined' ? document.documentElement : null;
+
+  function stored(key, fallback) {
+    try {
+      var value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (error) { /* private mode */ }
+  }
+
+  function systemTheme() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark';
+    } catch (error) {
+      return 'dark';
+    }
+  }
+
+  var theme = stored('toolregistry-theme', systemTheme());
+  if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+  var lang = stored('toolregistry-lang', 'zh');
+  if (lang !== 'zh' && lang !== 'en') lang = 'zh';
+
+  function apply() {
+    // Defensive: this script is also loaded by the test harness, which has no documentElement.
+    if (!root || typeof root.setAttribute !== 'function') return;
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang === 'en' ? 'en' : 'zh-CN');
+  }
+
+  apply();
+
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', function () {
+    var themeButton = document.getElementById('theme-toggle');
+    if (themeButton) {
+      themeButton.textContent = theme === 'light' ? '☀' : '☾';
+      themeButton.addEventListener('click', function () {
+        theme = theme === 'light' ? 'dark' : 'light';
+        apply();
+        themeButton.textContent = theme === 'light' ? '☀' : '☾';
+        save('toolregistry-theme', theme);
+      });
+    }
+
+    var langButton = document.getElementById('lang-toggle');
+    if (langButton) {
+      // A page without the other language gets no switch: an inert button is worse than none.
+      var bilingual = document.querySelector('[data-lang]') !== null;
+      if (!bilingual) {
+        langButton.style.display = 'none';
+      } else {
+        langButton.textContent = lang === 'en' ? '中' : 'EN';
+        langButton.addEventListener('click', function () {
+          lang = lang === 'en' ? 'zh' : 'en';
+          apply();
+          langButton.textContent = lang === 'en' ? '中' : 'EN';
+          save('toolregistry-lang', lang);
+        });
+      }
+    }
+  });
+})();</script>
+</head>
+<body>
+<div class="switches">
+    <button id="theme-toggle" type="button" title="切换明暗 / Toggle theme">☾</button>
+  </div>
+<div class="langswitch">
+  <a href="FRONTEND-INTEGRATION.en.html">EN</a> /
+  <a href="FRONTEND-INTEGRATION.en.html" class="current">中文</a>
+</div>
+<div class="layout">
+    <nav class="docs">
+      <a class="home" href="../index.html">← 入口</a>
+      <a class="topic" href="SPEC.zh-CN.html">格式规范</a>
+      <a class="topic" href="ATTRIBUTES.zh-CN.html">属性速查</a>
+      <a class="topic" href="CONTRIBUTING.zh-CN.html">贡献指南</a>
+      <a class="topic" href="ERRORS.zh-CN.html">错误码</a>
+      <a class="topic" href="GLOSSARY.zh-CN.html">术语表</a>
+      <a class="topic" href="FRONTEND-DESIGN.zh-CN.html">前端设计</a>
+      <a class="topic current" href="FRONTEND-INTEGRATION.zh-CN.html">前端集成</a>
+      <a class="topic" href="index.html">全部文档</a>
+    </nav>
+  <main class="doc">
+<h1>工具库导入工具 —— 对接契约</h1>
+<p><strong>语言</strong>：<a href="FRONTEND-INTEGRATION.zh-CN.html">中文</a> · <a href="FRONTEND-INTEGRATION.en.html">English</a> · <a href="../README.html">返回目录</a></p>
+<p>本文档是 ToolRegistry（本仓库）与 <strong>ToolImport</strong>（工具库导入工具）之间的接口约定。</p>
+<p>导入工具是<strong>唯一</strong>向使用者工程写入文件的组件。本仓库只提供数据；解析、校验、安装与回滚 全部由导入工具负责。</p>
+<p>英文版见 <a href="FRONTEND-INTEGRATION.en.html"><code>FRONTEND-INTEGRATION.en.md</code></a>。</p>
+<hr>
+<h2>1. 架构：后端与界面分离</h2>
+<p>导入工具<strong>不是</strong>一个 Unity 包，而是两层，后端本身又分成引擎中立的核心与逐引擎的适配器：</p>
+<pre class="code" data-lang-name="text"><code>  ┌─────────────────────── 与引擎无关 ───────────────────────────┐
+  │  packages/utool-core —— 引擎中立的核心（Node / npm）         │
+  │    * .yaml 解析、kind / formatVersion 头检查                │
+  │    * index 读取、依赖求解、能力（provides / injects）校验    │
+  │    * 版本约束、要求（requirements）比对                      │
+  │    * 制品校验（size / sha256 / 容器魔数 / 归档路径安全）      │
+  │    * 安装计划、落盘、回执、回滚指针、卸载计划                 │
+  │    核心不认任何引擎：容器格式与版本比较都由适配器注册         │
+  ├──────────────────────────────────────────────────────────────┤
+  │  providers/engine-unity —— Unity 适配器                      │
+  │    * unitypackage 容器（打开 GUID 目录、读 pathname）         │
+  │    * Unity 版本与 .NET API 级别（minRuntimeVersion）比较      │
+  │    没有适配器的引擎仍然是合法数据，但无法被规划安装            │
+  ├──────────────────────────────────────────────────────────────┤
+  │  apps/cli —— `utool`，后端的唯一对外接口，可脱离 Unity 运行   │
+  └──────────────────────────────────────────────────────────────┘
+                               ▲
+                               │ 子进程调用 + 记录流（--records）/ JSON
+                               │
+  ┌───────────────────────────┴──────────────────────────────────┐
+  │  frontends/unity-editor —— Unity 编辑器界面                   │
+  │    * 列出可导入项、展示详情与文件清单                          │
+  │    * 展示安装计划、确认后执行                                  │
+  │    * 展示已安装项与卸载入口                                    │
+  └──────────────────────────────────────────────────────────────┘</code></pre>
+<h3>1.1 为什么这样分层</h3>
+<table class="doc"><thead><tr><th>理由</th><th>说明</th></tr></thead><tbody><tr><td><strong>编译错误下仍可干预</strong></td><td>工程存在编译错误时，Unity 不会加载任何编辑器程序集，界面层完全无法执行。核心逻辑在 Node 里，此时 CLI 仍可正常工作——这是最实际的收益。</td></tr><tr><td><strong>跨引擎</strong></td><td>核心只认 <code>.yaml</code> 文档与制品字节，连 <code>unitypackage</code> 都不认识；Unity 支持来自 <code>providers/engine-unity</code>。接 Godot / Unreal 需要新增一个适配器与一个界面层，而不是改写核心。</td></tr><tr><td><strong>可测试</strong></td><td>解析、依赖与能力求解、校验都能在无 Editor、无网络的情况下做单元测试。</td></tr><tr><td><strong>可复用</strong></td><td>CI 可以直接用同一个 CLI 校验或安装，不必启动 Unity。</td></tr></tbody></table>
+<p><strong>代价</strong>：多一层进程边界，界面层无法直接持有后端对象，必须通过 <code>--records</code> 记录流或 JSON 通信。</p>
+<hr>
+<h2>2. 数据流</h2>
+<pre class="code" data-lang-name="text"><code>  index.yaml           （1 次请求，扁平目录）        -&gt; 构建可选列表（id、engines、provides、injects）
+     |
+     v
+   每个工具的 tool.yaml  （每个被查看的工具 1 次请求）  -&gt; 依赖、能力、逐引擎的 requirements 与 artifact
+     |
+     v
+   制品字节              （每个 target 每次安装 1 次请求） -&gt; 校验 size + sha256 + 容器后导入</code></pre>
+<p>导入工具不需要完整克隆仓库，每次只取一个文件。<strong>引擎选择发生在读完 manifest 之后</strong>： <code>index.yaml</code> 只告诉你某个工具面向哪些引擎，具体下限与制品路径在 manifest 的 <code>targets</code> 里。</p>
+<h3>2.1 免克隆的获取方式</h3>
+<table class="doc"><thead><tr><th>方式</th><th>请求形式</th><th>说明</th></tr></thead><tbody><tr><td>GitHub raw</td><td><code>https://raw.githubusercontent.com/JokeVallen/ToolRegistry/&lt;ref&gt;/index.yaml</code></td><td>最简单；<code>&lt;ref&gt;</code> 钉到 tag 才可复现</td></tr><tr><td><code>git</code> CLI</td><td><code>git clone --depth 1 --filter=blob:none &lt;url&gt;</code> 后读工作树</td><td>raw 不可用或走镜像时兜底</td></tr><tr><td>本地路径</td><td>直接读一个目录（省略 <code>--registry</code> 时会自动查找）</td><td>开发与测试用，无需网络</td></tr></tbody></table>
+<p><code>index.yaml</code> 与元信息应当缓存。制品按 <code>sha256</code> 内容寻址，因此以摘要为键的缓存永不需要失效。</p>
+<hr>
+<h2>3. 数据模型</h2>
+<pre class="code" data-lang-name="csharp"><code>// index.yaml -&gt; tools[] 的一行（只有引擎名，没有逐引擎细节）
+sealed class RegistryToolSummary
+{
+    public string Id;
+    public string DisplayName;
+    public string Type;              // editor-tool | tool-library | framework | asset-pack | template
+    public string Description;
+    public string Version;
+    public string[] Engines;         // 引擎名，如 [&quot;godot&quot;, &quot;unity&quot;]
+    public string[] Provides;
+    public string[] Injects;
+    public DependencyRef[] Dependencies;
+    public string[] Tags;
+    public string ManifestPath;      // 仓库相对路径，指向权威的 tool.yaml
+}
+
+// 完整的 tool.yaml
+sealed class ToolManifest
+{
+    public string Kind;              // 必须是 &quot;tool&quot;
+    public string FormatVersion;     // 只接受 &quot;2&quot;
+    public string Id;
+    public string DisplayName;
+    public string Type;
+    public string Description;
+    public string Version;
+    public string License;
+    public string Author;
+    public string Homepage;
+    public string[] Tags;
+    public string[] Provides;        // 本工具提供的能力
+    public string[] Injects;         // 需要由任意提供者满足的能力
+    public DependencyRef[] Dependencies;
+    public Dictionary&lt;string, ToolTarget&gt; Targets;   // 引擎名 -&gt; target
+    public string ReleasedAt;
+    public bool Deprecated;
+}
+
+sealed class ToolTarget
+{
+    public string Engine;                            // 映射的键
+    public Dictionary&lt;string, string&gt; Requirements;  // minEngineVersion 必备，其余由适配器定义
+    public string MinEngineVersion;                  // requirements.minEngineVersion
+    public Dictionary&lt;string, string&gt; ExtraRequirements;  // 其余键，交适配器比对
+    public ArtifactRef Artifact;                     // 恰好一个
+}
+
+sealed class DependencyRef
+{
+    public string Id;
+    public string Version;           // 约束，省略表示任意版本
+    public bool Optional;
+    public string Reason;
+    public string[] Engines;         // 空表示所有引擎
+}
+
+sealed class ArtifactRef
+{
+    public string Type;              // archive | package | file | external
+    public string Format;            // 非 external 必备
+    public string Path;              // 非 external 必备，payloads/&lt;id&gt;/artifacts/...
+    public long Size;                // 非 external 必备
+    public string Sha256;            // 非 external 必备
+    public string Source;            // external：git | http | npm
+    public string Url;               // external
+    public string Ref;               // external：tag 或 commit
+    public string Subdirectory;      // external
+    public string UpmPackageName;    // external
+    public string Unpack;            // none | auto
+    public string TargetPath;        // type: file 必备
+    public string ContentRoot;       // 解包归档的目标目录
+    public string[] Files;           // 人类可读的落盘清单
+    public bool EditorOnly;
+    public bool RestartRequired;
+}</code></pre>
+<p><strong>展示任何内容之前必须执行的拒绝规则：</strong></p>
+<ul><li><code>kind</code> 不是 <code>tool</code>，或 <code>formatVersion</code> 不是 <code>2</code> → 拒绝该工具并提示「导入工具版本过旧」</li></ul>
+<p>  （v1 文档不会被当成 v2 读）；</p>
+<ul><li>元信息中的 <code>id</code> 与所在目录不一致 → 拒绝；</li><li>缺失 <code>targets</code>，或某个 target 缺 <code>requirements</code> / <code>artifact</code> → 拒绝；</li><li><code>artifact.type == &quot;external&quot;</code> 却缺 <code>url</code> 或 <code>ref</code> → 拒绝；</li><li><code>artifact.type</code> 不是四种之一，或 <code>type: file</code> 缺 <code>targetPath</code> → 拒绝；</li><li>非 external 制品的 <code>path</code> 不是 <code>payloads/&lt;id&gt;/artifacts/&lt;id&gt;-&lt;version&gt;[-&lt;engine&gt;].&lt;ext&gt;</code> → 拒绝。</li></ul>
+<hr>
+<h2>4. 版本约束求解</h2>
+<p>比较只用数字三元组，预发布后缀在排序中被忽略（见 SPEC §4.1）。</p>
+<pre class="code" data-lang-name="text"><code>satisfies(version, constraint):
+    无约束             -&gt; true
+    ^1.2.3             -&gt; version &gt;= 1.2.3 且 major 相同
+    ~1.2.3             -&gt; version &gt;= 1.2.3 且 major.minor 相同
+    &gt;=、&gt;、&lt;=、&lt;       -&gt; 三元组数值比较
+    1.4.2 / =1.4.2     -&gt; 三元组精确相等</code></pre>
+<p>冲突策略：多数工具只发布一个版本，因此冲突通常只会在<strong>校验期</strong>以 <code>E-DEP-VERSION</code> 出现， 不会在安装期出现。若未来 <code>formatVersion</code> 引入多版本元信息，导入工具应在<strong>满足该 id 全部约束的 最高版本</strong>中选择；若无法满足，报「无法解决的冲突」，<strong>禁止</strong>猜测。</p>
+<p><strong>引擎下限不是版本约束</strong>：<code>requirements.minEngineVersion</code>、<code>minRuntimeVersion</code> 等由适配器比较， 比较失败的表述应当包含「要求的是什么、宿主是什么、是哪个工具的哪个 target 提出的」。</p>
+<hr>
+<h2>5. 依赖与能力求解</h2>
+<pre class="code" data-lang-name="text"><code>Resolve(requestedIds, engine, alsoEngines):
+    resolved = {}                      # id -&gt; manifest
+    queue    = requestedIds
+
+    while queue 非空:
+        id = queue.pop()
+        if id 已在 resolved: continue
+        manifest = FetchManifest(id)   # 找不到 -&gt; 硬错误「未知工具」
+        resolved[id] = manifest
+
+        CheckRequirements(manifest, engine)   # 缺该引擎 target 或下限不满足 -&gt; 硬错误
+        for dep in manifest.Dependencies:
+            if dep.Engines 非空 且 engine 不在其中: continue
+            if dep.Optional 且 dep.Id 不在 requestedIds: continue
+            if dep.Id 已在 resolved: continue
+            CheckConstraint(dep, registryLookup(dep.Id))   # 不满足 -&gt; 硬错误
+            queue.push(dep.Id)
+
+    CheckCapabilities(resolved)   # 见 5.2
+    if HasCycle(resolved): throw CycleError(环路径)
+    return TopologicalOrder(resolved)  # 依赖先于依赖者</code></pre>
+<p>规则：</p>
+<ul><li><strong>必需</strong>依赖总是被递归拉入；<code>engines</code> 限定了引擎的依赖只在对应引擎的计划里出现。</li><li><strong>可选</strong>依赖只在用户已选中它时解析；绝不主动拉入，也绝不能让安装计划因此失败。</li><li>有环是硬错误，<strong>禁止</strong>自动打破。</li><li>安装顺序为拓扑序：依赖先于依赖它的工具。</li><li>一个工具在本次计划里<strong>必须</strong>有被请求引擎的 target，否则报「该工具不支持 &lt;engine&gt;」。</li></ul>
+<p>  <code>--also-engine</code> 可以再附加另一个引擎的 target（例如把同一个跨引擎工具同时装进两个引擎），   但<strong>主引擎</strong>必须支持：装错引擎的字节比拒绝更糟。</p>
+<h3>5.1 要求（引擎下限）门禁</h3>
+<pre class="code" data-lang-name="text"><code>CheckRequirements(manifest, engine):
+    target = manifest.Targets[engine]        # 缺失 -&gt; 硬错误
+    adapter = adapters[engine]               # 缺失 -&gt; 硬错误「没有该引擎的适配器」
+    if !adapter.meets(target.Requirements, host[engine])   -&gt; PlatformMismatch(...)</code></pre>
+<p>核心不比较任何版本；比较由适配器完成（Unity 侧比较 <code>minEngineVersion</code> 与 <code>minRuntimeVersion</code>， 后者对应工程的 API 兼容性级别）。宿主事实由调用方声明：<code>--host-unity</code> / <code>--host-dotnet</code>， 或从 <code>&lt;project&gt;/ProjectSettings/ProjectVersion.txt</code> 读取 Unity 版本。 <strong>两者都不给时不强制下限</strong>，并在人类可读输出里明确说明「未声明宿主，下限未强制」。</p>
+<h3>5.2 能力（<code>provides</code> / <code>injects</code>）</h3>
+<p>依赖边与能力边是两笔账：</p>
+<ul><li>依赖边钉死一个 id，按 §5 递归求解；</li><li>能力边只说「我需要这个名字」。计划内<strong>任意</strong>提供该能力的工具即可满足它，</li></ul>
+<p>  <code>installedBecause</code> 因此记的是提供者与需求方的关系，而不是一条固定依赖。</p>
+<p>注意冲突的判据是<strong>一次安装计划</strong>，而不是整个库：库里允许若干工具提供同一能力（它们互为替代品， <code>tools/registry.mjs</code> 只发 <code>W-CAP-MULTIPLE</code> 警告，界面上应当把它当作提示而不是错误）； 只有计划里同时出现两个提供者才是硬错误。</p>
+<pre class="code" data-lang-name="text"><code>CheckCapabilities(resolved):
+    for cap in 所有 provides:
+        若计划内有两个工具提供同一 cap -&gt; 硬错误 E-CAP-CONFLICT
+    for cap in 所有 injects:
+        若计划内没有工具提供 cap -&gt; 硬错误 E-CAP-UNSATISFIED
+            （提示用户一并选中一个提供者）</code></pre>
+<p>能力名不合规（不足两段、含大写或下划线等）在<strong>校验期</strong>报 <code>E-CAP-FORMAT</code>。</p>
+<hr>
+<h2>6. 安装计划与回执</h2>
+<h3>6.1 计划（写入任何东西之前）</h3>
+<pre class="code" data-lang-name="csharp"><code>sealed class InstallPlan       { public PlannedTool[] Steps; }   // 拓扑序
+sealed class PlannedTool
+{
+    public string Id, Version;
+    public string Engine;            // 本次计划为哪个引擎安装
+    public string ArtifactType;      // archive | package | file | external
+    public string ArtifactFormat;    // 引擎容器或核心容器
+    public string ArtifactPath;
+    public long Size;
+    public string Sha256;
+    public string[] Files;           // 在确认面板中展示
+    public string ContentRoot;       // 解包归档时
+    public string TargetPath;        // type: file 时
+    public bool EditorOnly;
+    public string[] InstalledBecause;  // 需要它的 id，或 &quot;user&quot;
+}</code></pre>
+<p>计划必须在执行前展示，包含文件清单，使「不想装的」在写入之前就被拦下。 <code>--dry-run</code> 是同一套计算，只是跳过执行。</p>
+<h3>6.2 校验</h3>
+<p>每一步在解包之前：</p>
+<ol><li>取回制品字节；</li><li><code>sha256(bytes) == artifact.sha256</code> —— 不符则中止整个计划，什么都不写；</li><li><code>len(bytes) == artifact.size</code> —— 同上；</li><li>格式检查：<code>zip</code> 必须是 <code>50 4b 03 04</code>，gzip 容器（<code>tgz</code> / <code>tar.gz</code> / <code>unitypackage</code>）必须是</li></ol>
+<p>   <code>1f 8b</code>，<code>tar.zst</code> 必须是 <code>28 b5 2f fd</code>；</p>
+<ol><li>拒绝任何绝对路径或含 <code>..</code> 的归档条目（zip-slip / tar-slip）；</li><li><code>file</code> 类型没有容器：只校验摘要与 <code>targetPath</code> 是否落在工程根之内；</li><li><code>unitypackage</code> 由 <code>providers/engine-unity</code> 打开，要求每个 GUID 目录都有 <code>pathname</code> 条目，</li></ol>
+<p>   并把 <code>asset</code>、<code>asset.meta</code>、<code>pathname</code> 视为一个整体。</p>
+<p>声明了 <code>unpack: none</code> 的容器不打开，而是原样放到它的 <code>targetPath</code>：写下的只是一个文件，里面的条目 要等引擎自己的资源管线导入后才存在。<code>unitypackage</code> 通常用 <code>auto</code>——由适配器解开，于是&quot;装上&quot;这件事由 导入工具完成，而不是装完再靠人工导入。</p>
+<h3>6.3 回执</h3>
+<p>安装成功后写入，使卸载精确；跨引擎安装只写<strong>一份</strong>回执（一个工具是一次决定， <code>installedEngines</code> 记录这次落了哪些引擎）：</p>
+<pre class="code" data-lang-name="yaml"><code># &lt;ProjectRoot&gt;/Library/ToolImport/receipts/editor-tool-selection-history.yaml
+kind: receipt
+formatVersion: '3'
+toolId: editor-tool-selection-history
+version: 1.0.0
+artifactSha256: 6cb13d4a15d6a72345cf5232e61458a7194e97dc41a03056dfe248ae39f59ad5
+artifactFormat: unitypackage
+installedAtUtc: '2026-02-22T10:14:03Z'
+registryRef: main
+registryCommit: 073345b
+installedEngines:
+  - unity
+installedFiles:
+  - Assets/SelectionHistory/SelectionHistoryWindow.cs
+installedByTools:
+  - user
+previousSha256: null        # 版本指针：本次安装替换掉的旧制品摘要；首次安装为 null</code></pre>
+<p>回执位于 <code>Library/</code> 下，Unity 从不提交该目录，因此它天然只是本地状态。</p>
+<p>卸载规则——<strong>按目录所有权判定</strong>：</p>
+<ul><li>回执中记录的文件，只有在<strong>没有其他回执仍声明它</strong>时才可删除；</li><li>共享文件（由依赖装入的）在最后一个依赖者离开时移除；</li><li><strong>工具拥有它安装到的那些目录</strong>：装入期间写下的文件，卸载时一律移除，不区分用户此后是否改过。</li></ul>
+<p>  这不是冷漠，而是因为「这个改动算不算用户的」在数据上无法判定，而留在原地的文件就是残留——   一个声称无污染的工具不能留下它。</p>
+<p>用户手动改动导致的问题由用户负责，工具不承担处理职责，但<strong>提供还原路径</strong>：重新安装会用原始字节 覆盖回去（安装本身是幂等的，会重新校验摘要）。因此卸载前会<strong>把改动过的文件单独列出并要求一次确认</strong>： 不是为了拒绝删除，而是不让一次破坏性操作在用户没有看见的情况下发生。想保留某个改动， 请先把它移到工具目录之外。</p>
+<p><strong>卸载现已执行，边界如下：</strong></p>
+<ul><li><strong>卸载会真正删除文件。</strong> <code>utool uninstall</code> 先给出 <code>delete</code> / <code>keep</code>（被其他回执认领）两份清单，</li></ul>
+<p>  随后执行删除（<code>--dry-run</code> 只打印计划）。三条约束保证它不会越界：路径必须落在工程内，   被其他回执仍认领的共享文件一律保留，目录<strong>只在其为空时</strong>才移除，且 <code>Assets</code> 与 <code>Assets/Editor</code>   永不删除。回执最后清除，这样中途中断仍留有记录描述磁盘上的现状。</p>
+<ul><li><strong>被依赖的工具默认拒绝卸载。</strong> 若其他<strong>仍处于安装状态</strong>的工具需要它，卸载会被拒绝（退出码 2）</li></ul>
+<p>  并列出依赖方；加 <code>--force</code> 可强行继续。判断依据是回执里的 <code>installedByTools</code>——即<strong>本工程</strong>   的实际关系，而不是注册库里「可能被谁依赖」。依赖方已经卸掉时该记录不再构成阻止，   否则被依赖过的工具将永远无法移除。</p>
+<ul><li><strong>留下孤儿依赖时报出，但不自动删。</strong> 卸载掉某工具后，若它当初自动拉进来的依赖已无人需要，</li></ul>
+<p>  会提示「no longer needed by anything installed」并给出移除命令。用户没点名的工具不会   因为一次卸载而消失。<code>utool status</code> 也会显示每个工具的来源（谁要求了它）。</p>
+<ul><li><strong>回滚只报告指针，不执行。</strong> <code>utool rollback</code> 读 <code>previousSha256</code>，告诉你「当前是 X，</li></ul>
+<p>  记录的前一版是 Y」以及需要重新发布哪些字节。被替换掉的旧制品<strong>不保证仍在库内</strong>：   维护者可以在无人钉住旧版后删掉它，工具因此无法假定取得到——报出准确摘要比假装修好更诚实。</p>
+<ul><li><strong>external 源不会被真正解析。</strong> 后端把 <code>type: external</code> 的 target 报告为</li></ul>
+<p>  「由调用方解析」并记录 <code>url</code> / <code>ref</code>，它不会自己去 clone 或浅取；这一步同样没有实现。</p>
+<hr>
+<h2>7. 导入工具的义务</h2>
+<table class="doc"><thead><tr><th>#</th><th>义务</th></tr></thead><tbody><tr><td>1</td><td>绝不导入散装文件树；只导入封存制品（<code>archive</code> / <code>package</code> / <code>file</code>）</td></tr><tr><td>2</td><td>写入任何东西之前校验非 external 制品的 <code>sha256</code> 与 <code>size</code>，并核对容器魔数</td></tr><tr><td>3</td><td>拒绝不安全的归档条目</td></tr><tr><td>4</td><td>按被请求引擎的 target 强制检查 <code>requirements</code>（<code>minEngineVersion</code> 必备）</td></tr><tr><td>5</td><td>递归解析必需依赖；绝不自动打破环</td></tr><tr><td>6</td><td>求解 <code>injects</code>：没有提供者就报错，绝不假装满足</td></tr><tr><td>7</td><td>执行前展示安装计划（文件、体积、每个工具为何被纳入）</td></tr><tr><td>8</td><td>每个已安装工具写一份回执；绝不删除其他工具的文件</td></tr><tr><td>9</td><td>拒绝自己未实现的 <code>kind</code> / <code>formatVersion</code> / <code>artifact.type</code>，并说明原因</td></tr><tr><td>10</td><td>暴露校验失败，而不是绕过它</td></tr></tbody></table>
+<hr>
+<h2>8. 后端 CLI 约定</h2>
+<p>CLI 是后端的唯一对外接口，界面层通过子进程调用它。默认输出人类可读的表， <code>--json</code> 输出单个 JSON 文档，<code>--records</code> 输出逐行 TAB 分隔的记录（供 Unity 界面层解析）。 失败时以非零退出码结束；<code>--records</code> 模式下错误也走记录流，而不是 stderr。</p>
+<pre class="code" data-lang-name="text"><code>utool list      [--registry &lt;path|url&gt;] [--json|--records] [--quiet]
+utool show      &lt;id&gt; [--registry ...] [--json|--records]
+utool plan      &lt;id...&gt; [--engine &lt;name&gt;] [--also-engine &lt;name&gt;]... [--host-unity &lt;ver&gt;] [--host-dotnet &lt;ver&gt;] [--registry ...] [--json|--records]
+utool verify    &lt;id...&gt;  同上，只校验、不写盘
+utool install   &lt;id...&gt; [--project &lt;dir&gt;] [--dry-run]   其余同上
+utool uninstall &lt;id...&gt; --project &lt;dir&gt; [--dry-run] [--json]
+utool rollback  &lt;id...&gt; --project &lt;dir&gt; [--json]
+utool status    --project &lt;dir&gt; [--json|--records]
+utool validate  [&lt;registry&gt;] [--no-hash] [--write-index] [--quiet] [--json|--records]</code></pre>
+<table class="doc"><thead><tr><th>选项</th><th>含义</th></tr></thead><tbody><tr><td>`--registry &lt;path\</td><td>url&gt;`</td><td>注册库位置。省略时<strong>自动查找</strong>：工作目录附近的 <code>ToolRegistry/</code>，或任何同时含 <code>index.yaml</code> 与 <code>payloads/</code> 的目录</td></tr><tr><td><code>--mirror &lt;url&gt;</code></td><td>增加一个<strong>同构镜像</strong>主机，可重复，按给出顺序排在 <code>--registry</code> 之后；也可用环境变量 <code>UTOOL_MIRROR</code>（逗号或分号分隔）。见下文「镜像主机」</td></tr><tr><td><code>--project &lt;dir&gt;</code></td><td>工程根，默认当前目录</td></tr><tr><td><code>--engine &lt;name&gt;</code></td><td>目标引擎，默认 <code>unity</code></td></tr><tr><td><code>--also-engine &lt;name&gt;</code></td><td>额外再规划一个引擎的 target，可重复；用于把一个跨引擎工具同时装进两个引擎</td></tr><tr><td><code>--host-unity &lt;ver&gt;</code></td><td>声明宿主 Unity 版本（如 <code>2021.3.5f1</code>），启用下限门禁</td></tr><tr><td><code>--host-dotnet &lt;ver&gt;</code></td><td>声明宿主 .NET API 级别（如 <code>4.6</code>、<code>6.0</code>），启用下限门禁</td></tr><tr><td><code>--auto-provider</code></td><td>当某工具 <code>injects</code> 的能力在计划内无人提供时，代为选定一个提供者。默认<strong>关闭</strong>：静默塞进用户没要的工具，比直接说明缺口更糟。开启后选择是确定性的（id 最小者胜出），并会列出备选项</td></tr><tr><td><code>--no-hash</code></td><td>跳过 sha256 校验，仅比对大小与容器格式。用于网络受限或大制品调试，<strong>不得</strong>用于生产安装</td></tr><tr><td><code>--dry-run</code></td><td>只规划与校验，不写盘</td></tr><tr><td><code>--no-hash</code></td><td>跳过 sha256 校验（仍校验 size 与格式）</td></tr><tr><td><code>--write-index</code></td><td>重新生成 <code>index.yaml</code>（仅 validate）</td></tr><tr><td><code>--json</code></td><td>单个 JSON 文档</td></tr><tr><td><code>--records</code></td><td>逐行记录（TAB 分隔），给嵌入式界面层用</td></tr><tr><td><code>--quiet</code></td><td>抑制逐项检查输出</td></tr></tbody></table>
+<h3>镜像主机</h3>
+<p>镜像指的是<strong>同构镜像</strong>：另一个主机，提供完全相同的目录布局。它解决的是&quot;这个地址我这儿连不上&quot;， 不解决&quot;这个文件在这儿没有&quot;。</p>
+<pre class="code" data-lang-name="text"><code>utool install my-tool --registry https://primary.example/registry \
+                      --mirror https://gitee.example/registry</code></pre>
+<pre class="code" data-lang-name="bash"><code># CI 里更省事：环境变量。逗号或分号分隔，顺序即优先级
+UTOOL_MIRROR=https://gitee.example/registry,https://backup.example/registry</code></pre>
+<p>规则只有三条，但每一条都影响你排障时看到的东西：</p>
+<ol><li><strong>只有在&quot;完全连不上&quot;时才换下一个主机</strong>（<code>E-NETWORK</code>：DNS 失败、连接被拒、超时）。</li></ol>
+<p>   404 和&quot;文档格式不对&quot;都<strong>不算</strong>连不上——注册库已经答复了，去问第二个主机同一个问题，    答案不会变，只会把一个清楚的&quot;缺文件&quot;变成一个缓慢而含糊的失败。</p>
+<ol><li><strong>先 <code>--registry</code>，再按 <code>--mirror</code> 给出的顺序</strong>依次尝试。同时给出 <code>--mirror</code> 和</li></ol>
+<p>   <code>UTOOL_MIRROR</code> 时以 <code>--mirror</code> 为准，环境变量不会悄悄追加到命令行的意图之后。</p>
+<ol><li><strong>所有主机都连不上时，错误信息会逐个列出每个主机和各自的失败原因</strong>，不会只报第一个。</li></ol>
+<p>镜像<strong>不写在 <code>index.yaml</code> 里</strong>。你能连上哪个主机，是你所在网络的性质，不是注册库数据的性质； 一个能给自己指定镜像的注册库，也就等于能把读者重定向到任何地方。因此镜像也必须<strong>显式给出</strong>， 永远不会被自动尝试：连不上就如实报告，而不是悄悄换成用户没有指定过的另一个来源。</p>
+<p><code>--registry</code> 是一个本地目录时，给出 <code>--mirror</code> 会直接报 <code>E-MIRROR-LOCAL</code>。目录已经是可达且精确的， 在这里接受镜像，等于暗示工具可能拿远端内容替换调用方明确指定的路径。</p>
+<p><strong><code>--records</code> 的记录类型</strong>：<code>META</code>、<code>TOOL</code>、<code>TARGET</code>、<code>DETAIL</code>、<code>DEPENDENCY</code>、<code>WILLINSTALL</code>、 <code>PROBLEM</code>、<code>PLANTOOL</code>、<code>PLANFILE</code>、<code>PLAN</code>、<code>INSTALLED</code>、<code>INSTALLEDFILE</code>、<code>SKIPPED</code>、<code>RESULT</code>、 <code>RECEIPT</code>、<code>WARNING</code>、<code>ERROR</code>。值中的 TAB / CR / LF 会被转义，因此一条记录永远只占一行。</p>
+<p><strong><code>TARGET</code> 记录</strong>（<code>show</code> 时每个引擎一条，避免把多引擎的下限与制品摊平后对不上号）：</p>
+<pre class="code" data-lang-name="text"><code>TARGET  &lt;engine&gt;  &lt;minEngineVersion&gt;  &lt;其余要求键 k=v 逗号分隔&gt;  &lt;type&gt;  &lt;format&gt;
+        &lt;artifactPath&gt;  &lt;contentRoot&gt;  &lt;targetPath&gt;  &lt;editorOnly true|false&gt;
+        &lt;external.url&gt;  &lt;external.ref&gt;</code></pre>
+<p>其余关键记录：</p>
+<pre class="code" data-lang-name="text"><code>TOOL        &lt;id&gt; &lt;version&gt; &lt;type&gt; &lt;engines 逗号分隔&gt; &lt;provides 逗号分隔&gt; &lt;injects 逗号分隔&gt;
+            &lt;displayName&gt; &lt;tags 逗号分隔&gt; &lt;dependencies id@version 逗号分隔&gt; &lt;manifestPath&gt;
+DETAIL      id &lt;id&gt; / engines &lt;逗号分隔&gt; / provides &lt;逗号分隔&gt; / injects &lt;逗号分隔&gt; / ...
+WILLINSTALL &lt;file&gt; &lt;engine&gt;
+PROBLEM     &lt;code&gt; &lt;message&gt;
+PLAN        tools &lt;n&gt; bytes &lt;n&gt; ok &lt;true|false&gt; dryRun &lt;true|false&gt;</code></pre>
+<p><code>WILLINSTALL</code> 报的是制品<strong>声明</strong>的文件清单（<code>Versions[].targets.&lt;engine&gt;.artifact.files</code>），一条 记录一个文件。<code>&lt;file&gt;</code> 在第 0 个字段，引擎是<strong>追加在末尾</strong>的字段：只按第 0 个字段读的旧读取端 不受影响，而装进某一个引擎的前端可以只显示该引擎的那些，而不是把两个引擎的清单拼在一起——那会让 Unity 用户以为 Godot 的载荷也要写进 <code>Assets</code>。引擎字段为空表示&quot;清单没有绑定到某个引擎&quot;（旧后端， 或没有解析出版本的调用方），此时对所有引擎都显示。</p>
+<h3><code>--records</code> 的契约版本</h3>
+<p>后端的每条记录流都以一条 <code>META</code> 记录开头，声明契约版本：</p>
+<pre class="code" data-lang-name="text"><code>META  recordsVersion  2
+META  registry  &lt;注册库位置&gt;</code></pre>
+<p><strong>读方应当先看版本再解析其余内容。</strong> 版本号在最后，是为了让读方在解析任何一个值之前就能拒绝 一条自己不认识的流——这正是「格式变了」从「静默得到错数据」变成「明确报错」的地方。</p>
+<table class="doc"><thead><tr><th>版本</th><th>变化</th></tr></thead><tbody><tr><td>1</td><td>最初的记录集合：<code>META</code>、<code>TOOL</code>、<code>TARGET</code>、<code>DETAIL</code>、<code>DEPENDENCY</code>、<code>WILLINSTALL</code>、<code>PROBLEM</code>、<code>PLANTOOL</code>、<code>PLANFILE</code>、<code>PLAN</code>、<code>INSTALLED</code>、<code>INSTALLEDFILE</code>、<code>SKIPPED</code>、<code>RESULT</code>、<code>RECEIPT</code>、<code>WARNING</code>、<code>ERROR</code></td></tr><tr><td>2</td><td>新增 <code>VERSIONS</code>：一个工具可以发布多个版本，因此每个版本一条记录</td></tr></tbody></table>
+<p><strong>什么时候要提升版本号：</strong> 删掉一种记录、调换字段顺序、改变某个字段的含义——任何读方可能误读的改动。 <strong>什么时候不用：</strong> 新增一种记录、在末尾追加字段。按类型取值的读方不受影响。</p>
+<p>缺失版本号（老后端）<strong>不表示错误</strong>：它只会新增记录，因此按已知类型取值的读方仍能正确工作。</p>
+<p>退出码约定：</p>
+<table class="doc"><thead><tr><th>码</th><th>含义</th></tr></thead><tbody><tr><td>0</td><td>成功</td></tr><tr><td>1</td><td>一般失败（校验不过、制品哈希不符等）</td></tr><tr><td>2</td><td>用法错误</td></tr><tr><td>3</td><td>解析失败（未知工具、约束不满足、有环、能力无人提供）</td></tr><tr><td>4</td><td>引擎下限不满足（Unity / .NET 或适配器定义的其他要求）</td></tr></tbody></table>
+<h2>9. 错误码</h2>
+<p>全部错误码见 <a href="ERRORS.zh-CN.html"><code>ERRORS.zh-CN.md</code></a>——<strong>唯一出处</strong>，已与代码逐一核对。 它按「你会怎么遇到它」分组，并明确标出哪些只在实现导入工具时才会出现。</p>
+<p>实现导入工具时最需要记住的一条：<strong>引擎适配器对不认识的需求键返回 <code>undefined</code>，不是 <code>false</code></strong>。 核心把 <code>undefined</code> 读作「无法判断」，于是<strong>报告</strong>该下限而不强制它。</p>
+<h2>10. 可迁移性</h2>
+<p>这套工具<strong>不绑定任何具体的仓库名、Git 主机或机器</strong>，因为位置是运行时找到的，不是写死的。 下表是逐项保证，以及每一项靠什么成立：</p>
+<table class="doc"><thead><tr><th>场景</th><th>是否可用</th><th>靠什么成立</th></tr></thead><tbody><tr><td>仓库改名</td><td>可用</td><td>注册库工具<strong>扫描兄弟目录</strong>寻找导入工具，不按名字找；CLI 的默认注册库也是找到的，不是写死的</td></tr><tr><td>换 Git 主机（GitHub → Gitee → 自建）</td><td>可用</td><td>只有 <code>--registry &lt;url&gt;</code> 里的地址是主机；文档里的 GitHub URL 是<strong>示例</strong>，不是配置</td></tr><tr><td>只放本地、不推远程</td><td>可用</td><td><code>--registry &lt;本地目录&gt;</code> 是一等用法；<code>git</code> 远端只在一个地方被识别，且被明确拒绝（<code>E-SOURCE-GIT</code>）</td></tr><tr><td>换机器 / 换系统</td><td>可用</td><td>代码里没有绝对路径、盘符或用户目录；回执只记录<strong>工程相对路径</strong></td></tr><tr><td>整个工作区搬到别的盘</td><td>可用</td><td>同上；workspace 链接由 <code>npm install</code> 重建</td></tr><tr><td>只改目录层级（不再是兄弟目录）</td><td>可用，需一次显式指定</td><td>设 <code>UTOOL_CORE</code>（注册库工具）或 <code>--registry</code>（CLI）</td></tr></tbody></table>
+<p><strong>不保证的一件事</strong>：<code>external</code> 类型的 <code>url</code>。它指向<strong>上游</strong>仓库，那是数据，不是本工具的配置； 上游改名或消失时那个工具确实会失效，这是必须如实说明的——但我们不会因此悄悄换成别处。</p>
+<p><strong>为什么默认值是「找到」而不是「写死」</strong>：目录名不是契约的一部分。这个默认值曾经写死成 <code>UnityDevCommonLib</code>，而它早已改名为 <code>ToolRegistry</code>，于是所有不带 <code>--registry</code> 的命令都会 报「缺少 index」——一个与真实原因毫无关系的错误。找目录也会误判：<code>template/</code> 里也有一份 <code>index.yaml</code>，所以候选目录必须<strong>同时</strong>有 <code>index.yaml</code> 与 <code>payloads/</code>。</p>
+<h2>11. 目录与仓库边界</h2>
+<p><code>ToolImport/</code> 是与本仓库<strong>并列</strong>的兄弟目录，位于本仓库之外，拥有独立的本地 git 历史。</p>
+<table class="doc"><thead><tr><th></th><th>ToolRegistry</th><th>ToolImport</th></tr></thead><tbody><tr><td>职责</td><td>payload 格式与库内条目</td><td>解析、校验、安装的界面与后端</td></tr><tr><td>后端布局</td><td><code>schema/</code>、<code>payloads/</code>、<code>index.yaml</code></td><td><code>packages/utool-core</code>（引擎中立）、<code>providers/engine-unity</code>（Unity 适配器）、<code>apps/cli</code>、<code>frontends/unity-editor</code></td></tr><tr><td>版本管理</td><td>任意 Git 主机；下方地址只是<strong>当前</strong>所在，不是本工具的配置</td><td>本地 git 即可，不需要远程</td></tr><tr><td>变更时机</td><td>发布一个工具时</td><td>工具持续迭代时</td></tr></tbody></table>
+<p>两侧只通过本文件与 <code>schema/tool.schema.json</code> 通信，因此任一侧都可以在契约不变的前提下被替换。</p>
+    <p class="source">由 <code>docs/FRONTEND-INTEGRATION.zh-CN.md</code> 生成 · <a href="index.html">全部文档</a></p>
+  </main>
+</div>
+</body>
+</html>

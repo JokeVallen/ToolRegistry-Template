@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glossary</title>
+<!--
+  GENERATED PAGE - do not edit.
+  Source: docs/GLOSSARY.en.md · rebuild with: node tools/build-registry-template.mjs
+-->
+<style>:root {
+    --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
+    --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
+    --link: #9dbdd4; --link-hover: #c6dbe9;
+  }
+  /* Light is a second palette, not a filter: the accent and the two signal colours have to keep
+     their contrast against a light panel, so they are darkened rather than reused. */
+  :root[data-theme="light"] {
+    --bg: #f6f7f9; --panel: #ffffff; --panel-2: #eceff4; --line: #d6dbe3; --fg: #1b2027;
+    --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
+    --link: #2b5c83; --link-hover: #17405f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.75 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  main a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(127,166,196,.45); text-underline-offset: 2px; }
+  main a:hover { color: var(--link-hover); text-decoration-color: var(--link-hover); }
+  code {
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px;
+    font-variant-ligatures: none; background: var(--panel-2); padding: 1px 5px; border-radius: 4px;
+  }
+  .switches {
+    position: fixed; top: 12px; right: 14px; z-index: 50; display: flex; gap: 6px;
+  }
+  .switches button {
+    background: var(--panel); color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 9px; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
+  }
+  .switches button:hover { color: var(--fg); border-color: var(--accent); }
+  html[data-lang="zh"] [data-lang="en"], html[data-lang="en"] [data-lang="zh"] { display: none !important; }
+  .layout { display: flex; align-items: flex-start; max-width: 1180px; margin: 0 auto; }
+  nav.docs {
+    position: sticky; top: 0; flex: 0 0 232px; max-height: 100vh; overflow: auto;
+    padding: 26px 14px 30px 18px; border-right: 1px solid var(--line);
+  }
+  nav.docs .home { display: block; color: var(--dim); font-size: 12px; text-decoration: none; margin-bottom: 14px; }
+  nav.docs .home:hover { color: var(--link-hover); }
+  nav.docs a.topic {
+    display: block; padding: 5px 9px; border-radius: 5px; color: var(--dim);
+    text-decoration: none; font-size: 13.5px;
+  }
+  nav.docs a.topic:hover { background: var(--panel); color: var(--fg); }
+  nav.docs a.topic.current { background: var(--panel); color: var(--fg); font-weight: 600; }
+  main.doc { flex: 1 1 auto; min-width: 0; padding: 30px 30px 90px; max-width: 870px; }
+  main.doc > h1:first-child { margin-top: 0; }
+  main.doc h1 { font-size: 24px; margin: 26px 0 10px; }
+  main.doc h2 { font-size: 19px; margin: 30px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  main.doc h3 { font-size: 16px; margin: 22px 0 6px; }
+  main.doc h4 { font-size: 14.5px; margin: 18px 0 4px; color: var(--dim); }
+  main.doc p, main.doc li { font-size: 14.5px; }
+  main.doc ul, main.doc ol { padding-left: 22px; }
+  main.doc li { margin: 3px 0; }
+  main.doc pre.code {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 12px 14px;
+    overflow: auto; font-size: 12.5px; line-height: 1.55;
+  }
+  main.doc pre.code code {
+    background: none; padding: 0; font-size: 12.5px; white-space: pre; font-variant-ligatures: none;
+  }
+  main.doc table.doc { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+  main.doc table.doc th, main.doc table.doc td {
+    border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top;
+  }
+  main.doc table.doc th { background: var(--panel-2); font-weight: 600; }
+  main.doc blockquote {
+    margin: 12px 0; padding: 4px 0 4px 14px; border-left: 3px solid var(--line); color: var(--dim);
+  }
+  main.doc hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+  .langswitch { position: fixed; top: 14px; right: 96px; z-index: 50; font-size: 12px; color: var(--dim); }
+  .langswitch a { color: var(--dim); text-decoration: none; }
+  .langswitch a.current { color: var(--fg); font-weight: 600; }
+  .langswitch a:hover { color: var(--link-hover); }
+  .source { color: var(--dim); font-size: 12px; margin-top: 40px; border-top: 1px solid var(--line); padding-top: 10px; }
+  ul.topics { list-style: none; padding: 0; }
+  ul.topics li {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+    border-bottom: 1px solid var(--line); padding: 10px 2px;
+  }
+  ul.topics .pair a { margin-left: 14px; font-size: 12.5px; }
+</style>
+<script>(function () {
+  var META = {"languages":false};
+  var root = typeof document !== 'undefined' ? document.documentElement : null;
+
+  function stored(key, fallback) {
+    try {
+      var value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (error) { /* private mode */ }
+  }
+
+  function systemTheme() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark';
+    } catch (error) {
+      return 'dark';
+    }
+  }
+
+  var theme = stored('toolregistry-theme', systemTheme());
+  if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+  var lang = stored('toolregistry-lang', 'zh');
+  if (lang !== 'zh' && lang !== 'en') lang = 'zh';
+
+  function apply() {
+    // Defensive: this script is also loaded by the test harness, which has no documentElement.
+    if (!root || typeof root.setAttribute !== 'function') return;
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang === 'en' ? 'en' : 'zh-CN');
+  }
+
+  apply();
+
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', function () {
+    var themeButton = document.getElementById('theme-toggle');
+    if (themeButton) {
+      themeButton.textContent = theme === 'light' ? '☀' : '☾';
+      themeButton.addEventListener('click', function () {
+        theme = theme === 'light' ? 'dark' : 'light';
+        apply();
+        themeButton.textContent = theme === 'light' ? '☀' : '☾';
+        save('toolregistry-theme', theme);
+      });
+    }
+
+    var langButton = document.getElementById('lang-toggle');
+    if (langButton) {
+      // A page without the other language gets no switch: an inert button is worse than none.
+      var bilingual = document.querySelector('[data-lang]') !== null;
+      if (!bilingual) {
+        langButton.style.display = 'none';
+      } else {
+        langButton.textContent = lang === 'en' ? '中' : 'EN';
+        langButton.addEventListener('click', function () {
+          lang = lang === 'en' ? 'zh' : 'en';
+          apply();
+          langButton.textContent = lang === 'en' ? '中' : 'EN';
+          save('toolregistry-lang', lang);
+        });
+      }
+    }
+  });
+})();</script>
+</head>
+<body>
+<div class="switches">
+    <button id="theme-toggle" type="button" title="切换明暗 / Toggle theme">☾</button>
+  </div>
+<div class="langswitch">
+  <a href="GLOSSARY.zh-CN.html" class="current">EN</a> /
+  <a href="GLOSSARY.zh-CN.html">中文</a>
+</div>
+<div class="layout">
+    <nav class="docs">
+      <a class="home" href="../index.html">← Home</a>
+      <a class="topic" href="SPEC.en.html">Specification</a>
+      <a class="topic" href="ATTRIBUTES.en.html">Field reference</a>
+      <a class="topic" href="CONTRIBUTING.en.html">Contributing</a>
+      <a class="topic" href="ERRORS.en.html">Error codes</a>
+      <a class="topic current" href="GLOSSARY.en.html">Glossary</a>
+      <a class="topic" href="FRONTEND-DESIGN.en.html">Front-end design</a>
+      <a class="topic" href="FRONTEND-INTEGRATION.en.html">Front-end integration</a>
+      <a class="topic" href="index.html">All docs</a>
+    </nav>
+  <main class="doc">
+<h1>Glossary</h1>
+<p>One word, one meaning. This fixes the vocabulary the registry and the import tool share, and calls out the places where it is <strong>easy to say the wrong thing</strong> - similar names for different concepts are the main source of drift between documents.</p>
+<p><strong>Language</strong>: <a href="GLOSSARY.en.html">English</a> · <a href="GLOSSARY.zh-CN.html">中文</a> · <a href="../README.html">back to index</a></p>
+<hr>
+<h2>Core concepts</h2>
+<table class="doc"><thead><tr><th>Term</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>registry</strong></td><td>This repository. It holds <strong>data only</strong>: manifests and artifacts. It understands no engine and executes nothing.</td></tr><tr><td><strong>tool</strong></td><td>One installable unit in the registry, represented by one <code>payloads/&lt;id&gt;/</code> directory.</td></tr><tr><td><strong>manifest</strong></td><td>A tool's <code>tool.yaml</code>. Says who it is, what it needs, and which versions are published.</td></tr><tr><td><strong>artifact</strong></td><td><strong>The thing that actually gets imported</strong>: a sealed container or a single file. The only binaries the registry allows.</td></tr><tr><td><strong>payload</strong></td><td>The <code>payloads/&lt;id&gt;/</code> <strong>directory</strong>. It names a location, not a file - the file is an <strong>artifact</strong>.</td></tr><tr><td><strong>index</strong></td><td><code>index.yaml</code> at the repository root: a summary of every tool, so an importer reads it all in one request.</td></tr><tr><td><strong>receipt</strong></td><td>The record an install leaves behind: which files were written, and each one's digest. <strong>The only basis for uninstalling.</strong></td></tr><tr><td><strong>import tool</strong></td><td><code>ToolImport/</code>. It resolves, verifies and installs, and writes the receipt.</td></tr></tbody></table>
+<p><strong>The most common mix-up: artifact vs payload.</strong> A payload is a location (<code>payloads/</code>); an artifact is the file inside it (<code>.../artifacts/x-1.0.0.unitypackage</code>). &quot;Put the artifact in the payload directory&quot; is right; &quot;download the payload&quot; is not.</p>
+<h2>Engine-related</h2>
+<table class="doc"><thead><tr><th>Term</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>engine</strong></td><td>A host such as Unity or Godot. The core knows <strong>no</strong> engine by name.</td></tr><tr><td><strong>target</strong></td><td>One version's data for <strong>one</strong> engine: its floors and its artifact. <code>versions[].targets.&lt;engine&gt;</code>.</td></tr><tr><td><strong>adapter</strong></td><td>An engine's implementation, on the import tool's side (<code>providers/engine-*</code>). It contributes container formats and floor comparison.</td></tr><tr><td><strong>core</strong></td><td><code>packages/utool-core</code>: engine-neutral parsing, resolution, verification, installation.</td></tr><tr><td><strong>requirement key</strong></td><td>One key in a target's <code>requirements</code>, such as <code>minEngineVersion</code>. <strong>Every key except <code>minEngineVersion</code> is defined by the adapter</strong>; the core does not interpret them.</td></tr><tr><td><strong>container handler</strong></td><td>The hook an adapter registers with the core to open a proprietary format, such as <code>unitypackage</code>.</td></tr></tbody></table>
+<p><strong>Easy to confuse: adapter vs front end.</strong> An adapter lives in the import tool, is Node code, and gives the core engine knowledge. A front end (<code>frontends/unity-editor</code>) is a <strong>human</strong> interface. An engine can have an adapter with no front end.</p>
+<h2>Dependencies and capabilities</h2>
+<table class="doc"><thead><tr><th>Term</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>dependency</strong></td><td>&quot;I need <strong>this tool</strong>.&quot; Pinned by <code>id</code>; a path or URL is forbidden.</td></tr><tr><td><strong>capability</strong></td><td>A namespaced name such as <code>script.api.argument-guards</code>. At least two lowercase dot-separated segments.</td></tr><tr><td><strong>provides</strong></td><td>&quot;I <strong>can supply</strong> this capability.&quot;</td></tr><tr><td><strong>injects</strong></td><td>&quot;I <strong>need</strong> this capability; anyone may provide it.&quot; That is exactly what separates it from a dependency.</td></tr><tr><td><strong>provider</strong></td><td>An implementation of a capability. One capability may have several - they are <strong>alternatives</strong>, not a conflict.</td></tr></tbody></table>
+<p><strong>A capability conflict exists only in a plan.</strong> Several providers in the registry are a <strong>warning</strong> (<code>W-CAP-MULTIPLE</code>) because they are alternatives. Two providers of one capability inside <strong>one project</strong> is a hard error (<code>E-CAP-CONFLICT</code>), because the consumer cannot tell which it received.</p>
+<h2>Versions and status</h2>
+<table class="doc"><thead><tr><th>Term</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>version</strong></td><td>One published number, such as <code>1.0.0</code>. A tool may have several.</td></tr><tr><td><strong>latest</strong></td><td>The one installed by default when no version is named. It must be a genuinely published version.</td></tr><tr><td><strong>deprecated</strong></td><td>&quot;Something newer exists; prefer it.&quot; <strong>Still installable.</strong></td></tr><tr><td><strong>yanked</strong></td><td>&quot;This release is broken or unsafe; <strong>it must not be selected automatically</strong>.&quot; A different thing from deprecated.</td></tr><tr><td><strong>constraint</strong></td><td>The version requirement written in a dependency, such as <code>^1.1.0</code>.</td></tr><tr><td><strong>floor</strong></td><td>The host's minimum, such as <code>minEngineVersion: '2020.3'</code>. Below it, installation is refused.</td></tr></tbody></table>
+<p><strong>Deprecated is not yanked.</strong> Deprecated advises; yanked forbids. A yanked release <strong>stays listed</strong>, because an existing receipt may reference it.</p>
+<h2>Artifact types</h2>
+<table class="doc"><thead><tr><th>Term</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>archive</strong></td><td>A general container the core <strong>opens by itself</strong>: <code>zip</code>, <code>tgz</code>, <code>tar.gz</code>, <code>tar.zst</code>.</td></tr><tr><td><strong>package</strong></td><td>A proprietary container only <strong>an engine's adapter</strong> can open, such as <code>unitypackage</code>.</td></tr><tr><td><strong>file</strong></td><td>A single-file artifact with no container: a dll, a shader, a licence. Needs <code>targetPath</code>.</td></tr><tr><td><strong>external</strong></td><td><strong>No artifact is stored here</strong>; the manifest records where it lives (<code>url</code> + <code>ref</code>).</td></tr></tbody></table>
+<p><strong>The distinction that matters: archive vs package.</strong> The first is core knowledge, the second is engine knowledge. <code>unitypackage</code> is a package, not an archive - which is why the word appears nowhere in the core's code.</p>
+<h2>Say this, not that</h2>
+<table class="doc"><thead><tr><th>Not this</th><th>This</th></tr></thead><tbody><tr><td>package, bundle (when you mean the file)</td><td><strong>artifact</strong></td></tr><tr><td>metadata (when you mean the manifest)</td><td><strong>manifest</strong></td></tr><tr><td>installer, package</td><td><strong>artifact</strong> (or name the type: a container)</td></tr><tr><td>plugin library, tool collection</td><td><strong>registry</strong></td></tr><tr><td>importer program</td><td><strong>import tool</strong></td></tr><tr><td>dependency package</td><td><strong>dependency</strong></td></tr><tr><td>version lock</td><td><strong>constraint</strong></td></tr></tbody></table>
+    <p class="source">Generated from <code>docs/GLOSSARY.en.md</code> · <a href="index.html">All docs</a></p>
+  </main>
+</div>
+</body>
+</html>

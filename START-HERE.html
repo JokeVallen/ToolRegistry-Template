@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark" data-lang="zh">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,6 +13,13 @@
     --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
     --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
     --link: #9dbdd4; --link-hover: #c6dbe9;
+  }
+  /* Light is a second palette, not a filter: the accent and the two signal colours have to keep
+     their contrast against a light panel, so they are darkened rather than reused. */
+  :root[data-theme="light"] {
+    --bg: #f6f7f9; --panel: #ffffff; --panel-2: #eceff4; --line: #d6dbe3; --fg: #1b2027;
+    --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
+    --link: #2b5c83; --link-hover: #17405f;
   }
   html { scroll-behavior: smooth; }
   body {
@@ -201,8 +208,83 @@
     main { padding: 20px 16px 60px; }
   }
 </style>
+<script>(function () {
+  var META = {"languages":false};
+  var root = typeof document !== 'undefined' ? document.documentElement : null;
+
+  function stored(key, fallback) {
+    try {
+      var value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (error) { /* private mode */ }
+  }
+
+  function systemTheme() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark';
+    } catch (error) {
+      return 'dark';
+    }
+  }
+
+  var theme = stored('toolregistry-theme', systemTheme());
+  if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+  var lang = stored('toolregistry-lang', 'zh');
+  if (lang !== 'zh' && lang !== 'en') lang = 'zh';
+
+  function apply() {
+    // Defensive: this script is also loaded by the test harness, which has no documentElement.
+    if (!root || typeof root.setAttribute !== 'function') return;
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang === 'en' ? 'en' : 'zh-CN');
+  }
+
+  apply();
+
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', function () {
+    var themeButton = document.getElementById('theme-toggle');
+    if (themeButton) {
+      themeButton.textContent = theme === 'light' ? '☀' : '☾';
+      themeButton.addEventListener('click', function () {
+        theme = theme === 'light' ? 'dark' : 'light';
+        apply();
+        themeButton.textContent = theme === 'light' ? '☀' : '☾';
+        save('toolregistry-theme', theme);
+      });
+    }
+
+    var langButton = document.getElementById('lang-toggle');
+    if (langButton) {
+      // A page without the other language gets no switch: an inert button is worse than none.
+      var bilingual = document.querySelector('[data-lang]') !== null;
+      if (!bilingual) {
+        langButton.style.display = 'none';
+      } else {
+        langButton.textContent = lang === 'en' ? '中' : 'EN';
+        langButton.addEventListener('click', function () {
+          lang = lang === 'en' ? 'zh' : 'en';
+          apply();
+          langButton.textContent = lang === 'en' ? '中' : 'EN';
+          save('toolregistry-lang', lang);
+        });
+      }
+    }
+  });
+})();</script>
 </head>
 <body>
+<div class="switches">
+    <button id="theme-toggle" type="button" title="切换明暗 / Toggle theme">☾</button>
+  </div>
 <div class="layout">
   <nav>
     <div class="brand"><a href="index.html">← 入口</a> · Registry 起步包</div>
@@ -768,13 +850,13 @@
     
 <h4>本仓库（Registry）</h4>
 <ul class="docs">
-  <li><a href="docs/SPEC.zh-CN.md">格式规范</a>：合法数据长什么样（规范性文件），含迁移规则。</li>
-  <li><a href="docs/ATTRIBUTES.zh-CN.md">属性速查</a>：每个字段填什么（由 schema 生成）。</li>
-  <li><a href="docs/CONTRIBUTING.zh-CN.md">贡献指南</a>：加工具、发版本的完整流程。</li>
-  <li><a href="docs/ERRORS.zh-CN.md">错误码参考</a>：校验失败按码查改法。</li>
-  <li><a href="docs/GLOSSARY.zh-CN.md">术语表</a>：容易混的几个词。</li>
-  <li><a href="docs/FRONTEND-INTEGRATION.zh-CN.md">导入工具契约</a>：想自己写一个前端时读这个。</li>
-  <li><a href="README.md">README</a>：这份注册库的结构与三条命令。</li>
+  <li><a href="docs/SPEC.zh-CN.html">格式规范</a>：合法数据长什么样（规范性文件），含迁移规则。</li>
+  <li><a href="docs/ATTRIBUTES.zh-CN.html">属性速查</a>：每个字段填什么（由 schema 生成）。</li>
+  <li><a href="docs/CONTRIBUTING.zh-CN.html">贡献指南</a>：加工具、发版本的完整流程。</li>
+  <li><a href="docs/ERRORS.zh-CN.html">错误码参考</a>：校验失败按码查改法。</li>
+  <li><a href="docs/GLOSSARY.zh-CN.html">术语表</a>：容易混的几个词。</li>
+  <li><a href="docs/FRONTEND-INTEGRATION.zh-CN.html">导入工具契约</a>：想自己写一个前端时读这个。</li>
+  <li><a href="README.html">README</a>：这份注册库的结构与三条命令。</li>
 </ul>
 <h4>ToolImport 仓库</h4>
 <ul class="docs">

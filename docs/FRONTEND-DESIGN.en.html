@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor Front-End Design</title>
+<!--
+  GENERATED PAGE - do not edit.
+  Source: docs/FRONTEND-DESIGN.en.md · rebuild with: node tools/build-registry-template.mjs
+-->
+<style>:root {
+    --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
+    --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
+    --link: #9dbdd4; --link-hover: #c6dbe9;
+  }
+  /* Light is a second palette, not a filter: the accent and the two signal colours have to keep
+     their contrast against a light panel, so they are darkened rather than reused. */
+  :root[data-theme="light"] {
+    --bg: #f6f7f9; --panel: #ffffff; --panel-2: #eceff4; --line: #d6dbe3; --fg: #1b2027;
+    --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
+    --link: #2b5c83; --link-hover: #17405f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.75 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  main a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(127,166,196,.45); text-underline-offset: 2px; }
+  main a:hover { color: var(--link-hover); text-decoration-color: var(--link-hover); }
+  code {
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px;
+    font-variant-ligatures: none; background: var(--panel-2); padding: 1px 5px; border-radius: 4px;
+  }
+  .switches {
+    position: fixed; top: 12px; right: 14px; z-index: 50; display: flex; gap: 6px;
+  }
+  .switches button {
+    background: var(--panel); color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 9px; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
+  }
+  .switches button:hover { color: var(--fg); border-color: var(--accent); }
+  html[data-lang="zh"] [data-lang="en"], html[data-lang="en"] [data-lang="zh"] { display: none !important; }
+  .layout { display: flex; align-items: flex-start; max-width: 1180px; margin: 0 auto; }
+  nav.docs {
+    position: sticky; top: 0; flex: 0 0 232px; max-height: 100vh; overflow: auto;
+    padding: 26px 14px 30px 18px; border-right: 1px solid var(--line);
+  }
+  nav.docs .home { display: block; color: var(--dim); font-size: 12px; text-decoration: none; margin-bottom: 14px; }
+  nav.docs .home:hover { color: var(--link-hover); }
+  nav.docs a.topic {
+    display: block; padding: 5px 9px; border-radius: 5px; color: var(--dim);
+    text-decoration: none; font-size: 13.5px;
+  }
+  nav.docs a.topic:hover { background: var(--panel); color: var(--fg); }
+  nav.docs a.topic.current { background: var(--panel); color: var(--fg); font-weight: 600; }
+  main.doc { flex: 1 1 auto; min-width: 0; padding: 30px 30px 90px; max-width: 870px; }
+  main.doc > h1:first-child { margin-top: 0; }
+  main.doc h1 { font-size: 24px; margin: 26px 0 10px; }
+  main.doc h2 { font-size: 19px; margin: 30px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  main.doc h3 { font-size: 16px; margin: 22px 0 6px; }
+  main.doc h4 { font-size: 14.5px; margin: 18px 0 4px; color: var(--dim); }
+  main.doc p, main.doc li { font-size: 14.5px; }
+  main.doc ul, main.doc ol { padding-left: 22px; }
+  main.doc li { margin: 3px 0; }
+  main.doc pre.code {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 12px 14px;
+    overflow: auto; font-size: 12.5px; line-height: 1.55;
+  }
+  main.doc pre.code code {
+    background: none; padding: 0; font-size: 12.5px; white-space: pre; font-variant-ligatures: none;
+  }
+  main.doc table.doc { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+  main.doc table.doc th, main.doc table.doc td {
+    border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top;
+  }
+  main.doc table.doc th { background: var(--panel-2); font-weight: 600; }
+  main.doc blockquote {
+    margin: 12px 0; padding: 4px 0 4px 14px; border-left: 3px solid var(--line); color: var(--dim);
+  }
+  main.doc hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+  .langswitch { position: fixed; top: 14px; right: 96px; z-index: 50; font-size: 12px; color: var(--dim); }
+  .langswitch a { color: var(--dim); text-decoration: none; }
+  .langswitch a.current { color: var(--fg); font-weight: 600; }
+  .langswitch a:hover { color: var(--link-hover); }
+  .source { color: var(--dim); font-size: 12px; margin-top: 40px; border-top: 1px solid var(--line); padding-top: 10px; }
+  ul.topics { list-style: none; padding: 0; }
+  ul.topics li {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+    border-bottom: 1px solid var(--line); padding: 10px 2px;
+  }
+  ul.topics .pair a { margin-left: 14px; font-size: 12.5px; }
+</style>
+<script>(function () {
+  var META = {"languages":false};
+  var root = typeof document !== 'undefined' ? document.documentElement : null;
+
+  function stored(key, fallback) {
+    try {
+      var value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (error) { /* private mode */ }
+  }
+
+  function systemTheme() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark';
+    } catch (error) {
+      return 'dark';
+    }
+  }
+
+  var theme = stored('toolregistry-theme', systemTheme());
+  if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+  var lang = stored('toolregistry-lang', 'zh');
+  if (lang !== 'zh' && lang !== 'en') lang = 'zh';
+
+  function apply() {
+    // Defensive: this script is also loaded by the test harness, which has no documentElement.
+    if (!root || typeof root.setAttribute !== 'function') return;
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang === 'en' ? 'en' : 'zh-CN');
+  }
+
+  apply();
+
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', function () {
+    var themeButton = document.getElementById('theme-toggle');
+    if (themeButton) {
+      themeButton.textContent = theme === 'light' ? '☀' : '☾';
+      themeButton.addEventListener('click', function () {
+        theme = theme === 'light' ? 'dark' : 'light';
+        apply();
+        themeButton.textContent = theme === 'light' ? '☀' : '☾';
+        save('toolregistry-theme', theme);
+      });
+    }
+
+    var langButton = document.getElementById('lang-toggle');
+    if (langButton) {
+      // A page without the other language gets no switch: an inert button is worse than none.
+      var bilingual = document.querySelector('[data-lang]') !== null;
+      if (!bilingual) {
+        langButton.style.display = 'none';
+      } else {
+        langButton.textContent = lang === 'en' ? '中' : 'EN';
+        langButton.addEventListener('click', function () {
+          lang = lang === 'en' ? 'zh' : 'en';
+          apply();
+          langButton.textContent = lang === 'en' ? '中' : 'EN';
+          save('toolregistry-lang', lang);
+        });
+      }
+    }
+  });
+})();</script>
+</head>
+<body>
+<div class="switches">
+    <button id="theme-toggle" type="button" title="切换明暗 / Toggle theme">☾</button>
+  </div>
+<div class="langswitch">
+  <a href="FRONTEND-DESIGN.zh-CN.html" class="current">EN</a> /
+  <a href="FRONTEND-DESIGN.zh-CN.html">中文</a>
+</div>
+<div class="layout">
+    <nav class="docs">
+      <a class="home" href="../index.html">← Home</a>
+      <a class="topic" href="SPEC.en.html">Specification</a>
+      <a class="topic" href="ATTRIBUTES.en.html">Field reference</a>
+      <a class="topic" href="CONTRIBUTING.en.html">Contributing</a>
+      <a class="topic" href="ERRORS.en.html">Error codes</a>
+      <a class="topic" href="GLOSSARY.en.html">Glossary</a>
+      <a class="topic current" href="FRONTEND-DESIGN.en.html">Front-end design</a>
+      <a class="topic" href="FRONTEND-INTEGRATION.en.html">Front-end integration</a>
+      <a class="topic" href="index.html">All docs</a>
+    </nav>
+  <main class="doc">
+<h1>Editor Front-End Design</h1>
+<blockquote><p>For anyone iterating on the editor front end. It records <strong>why</strong> the design is what it is, <strong>what is promised</strong>, <strong>what may change</strong>, and <strong>where the boundaries are</strong>. Read sections 2 and 6 before changing anything.</p></blockquote>
+<h2>1. What this front end is</h2>
+<p>A Unity editor window: browse the registry, review an install plan, install and uninstall.</p>
+<p>The backend is a Node CLI (<code>utool</code>). The front end <strong>displays and forwards only</strong>; it contains no format logic.</p>
+<h2>2. One non-negotiable division of labour</h2>
+<p><strong>Every judgement that can be wrong lives in Node. The front end makes none.</strong></p>
+<table class="doc"><thead><tr><th>Judgement</th><th>Owner</th></tr></thead><tbody><tr><td>Parse <code>.yaml</code>, validate the schema</td><td>backend</td></tr><tr><td>Resolve dependencies, pick versions, detect cycles</td><td>backend</td></tr><tr><td>Verify sha256, decide install order</td><td>backend</td></tr><tr><td>Write receipts, count references, define uninstall bounds</td><td>backend</td></tr><tr><td>Draw the UI, collect clicks, show results</td><td>front end</td></tr></tbody></table>
+<p><strong>Why</strong>: a Unity project with a compile error loads <strong>no editor assembly</strong>, so this window <strong>cannot open at all</strong>. It therefore must not hold any critical responsibility — otherwise &quot;the project does not compile&quot; would also mean &quot;the tool cannot repair the project&quot;. The command line always works, and that escape route is deliberate.</p>
+<blockquote><p>Corollary: the front end must <strong>never</strong> read <code>.yaml</code> itself, compute a hash, or guess a dependency. When it needs new information, the backend emits another record.</p></blockquote>
+<h2>3. The front-end/backend contract</h2>
+<p>The front end uses <code>--records</code>, not JSON: <code>UnityEngine.JsonUtility</code> <strong>cannot deserialise a root-level array</strong>, and hand-writing a JSON parser in the editor would redo the backend's work with more ways to get it wrong.</p>
+<p>Format: <code>TYPE \t field \t field ... \n</code>, with TAB/CR/LF escaped. The first record is <code>META recordsVersion &lt;n&gt;</code>, so a reader can tell whether it understands the stream.</p>
+<p>Records the front end consumes:</p>
+<table class="doc"><thead><tr><th>record</th><th>used for</th></tr></thead><tbody><tr><td><code>META recordsVersion</code></td><td>contract version</td></tr><tr><td><code>TOOL</code></td><td>the tool list (<code>list</code>)</td></tr><tr><td><code>VERSIONS</code></td><td>which versions a tool publishes</td></tr><tr><td><code>TARGET</code></td><td>per engine: floors and artifact type</td></tr><tr><td><code>DETAIL</code> / <code>DEPENDENCY</code> / <code>WILLINSTALL</code></td><td>detail pane (<code>show</code>)</td></tr><tr><td><code>PLANTOOL</code> / <code>PLANFILE</code> / <code>PLAN</code></td><td>the plan and its verification (<code>plan</code>)</td></tr><tr><td><code>INSTALLED</code> / <code>INSTALLEDFILE</code></td><td>install outcome</td></tr><tr><td><code>REMOVED</code> / <code>REMOVEDDIR</code> / <code>RECEIPTREMOVED</code></td><td>uninstall outcome</td></tr><tr><td><code>RECEIPT</code></td><td>what is installed (<code>status</code>)</td></tr><tr><td><code>PROBLEM</code> / <code>ERROR</code></td><td>why something failed</td></tr></tbody></table>
+<p><strong>Reordering fields breaks the contract.</strong> Appending a field or adding a record type is safe (an older front end ignores it); removing or reordering requires bumping <code>recordsVersion</code> and updating the note in <code>apps/cli/lib/records.js</code>.</p>
+<p><strong>A mistake made here once</strong>: <code>PLAN</code> packs several key/value pairs into <strong>one</strong> record (<code>PLAN tools 2 bytes 2968 ok true</code>), it is not <code>RESULT key value</code>. Matching on &quot;the first field equals ok&quot; never matched, so <strong>a verified plan displayed as &quot;could not be verified&quot;</strong>. Read this shape as key/value pairs; never assume a position.</p>
+<h2>4. Layout</h2>
+<pre class="code"><code>┌──────────────────────────────────────────────────────────────┐
+│ [Refresh] [Registry: ToolRegistry] [Settings...] [search] │
+├────────────────────────┬─────────────┬───────────────────────┤
+│ [All ▾]            3/5 │             │ Tool Name  [installed] │
+│ ══════════════════════ │             │ id (copyable)          │
+│ ● Guard Utils    1.1.0 │             │ version • type         │
+│ ○ Selection History    │             │ Homepage Doc Notes MIT │
+│                        │             │ Engines                │
+│                        │             │   - unity              │
+│                        │             │ Provides               │
+│                        │             │   - script.api.x       │
+│                        │             │ Dependencies (jump)    │
+├────────────────────────┴─────────────┴───────────────────────┤
+│ Install into [________________] [Default]                     │
+│ [Verify and plan] [Install] [Uninstall...]                   │
+└──────────────────────────────────────────────────────────────┘
+statusMessage</code></pre>
+<ul><li><strong>toolbar</strong>: refresh, a <strong>read-only</strong> registry indicator (click it to open settings), a</li></ul>
+<p>  settings entry point, and search</p>
+<ul><li><strong>left column</strong>: a right-aligned collapse control, the filter on one row (plus a value</li></ul>
+<p>  row when the mode takes one), a separator, then the tool list; <strong>right-click a row</strong> for   its versions</p>
+<ul><li><strong>collapsed left column</strong>: a narrow rail holding only the button that restores it, left</li></ul>
+<p>  where the list was, so the control that reverses an action sits where the action happened</p>
+<ul><li><strong>vertical rule</strong> between the list and the details</li><li><strong>right column</strong>: details, with the links (<code>Homepage</code>, <code>Documentation</code>, <code>Release notes</code>,</li></ul>
+<p>  and the licence by <strong>name only</strong> — <code>MIT</code>, not <code>License: MIT</code>) on one row under the   identity block</p>
+<ul><li><strong>install destination</strong> sits directly above the action buttons, where the consequence of</li></ul>
+<p>  changing it is visible: the plan it invalidates is right there</p>
+<ul><li>row prefix: <code>●</code> installed / <code>○</code> not installed; <code>[no unity]</code> means this engine is unsupported</li></ul>
+<p><strong>The count appears exactly once</strong> (in the filter row). It used to appear at the toolbar's right end, again beside the filter, and a third time in the status line — the same number three times, which reads as three separate facts. <strong>The status line reports the outcome of an action, not state that is already on screen.</strong></p>
+<p><strong>Why search is in the toolbar and the filter is not</strong>: a search box is what people look for in a toolbar; a filter reads as a heading over the list it affects. The difference is deliberate.</p>
+<p><strong>Why a row is not a Button</strong>: a Button draws its text <strong>centred</strong> with padding, so short and long names started at different x positions and read as a ragged block. Every name in a list must start at the same left edge.</p>
+<p><strong>The selection highlight has to be drawn explicitly.</strong> The selected style once copied <code>EditorStyles.label.onNormal.background</code> — and a plain label has <strong>no</strong> background in its on state, so it copied <code>null</code> and the selected row was <strong>pixel-identical</strong> to every other row. Clicking a tool genuinely looked like it did nothing. Rows now reserve their rect, fill it, then draw the text, which <strong>depends on no style internals</strong> and so cannot silently regress the same way.</p>
+<h3>4.1 Settings live in their own window</h3>
+<p>Configuration (registry location, CLI path, Node path) sits in a <strong>separate window</strong>; the toolbar keeps a read-only indicator and one entry point.</p>
+<p><strong>Why</strong>: configuration competed with the tool list for horizontal room, and every future setting would compete again. Separated, <strong>a new setting cannot disturb the main layout at all</strong>.</p>
+<p>Paths are stored in <code>EditorPrefs</code> — <strong>per user, per machine</strong>, never in the project: a path to a checkout is a property of the machine, and committing it would break every other developer.</p>
+<p>The settings window <strong>shows what the automatic resolution currently finds</strong>, so &quot;empty means automatic&quot; is verifiable rather than a guess.</p>
+<h3>4.1 Readability rules for the details pane</h3>
+<table class="doc"><thead><tr><th>rule</th><th>how</th></tr></thead><tbody><tr><td>copyable values must be copyable</td><td>id, URL, hash, path use <code>SelectableLabel</code></td></tr><tr><td>multiple values are a <strong>list</strong>, not a row</td><td><code>Engines</code>/<code>Provides</code>/<code>Injects</code>/<code>Tags</code> are a header plus one multi-line <code>- value</code> block. Chips were tried and removed: a capability name is longer than the gap between two chips, so they wrapped mid-token and read as one string. The lines share ONE label rather than one control each: a vertical layout separates every control, so five items became five paragraphs</td></tr><tr><td>clickable things must be clickable</td><td>homepage, documentation, release notes and licence are <strong>links</strong> with the <strong>destination as the tooltip</strong>, separated by <code>·</code>; the licence shows its <strong>name only</strong> — in a row of four links a <code>License:</code> prefix reads as a labelled field; dependencies are clickable rows, with the first one selected by default</td></tr><tr><td>a scrollable region must show something</td><td>the dependency list gets an explicit height, because inside the details scroll view <code>ExpandHeight</code> has nothing to expand into; the plan's long paths sit in a <strong>horizontal</strong> scroll view, since clipping cuts off the file name</td></tr><tr><td>focusable things must show it</td><td>the search field sets a <strong>text cursor</strong>; links set a <strong>link cursor</strong></td></tr><tr><td>empty values are still shown</td><td><code>- (none)</code> rather than omitting the section — &quot;nothing&quot; is information</td></tr><tr><td>constraints in plain words</td><td><code>^1.1.0</code> → <code>1.1.0 or newer (same major)</code></td></tr><tr><td>regions must be visible</td><td>separators between toolbar / list / details / actions</td></tr><tr><td>the destination is visible before writing</td><td>an <code>Install Into</code> header plus field above the buttons, empty meaning &quot;as the manifest declares&quot;; the empty state is written <strong>inside the field</strong> and the full rule is the header's <strong>tooltip</strong>; <code>Browse...</code> names a folder with the panel and converts it to a project-relative path</td></tr><tr><td>the declared inventory and the plan are not both drawn</td><td>with a valid plan on screen, <code>Installs N file(s)</code> is hidden: the plan lists the final destinations (dependencies included, <code>--into</code> applied) while the declared list is only a promise. Without a plan, the declared list is the preview</td></tr><tr><td>a moved tool is reported</td><td>after an uninstall whose recorded files were all gone, the status line names the directory that is no longer there instead of reporting &quot;0 files removed&quot;</td></tr></tbody></table>
+<h3>4.2 Search</h3>
+<p>Case-insensitive <strong>substring</strong> match on the <strong>display name</strong>.</p>
+<p>It matches the display name <strong>only</strong> — not id, type, tags or provides. The reason is a real report: typing <code>s</code> returned <code>gITF Importer</code>, because its <strong>id is <code>libs-gltf-importer</code></strong>. The match was real but the id is not on screen, and <strong>matching something the user cannot see is indistinguishable from a bug</strong>. Filtering tags and capabilities gets its own control (4.3), which states what it is filtering on.</p>
+<p><strong>Why there is no debounce: there is nothing to debounce.</strong></p>
+<p>Filtering is a substring scan over a few short in-memory strings; it costs <strong>microseconds</strong>. A debounce would add a timer, a repaint dependency, and a frame of lag, in order to hide a cost that does not exist.</p>
+<p>What actually matters is <strong>not recomputing every frame</strong> (see 4.4), and the trigger for that is a <strong>measured cost</strong>, not the fact that the user is typing.</p>
+<p><strong>Why there is no debounce: there is nothing to debounce.</strong></p>
+<p>Filtering is a substring scan over a few short in-memory strings; it costs <strong>microseconds</strong>. A debounce would add a timer, a repaint dependency, and a frame of lag, in order to hide a cost that does not exist.</p>
+<p>What actually matters is <strong>not recomputing every frame</strong> (see 4.4), and the trigger for that is a <strong>measured cost</strong>, not the fact that the user is typing.</p>
+<h3>4.3 Filtering</h3>
+<p>A <code>Show:</code> dropdown. The first four are fixed subsets:</p>
+<table class="doc"><thead><tr><th>option</th><th>meaning</th></tr></thead><tbody><tr><td>All</td><td>everything</td></tr><tr><td>Installed</td><td>installed in this project</td></tr><tr><td>Not installed</td><td>the rest</td></tr><tr><td>This engine</td><td>tools declaring a target for this engine</td></tr></tbody></table>
+<p>The last four each take a <strong>value</strong>, chosen in a second dropdown: <code>Tag is</code>, <code>Provides</code>, <code>Injects</code>, <code>Depends on</code>.</p>
+<p><strong>Why a dropdown rather than several independent toggles</strong>: two toggles can both be on, producing &quot;installed and not installed&quot;, which means nothing and leaves the user to work out which combination they are in. <strong>One choice cannot contradict itself.</strong></p>
+<p><strong>Why the value list is collected from the listing, not typed</strong>: the second dropdown can only offer values that exist, so a typo cannot silently produce an empty list. That is the same failure the backend's <code>--provides</code> hint exists to prevent, and a front end already holding the listing needs no round trip to avoid it.</p>
+<p><strong><code>Depends on</code> is the reverse lookup.</strong> It answers &quot;what would break if I removed this&quot;, which the listing can answer because <code>TOOL</code> carries each tool's dependency ids.</p>
+<p>Capability and tag matching is <strong>per element, not substring</strong>: the tag <code>editor</code> must not select a tool tagged <code>editor-tool</code>. A substring match would be defensible in the data and wrong on screen — the same failure shape as a search that matches an id the user cannot see.</p>
+<p><code>This engine</code> only asks whether a target exists for this engine. It says nothing about whether the artifact can be <strong>installed</strong> — that needs the <code>TARGET</code> record's artifact type, which would cost one <code>show</code> call per tool.</p>
+<h3>4.3a Version selection</h3>
+<p>A tool may publish several releases. The choice lives <strong>on the tool row</strong>: right-clicking a row opens its releases under a first-level <strong><code>Versions</code></strong> submenu. That is the only control.</p>
+<ul><li><strong>Why a submenu rather than a flat menu.</strong> The row menu is where every per-tool action belongs.</li></ul>
+<p>  Spreading the versions across the top level spends the whole menu on one decision, and the next   action (uninstall, copy the id, open the receipt) then has to be squeezed in beside them or   reshuffles the list every time one is added. One <code>Versions</code> entry leaves that room structurally,   rather than by choosing a sort order.</p>
+<ul><li><strong>Why the row and not the description.</strong> The description is <em>per release</em> — it changes when</li></ul>
+<p>  the version does — so a version list inside it sat under text that the click was about to   replace. Choosing a release is choosing which tool record to look at, so it belongs beside   the record's name.</p>
+<ul><li><strong>Why a menu and only a menu.</strong> An inline list under the row was tried and removed: it</li></ul>
+<p>  duplicated the menu, grew the list column unpredictably, and put a per-release control in a   column that describes tools rather than releases. A right-click is one gesture and it is   where a user who has used a file list looks first — so the window says the gesture out loud   (below) instead of adding a second control.</p>
+<ul><li><strong>The menu carries both facts.</strong> A check mark is the <strong>pinned</strong> release; <code> • installed</code> marks</li></ul>
+<p>  the release actually in the project. They differ exactly when an update is available, which   is when the distinction matters: &quot;selected&quot; alone would make the checked entry look installed.</p>
+<ul><li>The pin is stored as <strong><code>id@version</code></strong>, and belongs to the tool it was chosen for.</li></ul>
+<p>  Selecting a different tool drops it, because <code>0.9.0</code> means nothing for a tool that never   published one.</p>
+<ul><li>The details are <strong>re-fetched for the pinned release</strong>, since descriptions, floors and</li></ul>
+<p>  artifacts can differ between versions. Showing latest's metadata beside a plan for an   older release would be worse than showing nothing.</p>
+<ul><li><code>show</code>, <code>plan</code> and <code>install</code> are all given the pinned reference, so the release that was</li></ul>
+<p>  described is the release that gets written.</p>
+<ul><li>It lives in <code>SessionState</code> like the selection, so a recompile cannot silently move the</li></ul>
+<p>  user from the version they chose back to latest.</p>
+<p><strong>The gesture is named.</strong> A context menu has no visible affordance, so the header names it for the case that needs it: a tool installed behind <code>latest</code> says which release would update it. <strong>&quot;N versions published&quot; was removed</strong>: it stated a count and then a gesture the menu already carries, and it spent a line on every tool that has more than one release.</p>
+<p><strong>One backend call at a time, and the waiting one is the newest.</strong> The pane can only show one release, so a request made while another is running waits, and a <strong>new request replaces the waiting one</strong> — otherwise the pin has moved while the screen still shows the previous release (that is &quot;choose 0.9.0 and see 1.0.0&quot;). A superseded request must not paint its stale result afterwards.</p>
+<p><strong>The installed release is named too.</strong> &quot;Installed&quot; cannot answer the question a version selector raises: installed <strong>at which version</strong>. The badge reads <code>installed 1.0.0</code>, the menu marks that release, and when the installed one is not <code>latest</code> the header says so outright instead of leaving the user to compare two numbers in different places.</p>
+<p><strong>Release notes are a link, not a panel.</strong> Changelogs are maintained <em>after</em> publication, so a copy inside the registry is stale exactly when someone is deciding whether to upgrade; and a front end cannot render notes it has no data for. <code>releaseNotes</code> is a URI, and the window shows only a <code>Release notes</code> link. <code>What changed</code> is gone for the same reason — it was the one place in the tool that would rather show you an old copy than the source.</p>
+<h3>4.4 Performance</h3>
+<p>IMGUI <strong>repaints on every mouse move</strong>, so per-frame cost is multiplied. What is done:</p>
+<ul><li>**The filtered list is computed once per frame, and only recomputed when its inputs</li></ul>
+<p>  change.<strong> The toolbar (for the count) and the list used to each call <code>VisibleTools()</code>, so   every repaint filtered the whole registry twice and allocated two lists. It is now built   once per <code>OnGUI</code>, cached against (search text, filter, </strong>filter value**, tool count).   The filter value is part of the key because changing only the value — <code>editor</code> to   <code>workflow</code> — would otherwise leave a stale list on screen, the mode having not changed.</p>
+<ul><li><strong>A change to the installed set invalidates that cache</strong>, or a freshly installed tool</li></ul>
+<p>  would not appear under <code>Installed</code>.</p>
+<p><strong>A known, deliberate trade-off</strong>: rows are drawn with explicit rects rather than <code>GUILayout.Toggle</code>, so each row builds a <code>GUIContent</code> on every repaint. With <strong>tens</strong> of tools that is fine. At <strong>thousands</strong>, virtual scrolling (draw only visible rows) becomes worth doing — and the trigger then is a <strong>measured count</strong>, not a precaution.</p>
+<p><strong>State is serialised, not concurrent</strong>: <code>Run</code> uses <strong>one</strong> <code>busy</code> flag to serialise all backend calls. That is deliberate (no concurrent writes to one project), but <strong>callers must queue themselves</strong> — see 4.5.</p>
+<h3>4.5 The calling convention that single flag imposes</h3>
+<p><code>Run</code> holds a <code>busy</code> flag and <strong>returns immediately, doing nothing, while it is set</strong>.</p>
+<p><strong>This took two attempts to fix, and the first diagnosis was wrong</strong> — worth recording.</p>
+<p>The first diagnosis was that <code>OnEnable</code> made two calls side by side (<code>RefreshInstalled()</code> then <code>Refresh()</code>) and they collided. Sequencing them through a callback did <strong>not</strong> fix the symptom.</p>
+<p>The real cause is subtler: <strong>the callback runs inside <code>Run</code>, while <code>busy</code> is still true</strong>. <code>busy = false</code> sits in the <code>finally</code>, and <code>onSuccess(records)</code> comes <strong>before</strong> it. So starting another call from a callback — whether written as a callback or side by side — is <strong>dropped the same way</strong>. A new shape, the same collision.</p>
+<p><strong>The convention</strong>:</p>
+<ol><li><strong>Never start a call while another is in flight.</strong> To sequence work, use</li></ol>
+<p>   <code>QueueCommand(...)</code>, which defers it to the <code>finally</code> — the first moment <code>busy</code> is    actually clear.</p>
+<ol><li><strong>Disable controls while busy</strong>, or clicks vanish silently. Rows are disabled while</li></ol>
+<p>   busy: <strong>a click that does nothing is worse than a click that is visibly unavailable.</strong></p>
+<ol><li>The queue is a <strong>single slot</strong>: a burst of clicks keeps only the newest, because earlier</li></ol>
+<p>   requests are stale by the time they would run.</p>
+<pre class="code" data-lang-name="csharp"><code>// right: deferred to the finally
+QueueCommand(() =&gt; RefreshInstalled());
+
+// wrong: called from a callback -- busy is still set, so it is dropped
+RefreshInstalled();</code></pre>
+<h3>4.3 Settled interaction constraints</h3>
+<ul><li><strong>The engine selector is gone.</strong> This window <strong>is</strong> the Unity editor, and the selector</li></ul>
+<p>  once allowed a Godot plugin to be installed into a Unity project (the backend is   engine-agnostic and accepted it). <strong>A UI may only offer what it can honour.</strong></p>
+<ul><li><strong>An unsupported tool cannot be installed.</strong> For an <code>external</code>/git target the backend</li></ul>
+<p>  reports without resolving, so installing would &quot;succeed&quot; while writing nothing.   <code>Verify and plan</code> and <code>Install</code> are therefore <strong>disabled</strong>, with a prominent explanation   (a <code>Warning</code>, not <code>Info</code>) both in the detail pane and above the buttons.   <strong><code>Uninstall</code> is deliberately NOT disabled</strong> — something already installed must always be   removable, or the user is trapped with files they cannot get rid of.</p>
+<ul><li><strong>Targets shows this engine only.</strong> Other engines are stated factually but not offered:</li></ul>
+<p>  <code>Also ships a target for: godot (not installable here)</code>. Hiding them entirely would   contradict <code>utool show</code> output, and a user would then trust neither.</p>
+<ul><li><strong>Uninstall is enabled only when installed.</strong> Otherwise the button is disabled and reads</li></ul>
+<p>  <code>Uninstall (not installed)</code>. A clickable button whose only outcome is an error reads as   &quot;the tool is broken&quot; rather than &quot;this was never installed&quot;.</p>
+<ul><li><strong>The listing is cached per session.</strong> Unity destroys an <code>EditorWindow</code> on close, so</li></ul>
+<p>  without a cache every reopen demands Refresh → re-select → re-Verify. <code>Refresh</code> still   re-reads on demand, and <strong>a failed refresh must not replace a good listing with an empty   one</strong>.</p>
+<ul><li><strong>Destructive actions need confirmation</strong> that states the consequence (one dialog each for</li></ul>
+<p>  install and uninstall).</p>
+<ul><li><strong>An empty list distinguishes the two kinds of empty</strong>: &quot;the registry has no tools&quot; and</li></ul>
+<p>  &quot;nothing matches the current search or filter&quot; have different causes and different fixes.</p>
+<h2>5. Styling and UI framework</h2>
+<p><strong>Today: IMGUI (<code>EditorGUILayout</code>).</strong> Reasons: no dependencies, one file, no build step, consistent behaviour across Unity versions.</p>
+<p><strong>Recorded direction: UIToolkit (UIElements).</strong> Raised during iteration, and the reasoning holds — better performance (retained mode, no control-tree rebuild), better styling (USS), stronger layout.</p>
+<p><strong>The migration is not free</strong>, and the cost comes first:</p>
+<table class="doc"><thead><tr><th>item</th><th>impact</th></tr></thead><tbody><tr><td>The whole window is rewritten</td><td>~700 lines, with logic and display currently interleaved</td></tr><tr><td>Version floor</td><td><code>minEngineVersion</code> is <code>2019.4</code> today; UIElements is comfortably stable from 2021+</td></tr><tr><td>Testing changes</td><td>it relies on type-checking plus behaviour tests; UIElements needs a new approach</td></tr></tbody></table>
+<p><strong>Recommended path</strong> (do not start before step 1):</p>
+<ol><li><strong>Separate logic from display first</strong> — <code>BackendRecords</code> is already pure logic with</li></ol>
+<p>   <strong>executable tests</strong>; keep pulling state apart from rendering;</p>
+<ol><li>then swap the rendering layer, at which point the framework change is low-risk.</li></ol>
+<blockquote><p>No timeline is promised. This is a direction with an explicit precondition, not a to-do.</p></blockquote>
+<h2>6. Target version and scope (this is the promise)</h2>
+<p><strong>Stable target: <code>v1.0</code> — the current feature set frozen; fixes only afterwards.</strong></p>
+<p><code>v1.0</code> includes (<strong>all implemented and tested</strong>):</p>
+<ul><li>browse the registry, inspect a tool's details and dependencies</li><li>resolve dependencies and produce an install plan</li><li>verify an artifact (size + sha256) before anything is written</li><li>install and uninstall, with receipts, reference counting and empty-directory cleanup</li><li>refuse by default to uninstall a tool another installed tool depends on; <code>--force</code> overrides</li><li>report an orphaned dependency without removing it automatically</li></ul>
+<p><strong>Explicitly outside <code>v1.0</code></strong> (written down rather than glossed over):</p>
+<table class="doc"><thead><tr><th>item</th><th>status</th></tr></thead><tbody><tr><td>Actually cloning <code>external</code> / git sources</td><td><strong>not implemented</strong>; the UI <strong>disables</strong> it and says why</td></tr><tr><td>Rollback actually restoring bytes</td><td><strong>not implemented</strong>; reports the pointer only</td></tr><tr><td>UIToolkit migration</td><td><strong>not doing it</strong>; compatibility first, IMGUI continues</td></tr><tr><td>User-overridable install location</td><td><strong>v1.1</strong> (below)</td></tr><tr><td>Front ends for other engines</td><td>backend supports it; only Unity ships</td></tr></tbody></table>
+<p><strong>Will features be added after <code>v1.0</code>?</strong> Yes, under one rule: <strong>additive only</strong>. New record types, new optional fields and new engine adapters are allowed; changing existing semantics requires a new major version.</p>
+<h3>6.1 Roadmap (a route, not dated promises)</h3>
+<p><strong><code>v1.0</code> — a shaped UI, and an honest presentation of what works</strong></p>
+<ul><li>three-part layout: toolbar row / list on the left / details on the right</li><li>the list shows <strong>installed state</strong>, with an installed-only filter</li><li><strong>search</strong> (id, display name, tag)</li><li>a tool that is not installed: Uninstall disabled</li><li><strong>unsupported tools (<code>external</code>/git) cannot be installed</strong>, with the reason shown plainly</li></ul>
+<p>  in the detail pane</p>
+<ul><li>loading / empty / failed are all shown explicitly</li></ul>
+<blockquote><p>The test: <strong>anything in the UI that cannot be used must make clear why.</strong></p></blockquote>
+<p><strong><code>v1.1</code> — override the install location</strong></p>
+<ul><li>a tool declares a <strong>suggested</strong> location (e.g. plugins suggest <code>Assets/Plugins</code>)</li><li>the user may <strong>override</strong> it per project or per tool; the override is project-local config</li></ul>
+<p>  and never written back to the registry</p>
+<ul><li>the receipt records the <strong>actual</strong> location, so uninstall stays exact</li><li>requires rebuilding unitypackage artifacts into a relocatable shape (see 6.2)</li></ul>
+<p><strong><code>v1.2</code> — provenance and updates</strong></p>
+<ul><li>an installed tool shows <strong>current vs available version</strong>, and can be updated</li><li><code>status</code> exposes the version pointer so update history is visible</li></ul>
+<p><strong><code>v2.0</code> (provisional, not promised)</strong></p>
+<ul><li>git / <code>external</code> sources actually resolved</li><li>rollback actually restoring bytes</li><li>UIToolkit (by then the Unity floor will likely have risen, and the precondition is that</li></ul>
+<p>  logic and rendering are already separated)</p>
+<h3>6.2 Who owns the install path: implemented</h3>
+<p><strong>The user was right</strong>: project layout varies by project, and a tool must not unilaterally pin it. Implementing it changed the sketch in three places:</p>
+<table class="doc"><thead><tr><th>the sketch</th><th>what it does now</th><th>why</th></tr></thead><tbody><tr><td>a new <code>suggestedRoot</code> field</td><td>no new field: <code>contentRoot</code> / <code>targetPath</code> <strong>are</strong> the suggestion</td><td>a declared root is a second source of truth; the moment it disagrees with where entries land, files are written outside the directory the user chose</td></tr><tr><td>the manifest names the root</td><td>the root is <strong>derived</strong> from the landed paths (their common directory)</td><td>same reason: the only fact that cannot be wrong is where the files go</td></tr><tr><td>a <code>unitypackage</code> <strong>cannot</strong> be relocated</td><td>it <strong>can</strong>: the adapter reports each <code>pathname</code> and writes through the core's write context, so the rewrite happens in one place</td><td>the destination is baked in at build time, but the <em>write</em> still asks the core where it goes</td></tr></tbody></table>
+<p>What it does:</p>
+<ol><li><strong>Default follows the manifest.</strong> With nothing typed, the behaviour is exactly what it was.</li><li><strong>The user may override</strong> (<code>utool install --into &lt;dir&gt;</code>, or the <code>Install into</code> field above the</li></ol>
+<p>   buttons). The override replaces that root and <strong>keeps the structure below it</strong>.</p>
+<ol><li>The receipt records the <strong>actual</strong> root (<code>installedRoots</code>), so uninstall and reference counting</li></ol>
+<p>   need no further instruction.</p>
+<ol><li>It applies to the <strong>tool that was asked for</strong>; a dependency keeps its own layout. <code>--into</code></li></ol>
+<p>   therefore requires exactly one id.</p>
+<ol><li>A path outside that root is <strong>refused</strong> (<code>E-INSTALL-ROOT</code>, nothing written) instead of being</li></ol>
+<p>   placed wherever the prefix arithmetic lands.</p>
+<ol><li>An unusable override (empty, absolute, drive letter, <code>..</code>) fails as <code>E-INSTALL-INTO</code> <strong>before</strong></li></ol>
+<p>   any artifact is fetched.</p>
+<blockquote><p>The test is unchanged: <strong>relocate when it is safe, refuse clearly when it is not.</strong> The worst outcome is an override the user believes took effect and did not.</p>
+<p>The other half is now covered too: when a tool's directory was <strong>moved after installing</strong>, every recorded path is gone, so the uninstall &quot;succeeds&quot; and removes nothing. That case names the directory that is no longer there (<code>MOVEDROOT</code>) and still <strong>does not delete it</strong> — a dragged-away directory and a directory the user created are indistinguishable in the data.</p></blockquote>
+<h2>7. Relationship to UPM (straight answer first)</h2>
+<p><strong>UPM is the official, more mature option and covers part of what this tool does.</strong> If a need falls entirely in the &quot;UPM can&quot; column below, <strong>use UPM</strong>.</p>
+<table class="doc"><thead><tr><th>capability</th><th>UPM</th><th>this tool</th></tr></thead><tbody><tr><td>Install from a git URL</td><td>✅ native</td><td>⚠️ reports <code>external</code>, does not clone</td></tr><tr><td>Install from a local folder / tarball</td><td>✅</td><td>✅</td></tr><tr><td>Dependency declaration and resolution</td><td>✅ full semver</td><td>✅ plus capability injection</td></tr><tr><td>Version ranges</td><td>✅</td><td>✅</td></tr><tr><td><strong>Engines other than Unity</strong></td><td>❌ Unity-specific</td><td>✅ Godot from one source tree</td></tr><tr><td><strong>Share runtime source across two engines</strong></td><td>❌</td><td>✅ the same C#</td></tr><tr><td><strong>Arbitrary artifact shapes</strong></td><td>⚠️ mainly package folders</td><td>✅ unitypackage / tgz / bare dll / external</td></tr><tr><td><strong>Capability-level dependencies</strong> (<code>injects</code> / <code>provides</code>)</td><td>❌</td><td>✅</td></tr><tr><td><strong>Byte-level verification before install</strong></td><td>⚠️ hashes exist, not in this form</td><td>✅ size + sha256, refuse on mismatch</td></tr><tr><td><strong>Exact uninstall</strong></td><td>⚠️ removes the package folder</td><td>✅ receipts plus reference counting</td></tr><tr><td><strong>Engine/runtime floors</strong></td><td>⚠️ limited</td><td>✅ three-valued (cannot judge = report, not block)</td></tr></tbody></table>
+<p><strong>Conclusion (no sales pitch):</strong></p>
+<ul><li>If you are <strong>Unity-only and use standard packages</strong>, UPM is better. It is free, official,</li></ul>
+<p>  and has no Node backend to depend on.</p>
+<ul><li>This tool's value proposition is exactly four things: **cross-engine, capability-level</li></ul>
+<p>  dependencies, pre-install verification, exact uninstall<strong>. If none of those matter to you,   </strong>use UPM**.</p>
+<ul><li>This tool does <strong>not</strong> compete with UPM. The <code>upmPackageName</code> field on <code>external</code> entries</li></ul>
+<p>  such as <code>libs-gltf-importer</code> shows the intended relationship: the registry can <strong>point at</strong>   a UPM package rather than replace it.</p>
+<blockquote><p>Stated plainly: this tool is <strong>less</strong> mature than UPM in many ways — no official support, little large-scale validation, and a C# front end that <strong>has never run in a real Unity editor</strong> (see section 8). Treat it as a targeted supplement, not a replacement.</p></blockquote>
+<h2>8. Verified / unverified (please relay this honestly)</h2>
+<table class="doc"><thead><tr><th>item</th><th>status</th></tr></thead><tbody><tr><td>Node backend: install, uninstall, dependencies, verification</td><td>✅ exercised for real</td></tr><tr><td>Registry validation, payload compile check</td><td>✅ CI-grade</td></tr><tr><td>C# front end: <strong>type-check plus record-parsing behaviour</strong></td><td>✅ automated</td></tr><tr><td>Windows + Unity <code>2021.3.45f1c2</code>: install and uninstall</td><td>✅ confirmed</td></tr><tr><td><strong>Full front-end interaction inside a real Unity editor</strong></td><td>⚠️ no Unity available; not verified item by item</td></tr></tbody></table>
+<p>The meaning of the last row: <strong>the window opening, listing, installing and uninstalling has been confirmed by the user</strong>; but a UIToolkit migration or a new interaction pattern must be verified on a real editor before it can be called done.</p>
+<h2>9. Change checklist</h2>
+<p>Before changing the front end:</p>
+<ul><li>[ ] Is the logic in the backend? Is the front end displaying only?</li><li>[ ] Is a new field appended or reordered? Reordering requires bumping <code>recordsVersion</code></li><li>[ ] Does it offer only operations this engine can honour?</li><li>[ ] Does a destructive action confirm and state its consequence?</li><li>[ ] Are the empty / failed / not-installed states all shown explicitly rather than silently?</li><li>[ ] Does <code>npm run check:csharp</code> pass (type-check plus record-parsing behaviour tests)?</li></ul>
+<h2>10. Key files</h2>
+<table class="doc"><thead><tr><th>file</th><th>role</th></tr></thead><tbody><tr><td><code>frontends/unity-editor/Editor/ImportToolWindow.cs</code></td><td>window and interaction</td></tr><tr><td><code>frontends/unity-editor/Editor/CliRunner.cs</code></td><td>invokes the backend, locates the CLI</td></tr><tr><td><code>frontends/unity-editor/Editor/BackendRecords.cs</code></td><td>parses the record stream (pure, testable)</td></tr><tr><td><code>tools/csharp-check/BehaviourTests.cs</code></td><td>behaviour tests for record parsing</td></tr><tr><td><code>apps/cli/lib/records.js</code></td><td>the <strong>authoritative</strong> contract definition</td></tr></tbody></table>
+    <p class="source">Generated from <code>docs/FRONTEND-DESIGN.en.md</code> · <a href="index.html">All docs</a></p>
+  </main>
+</div>
+</body>
+</html>

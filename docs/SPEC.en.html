@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ToolRegistry Format Specification</title>
+<!--
+  GENERATED PAGE - do not edit.
+  Source: docs/SPEC.en.md · rebuild with: node tools/build-registry-template.mjs
+-->
+<style>:root {
+    --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
+    --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
+    --link: #9dbdd4; --link-hover: #c6dbe9;
+  }
+  /* Light is a second palette, not a filter: the accent and the two signal colours have to keep
+     their contrast against a light panel, so they are darkened rather than reused. */
+  :root[data-theme="light"] {
+    --bg: #f6f7f9; --panel: #ffffff; --panel-2: #eceff4; --line: #d6dbe3; --fg: #1b2027;
+    --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
+    --link: #2b5c83; --link-hover: #17405f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.75 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  main a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(127,166,196,.45); text-underline-offset: 2px; }
+  main a:hover { color: var(--link-hover); text-decoration-color: var(--link-hover); }
+  code {
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px;
+    font-variant-ligatures: none; background: var(--panel-2); padding: 1px 5px; border-radius: 4px;
+  }
+  .switches {
+    position: fixed; top: 12px; right: 14px; z-index: 50; display: flex; gap: 6px;
+  }
+  .switches button {
+    background: var(--panel); color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 9px; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
+  }
+  .switches button:hover { color: var(--fg); border-color: var(--accent); }
+  html[data-lang="zh"] [data-lang="en"], html[data-lang="en"] [data-lang="zh"] { display: none !important; }
+  .layout { display: flex; align-items: flex-start; max-width: 1180px; margin: 0 auto; }
+  nav.docs {
+    position: sticky; top: 0; flex: 0 0 232px; max-height: 100vh; overflow: auto;
+    padding: 26px 14px 30px 18px; border-right: 1px solid var(--line);
+  }
+  nav.docs .home { display: block; color: var(--dim); font-size: 12px; text-decoration: none; margin-bottom: 14px; }
+  nav.docs .home:hover { color: var(--link-hover); }
+  nav.docs a.topic {
+    display: block; padding: 5px 9px; border-radius: 5px; color: var(--dim);
+    text-decoration: none; font-size: 13.5px;
+  }
+  nav.docs a.topic:hover { background: var(--panel); color: var(--fg); }
+  nav.docs a.topic.current { background: var(--panel); color: var(--fg); font-weight: 600; }
+  main.doc { flex: 1 1 auto; min-width: 0; padding: 30px 30px 90px; max-width: 870px; }
+  main.doc > h1:first-child { margin-top: 0; }
+  main.doc h1 { font-size: 24px; margin: 26px 0 10px; }
+  main.doc h2 { font-size: 19px; margin: 30px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  main.doc h3 { font-size: 16px; margin: 22px 0 6px; }
+  main.doc h4 { font-size: 14.5px; margin: 18px 0 4px; color: var(--dim); }
+  main.doc p, main.doc li { font-size: 14.5px; }
+  main.doc ul, main.doc ol { padding-left: 22px; }
+  main.doc li { margin: 3px 0; }
+  main.doc pre.code {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 12px 14px;
+    overflow: auto; font-size: 12.5px; line-height: 1.55;
+  }
+  main.doc pre.code code {
+    background: none; padding: 0; font-size: 12.5px; white-space: pre; font-variant-ligatures: none;
+  }
+  main.doc table.doc { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+  main.doc table.doc th, main.doc table.doc td {
+    border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top;
+  }
+  main.doc table.doc th { background: var(--panel-2); font-weight: 600; }
+  main.doc blockquote {
+    margin: 12px 0; padding: 4px 0 4px 14px; border-left: 3px solid var(--line); color: var(--dim);
+  }
+  main.doc hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+  .langswitch { position: fixed; top: 14px; right: 96px; z-index: 50; font-size: 12px; color: var(--dim); }
+  .langswitch a { color: var(--dim); text-decoration: none; }
+  .langswitch a.current { color: var(--fg); font-weight: 600; }
+  .langswitch a:hover { color: var(--link-hover); }
+  .source { color: var(--dim); font-size: 12px; margin-top: 40px; border-top: 1px solid var(--line); padding-top: 10px; }
+  ul.topics { list-style: none; padding: 0; }
+  ul.topics li {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+    border-bottom: 1px solid var(--line); padding: 10px 2px;
+  }
+  ul.topics .pair a { margin-left: 14px; font-size: 12.5px; }
+</style>
+<script>(function () {
+  var META = {"languages":false};
+  var root = typeof document !== 'undefined' ? document.documentElement : null;
+
+  function stored(key, fallback) {
+    try {
+      var value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (error) { /* private mode */ }
+  }
+
+  function systemTheme() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark';
+    } catch (error) {
+      return 'dark';
+    }
+  }
+
+  var theme = stored('toolregistry-theme', systemTheme());
+  if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+  var lang = stored('toolregistry-lang', 'zh');
+  if (lang !== 'zh' && lang !== 'en') lang = 'zh';
+
+  function apply() {
+    // Defensive: this script is also loaded by the test harness, which has no documentElement.
+    if (!root || typeof root.setAttribute !== 'function') return;
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang === 'en' ? 'en' : 'zh-CN');
+  }
+
+  apply();
+
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', function () {
+    var themeButton = document.getElementById('theme-toggle');
+    if (themeButton) {
+      themeButton.textContent = theme === 'light' ? '☀' : '☾';
+      themeButton.addEventListener('click', function () {
+        theme = theme === 'light' ? 'dark' : 'light';
+        apply();
+        themeButton.textContent = theme === 'light' ? '☀' : '☾';
+        save('toolregistry-theme', theme);
+      });
+    }
+
+    var langButton = document.getElementById('lang-toggle');
+    if (langButton) {
+      // A page without the other language gets no switch: an inert button is worse than none.
+      var bilingual = document.querySelector('[data-lang]') !== null;
+      if (!bilingual) {
+        langButton.style.display = 'none';
+      } else {
+        langButton.textContent = lang === 'en' ? '中' : 'EN';
+        langButton.addEventListener('click', function () {
+          lang = lang === 'en' ? 'zh' : 'en';
+          apply();
+          langButton.textContent = lang === 'en' ? '中' : 'EN';
+          save('toolregistry-lang', lang);
+        });
+      }
+    }
+  });
+})();</script>
+</head>
+<body>
+<div class="switches">
+    <button id="theme-toggle" type="button" title="切换明暗 / Toggle theme">☾</button>
+  </div>
+<div class="langswitch">
+  <a href="SPEC.zh-CN.html" class="current">EN</a> /
+  <a href="SPEC.zh-CN.html">中文</a>
+</div>
+<div class="layout">
+    <nav class="docs">
+      <a class="home" href="../index.html">← Home</a>
+      <a class="topic current" href="SPEC.en.html">Specification</a>
+      <a class="topic" href="ATTRIBUTES.en.html">Field reference</a>
+      <a class="topic" href="CONTRIBUTING.en.html">Contributing</a>
+      <a class="topic" href="ERRORS.en.html">Error codes</a>
+      <a class="topic" href="GLOSSARY.en.html">Glossary</a>
+      <a class="topic" href="FRONTEND-DESIGN.en.html">Front-end design</a>
+      <a class="topic" href="FRONTEND-INTEGRATION.en.html">Front-end integration</a>
+      <a class="topic" href="index.html">All docs</a>
+    </nav>
+  <main class="doc">
+<h1>ToolRegistry Format Specification</h1>
+<p><strong>Language</strong>: <a href="SPEC.en.html">English</a> · <a href="SPEC.zh-CN.html">中文</a> · <a href="../README.html">back to index</a></p>
+<p>Status: <strong>v3 (<code>formatVersion</code> is <code>'3'</code>)</strong>. The normative keywords <strong>MUST</strong>, <strong>MUST NOT</strong>, <strong>SHOULD</strong> and <strong>MAY</strong> are used with the meanings given in RFC 2119.</p>
+<p>This document is normative. For an overview see <a href="../README.en.html"><code>../README.en.md</code></a>, for the Chinese version see <a href="SPEC.zh-CN.html"><code>SPEC.zh-CN.md</code></a>.</p>
+<hr>
+<h2>1. Who this specification is for</h2>
+<p>There are three kinds of reader, and each has its own document:</p>
+<table class="doc"><thead><tr><th>What you want to do</th><th>Read</th></tr></thead><tbody><tr><td>Contribute or change a tool</td><td><a href="CONTRIBUTING.en.html"><code>CONTRIBUTING.en.md</code></a>, <a href="ATTRIBUTES.en.html"><code>ATTRIBUTES.en.md</code></a></td></tr><tr><td>Implement an import tool</td><td><a href="FRONTEND-INTEGRATION.en.html"><code>FRONTEND-INTEGRATION.en.md</code></a></td></tr><tr><td>Change the format itself</td><td>this file</td></tr></tbody></table>
+<p>This document covers <strong>what valid data looks like</strong>, not why it looks that way: the rationale is a maintainer's concern, not a consumer's.</p>
+<p>This document is <strong>normative</strong>: it defines what valid data looks like, states constraints with <code>MUST</code> / <code>MUST NOT</code>, and gives every constraint a rule number so reviews and error messages can cite it.</p>
+<h2>2. Repository layout</h2>
+<pre class="code" data-lang-name="text"><code>&lt;repo-root&gt;/
+├─ index.yaml
+├─ package.json
+├─ schema/tool.schema.json
+├─ template/*.yaml
+├─ payloads/&lt;id&gt;/tool.yaml
+├─ payloads/&lt;id&gt;/artifacts/&lt;id&gt;-&lt;version&gt;[-&lt;engine&gt;].&lt;ext&gt;
+└─ tools/</code></pre>
+<ul><li><strong>R-LAYOUT-1</strong> Every payload <strong>MUST</strong> live in <code>payloads/&lt;id&gt;/</code>.</li><li><strong>R-LAYOUT-2</strong> <code>&lt;id&gt;</code> <strong>MUST</strong> equal the <code>id</code> in the metadata.</li><li><strong>R-LAYOUT-3</strong> A payload directory <strong>MUST</strong> contain <code>tool.yaml</code>, and <strong>MUST NOT</strong> contain</li></ul>
+<p>  anything other than <code>tool.yaml</code>, an optional <code>README.md</code>, and <code>artifacts/</code>.   <strong>Source files MUST NOT be committed into a payload.</strong></p>
+<ul><li><strong>R-LAYOUT-4</strong> <code>artifacts/</code> <strong>MUST</strong> contain exactly one published artifact per target, and its</li></ul>
+<p>  file name <strong>MUST</strong> be:</p>
+<ul><li><code>&lt;id&gt;-&lt;version&gt;.&lt;ext&gt;</code> when the tool has <strong>one</strong> target;<ul><li><code>&lt;id&gt;-&lt;version&gt;-&lt;engine&gt;.&lt;ext&gt;</code> when the tool has <strong>several</strong> targets.</li></ul></li></ul>
+<p>  The extension follows the format (§6.1): <code>zip</code> → <code>.zip</code>, <code>tgz</code> / <code>tar.gz</code> → <code>.tgz</code>,   <code>tar.zst</code> → <code>.tar.zst</code>; a <code>file</code> artifact keeps its own format as the extension (<code>dll</code> → <code>.dll</code>).   The engine segment depends only on the <strong>number</strong> of targets, so turning a single-engine tool into   a two-engine tool changes the file name — that is a version bump, not a rename in place.</p>
+<ul><li><strong>R-LAYOUT-5</strong> <code>index.yaml</code> <strong>MUST</strong> be consistent with the payloads; regenerate it with</li></ul>
+<p>  <code>node tools/registry.mjs write-index</code>.</p>
+<hr>
+<h2>3. Identifier rules</h2>
+<ul><li><strong>R-ID-1</strong> <code>id</code> <strong>MUST</strong> match <code>^[a-z0-9]+(-[a-z0-9]+)*$</code>, length 3–64.</li><li><strong>R-ID-2</strong> <code>id</code> <strong>MUST</strong> be unique across the whole registry, and comparison is case-insensitive.</li></ul>
+<p>  All-lowercase makes &quot;case-insensitive&quot; equivalent to &quot;exact comparison&quot; — which matters, because   Windows and macOS file systems are case-insensitive by default.</p>
+<ul><li><strong>R-ID-3</strong> <code>id</code> is the primary key: it names the directory, dependency references, the artifact</li></ul>
+<p>  file name stem, <code>index.yaml</code> entries, and import receipts.</p>
+<h3>3.1 Naming conventions</h3>
+<table class="doc"><thead><tr><th>Field</th><th>Style</th><th>Example</th></tr></thead><tbody><tr><td><code>id</code></td><td>lowercase kebab-case, may carry a category prefix</td><td><code>editor-tool-selection-history</code></td></tr><tr><td><code>displayName</code></td><td>human-readable title, any language</td><td><code>Selection History</code></td></tr><tr><td><code>tags</code></td><td>lowercase kebab-case</td><td><code>asset-pipeline</code></td></tr></tbody></table>
+<p>The category prefixes (<code>editor-tool-</code>, <code>core-</code>, <code>libs-</code>, <code>framework-</code>) are <strong>SHOULD</strong>, not <strong>MUST</strong>: they make the flat <code>payloads/</code> listing easier to read without introducing the nesting that would break &quot;id == directory name&quot;.</p>
+<h3>3.2 Engine names</h3>
+<ul><li><strong>R-ID-4</strong> The keys of <code>targets</code> <strong>MUST</strong> match <code>^[a-z0-9]+(-[a-z0-9]+)*$</code>, length 2–32</li></ul>
+<p>  (<code>unity</code>, <code>godot</code>, <code>unreal</code>, <code>defold</code>).</p>
+<ul><li><strong>R-ID-5</strong> The core <strong>MUST NOT</strong> enumerate engine names. An engine name acquires meaning in exactly</li></ul>
+<p>  two places: that engine's adapter, and being a key of <code>targets</code>. An engine without an adapter   <strong>MAY</strong> appear in the data, but cannot be planned for installation.</p>
+<hr>
+<h2>4. Versions</h2>
+<ul><li><strong>R-VER-1</strong> <code>version</code> <strong>MUST</strong> have the form <code>major.minor.patch</code>, optionally followed by a</li></ul>
+<p>  pre-release suffix (<code>1.0.0</code>, <code>2.3.1</code>, <code>1.0.0-rc.1</code>). This is semver-lite: build metadata   (<code>+build</code>) is not used.</p>
+<ul><li><strong>R-VER-2</strong> Comparison uses only the numeric triple; the pre-release suffix is ignored in ordering.</li></ul>
+<p>  A pre-release therefore serves only as a <strong>label</strong>, not as a precedence.</p>
+<ul><li><strong>R-VER-3</strong> Published bytes are immutable. Any change to an artifact — even a comment-only change —</li></ul>
+<p>  <strong>MUST</strong> be published with a new <code>version</code> and a new file. <strong>MUST NOT</strong> rewrite an artifact that   has already been pushed.</p>
+<ul><li><strong>R-VER-4</strong> One manifest describes <strong>every</strong> published version of the tool, one entry per</li></ul>
+<p>  version under <code>versions[]</code>; <code>latest</code> <strong>MUST</strong> name one of them (see R-VER-6). A reader that   does not understand that shape <strong>MUST</strong> reject it rather than guess.</p>
+<ul><li><strong>R-VER-5</strong> The same <code>version</code> <strong>MUST NOT</strong> appear twice in one manifest.</li><li><strong>R-VER-6</strong> <code>latest</code> <strong>MUST</strong> match a <code>version</code> in <code>versions</code> exactly, and that entry</li></ul>
+<p>  <strong>MUST NOT</strong> be <code>yanked</code>: the default may not point at a release that does not exist or has   been withdrawn.</p>
+<h3>4.1 Dependency constraints</h3>
+<p><code>dependencies[].version</code> is a constraint:</p>
+<table class="doc"><thead><tr><th>Form</th><th>Meaning</th></tr></thead><tbody><tr><td><code>^1.2.3</code></td><td><code>&gt;= 1.2.3</code>, same major version</td></tr><tr><td><code>~1.2.3</code></td><td><code>&gt;= 1.2.3</code>, same major and minor version</td></tr><tr><td><code>&gt;=1.0.0</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&lt;</code></td><td>one-sided bound</td></tr><tr><td><code>1.4.2</code></td><td>exactly that version</td></tr><tr><td>omitted</td><td>any version provided by this registry</td></tr></tbody></table>
+<ul><li><strong>R-DEP-1</strong> A dependency <strong>MUST</strong> reference an <code>id</code> and <strong>MUST NOT</strong> reference a path or a URL.</li><li><strong>R-DEP-2</strong> A tool <strong>MUST NOT</strong> depend on itself.</li><li><strong>R-DEP-3</strong> Every referenced <code>id</code> <strong>MUST</strong> exist in this registry.</li><li><strong>R-DEP-4</strong> Cycles among required dependencies <strong>MUST NOT</strong> exist.</li><li><strong>R-DEP-5</strong> <code>optional: true</code> means: use it when the user has already selected it, never pull it in</li></ul>
+<p>  proactively.</p>
+<p>A dependency <strong>MAY</strong> restrict itself to some engines with <code>engines</code> (a helper that is only needed on the Unity side, for instance), so that one dependency edge is not inherited by another engine's install plan.</p>
+<hr>
+<h2>5. Engine targets and floors</h2>
+<p><code>targets</code> maps an engine name to a target. Every target has two mandatory keys: <code>requirements</code> and <code>artifact</code>.</p>
+<pre class="code" data-lang-name="yaml"><code>targets:
+  unity:
+    requirements:                 # host floors; the core defines only minEngineVersion
+      minEngineVersion: '2019.4'
+      minRuntimeVersion: '4.6'    # the .NET API level floor, defined by the Unity adapter
+    artifact:
+      type: package               # archive | package | file | external (§6)
+      format: unitypackage
+      path: payloads/core-editor-utils/artifacts/core-editor-utils-1.1.0-unity.unitypackage
+      size: 1709
+      sha256: e2cadf5ee729033c1415eefb90d63af35a3af3d205d0e59c435b3589a2c236dd</code></pre>
+<ul><li><strong>R-TGT-1</strong> <code>targets</code> <strong>MUST</strong> be a non-empty mapping whose keys are named per §3.2.</li><li><strong>R-TGT-2</strong> Every target <strong>MUST</strong> declare both <code>requirements</code> and <code>artifact</code>; missing either one is</li></ul>
+<p>  a rejection (<code>E-TARGET-REQUIREMENTS</code> / <code>E-TARGET-ARTIFACT</code>).</p>
+<ul><li><strong>R-TGT-3</strong> A target describes <strong>one engine</strong>. The floors, container and layout a tool has in</li></ul>
+<p>  different engines <strong>MUST</strong> live in their own targets and <strong>MUST NOT</strong> be repeated at the top level.</p>
+<ul><li><strong>R-PLAT-1</strong> <code>requirements.minEngineVersion</code> <strong>MUST</strong> be present.</li></ul>
+<p>  On the Unity side the format is <code>YYYY.MINOR</code> or a full editor version (<code>2020.3</code>, <code>2021.3.5f1</code>);   other engines define how it is compared in their own adapters. The importer compares it against the   host and refuses to install when it is below the floor.</p>
+<ul><li><strong>R-PLAT-2</strong> Every other key of <code>requirements</code> is defined by the <strong>engine adapter</strong> and its value</li></ul>
+<p>  is a flat scalar. The Unity adapter defines <code>minRuntimeVersion</code> (<code>4.6</code> means .NET Framework;   <code>6.0</code> / <code>7.0</code> / <code>8.0</code> mean .NET Standard 2.1 / .NET, compared against the project's API   compatibility level); the Godot adapter defines <code>minApiVersion</code>, and so on. The core only   guarantees that <code>minEngineVersion</code> is always comparable.</p>
+<ul><li><strong>R-PLAT-3</strong> <code>minEngineVersion</code> is mandatory even when a tool has no real floor — because &quot;field</li></ul>
+<p>  missing&quot; and &quot;forgot to fill it in&quot; are indistinguishable in the data. This is the &quot;minimal   necessary attribute set&quot; rule: a tool that cannot declare its own engine floor is not admitted.</p>
+<hr>
+<h2>6. The four artifact types</h2>
+<p><code>artifact.type</code> says what the artifact is and who is able to open it. The four values are mutually exclusive.</p>
+<ul><li><strong>R-SRC-1</strong> <code>artifact.type</code> <strong>MUST</strong> be one of <code>archive</code>, <code>package</code>, <code>file</code>, <code>external</code>.</li><li><strong>R-SRC-2</strong> <code>artifact.path</code> <strong>MUST</strong> have the form <code>payloads/&lt;id&gt;/artifacts/&lt;file&gt;</code>, where</li></ul>
+<p>  <code>&lt;file&gt;</code> <strong>MUST</strong> follow the naming of <strong>R-LAYOUT-4</strong>; the directory segment <strong>MUST</strong> equal the   tool's <code>id</code>.</p>
+<ul><li><strong>R-SRC-3</strong> <code>archive</code> / <code>package</code> / <code>file</code> <strong>MUST</strong> carry <code>format</code>, <code>path</code>, <code>size</code> and <code>sha256</code>.</li></ul>
+<p>  <code>sha256</code> <strong>MUST</strong> be the digest of the artifact file itself (not of its contents), in lowercase   hexadecimal; <code>size</code> <strong>MUST</strong> be its exact byte count.</p>
+<ul><li><strong>R-SRC-4</strong> <code>format</code> <strong>MUST</strong> agree with the container's real bytes (a zip starts with</li></ul>
+<p>  <code>PK\x03\x04</code>, a gzipped tar with <code>1f 8b</code>, a zstd frame with <code>28 b5 2f fd</code>). Labelling the format   wrongly causes validation to fail.</p>
+<ul><li><strong>R-SRC-5</strong> A container <strong>MUST NOT</strong> hold absolute paths or <code>..</code> segments (zip-slip / tar-slip).</li></ul>
+<h3>6.1 <code>archive</code> — a container the core itself can open</h3>
+<ul><li><strong>R-ART-1</strong> For <code>type: archive</code>, <code>format</code> <strong>MUST</strong> be one of the formats the core supports:</li></ul>
+<p>  <code>zip</code>, <code>tgz</code>, <code>tar.gz</code>, <code>tar.zst</code>. A container the core does not know <strong>MUST NOT</strong> be declared   <code>archive</code> — an engine-specific container <strong>MUST</strong> be declared <code>package</code>, otherwise the core would   try to open it with a generic unpacker when the correct behaviour is to hand it to that engine's   own import pipeline.</p>
+<pre class="code" data-lang-name="yaml"><code>targets:
+  godot:
+    requirements:
+      minEngineVersion: '4.2'
+    artifact:
+      type: archive
+      format: tgz
+      path: payloads/core-editor-utils/artifacts/core-editor-utils-1.1.0-godot.tgz
+      size: 1047
+      sha256: 06a6523ef5d8272f3373646f7cfa57795f4a1e5c4d74f8cf5ec9c61ade36419a
+      unpack: auto
+      contentRoot: addons/core_utils
+      files:
+        - plugin.cfg
+        - CoreUtilsPlugin.cs
+        - Runtime/Core/Guard.cs
+        - Runtime/Core/PooledList.cs</code></pre>
+<p><code>contentRoot</code> declares the extraction target (relative to the project root). Archive entries should already look the way they should appear under <code>contentRoot</code>.</p>
+<h3>6.2 <code>package</code> — a container only that engine's adapter can open</h3>
+<ul><li><strong>R-ART-2</strong> For <code>type: package</code>, <code>format</code> is registered by the <strong>engine adapter</strong>, which is why</li></ul>
+<p>  <code>unitypackage</code> is a <strong>Unity concept</strong> rather than a core one: the core moves and verifies the bytes,   and <code>providers/engine-unity</code> opens them. For an engine with no adapter a <code>package</code> artifact   <strong>MAY</strong> still be stored, but the importer <strong>MUST NOT</strong> pretend it can open it.   Inside a <code>unitypackage</code>, every GUID folder <strong>MUST</strong> carry a <code>pathname</code> entry, otherwise the engine   cannot place its files and the import result is unpredictable. <code>unpack: auto</code> means that engine's   adapter opens the container and takes its entries, which is what actually installs the tool;   <code>none</code> means the whole artifact is placed at <code>targetPath</code>, so its entries exist only after the   engine imports it - which is why <code>targetPath</code> is <strong>required</strong> in that case.</p>
+<pre class="code" data-lang-name="yaml"><code>targets:
+  unity:
+    requirements:
+      minEngineVersion: '2020.3'
+      minRuntimeVersion: '4.6'
+    artifact:
+      type: package
+      format: unitypackage
+      path: payloads/editor-tool-selection-history/artifacts/editor-tool-selection-history-1.0.0.unitypackage
+      size: 1259
+      sha256: 6cb13d4a15d6a72345cf5232e61458a7194e97dc41a03056dfe248ae39f59ad5
+      unpack: auto
+      editorOnly: true
+      files:
+        - Assets/SelectionHistory/SelectionHistoryWindow.cs
+        - Assets/SelectionHistory/SelectionHistoryTracker.cs</code></pre>
+<h3>6.3 <code>file</code> — a single-file artifact</h3>
+<ul><li><strong>R-ART-3</strong> <code>type: file</code> describes a single-file payload with <strong>no container at all</strong> (a dll, one</li></ul>
+<p>  shader, a licence text). It <strong>MUST</strong> carry <code>targetPath</code> (relative to the project root, saying where   the file lands) and its <code>unpack</code> <strong>MUST</strong> be <code>none</code>. <code>format</code> mirrors the extension (<code>dll</code>, <code>pdb</code>,   <code>so</code>, <code>dylib</code>, <code>txt</code>). Like an <code>archive</code> it is bound by <code>size</code> + <code>sha256</code>, so it is <strong>not</strong> a   &quot;loose file&quot; — it is a sealed, verifiable single file.</p>
+<pre class="code" data-lang-name="yaml"><code>targets:
+  unity:
+    requirements:
+      minEngineVersion: '2019.4'
+      minRuntimeVersion: '4.6'
+    artifact:
+      type: file
+      format: dll
+      path: payloads/libs-sharp-json/artifacts/libs-sharp-json-3.0.0.dll
+      size: 128
+      sha256: 7e7b7dec8f657dc691ca06c3bf23956976a3c6727e9fadb7c2bfd8df4d55246f
+      unpack: none
+      targetPath: Assets/SharpJson/SharpJson.dll
+      files:
+        - Assets/SharpJson/SharpJson.dll</code></pre>
+<h3>6.4 <code>external</code> — metadata only</h3>
+<ul><li><strong>R-EXT-1</strong> <code>type: external</code> <strong>MUST</strong> carry <code>source</code> (<code>git</code> / <code>http</code> / <code>npm</code>), <code>url</code> and <code>ref</code>, and</li></ul>
+<p>  <strong>MUST NOT</strong> carry <code>path</code>, <code>size</code> or <code>sha256</code>: recording a digest for bytes that are not in this   repository cannot be checked. This registry stores no artifact for that tool.</p>
+<ul><li><strong>R-EXT-2</strong> <code>ref</code> <strong>MUST</strong> be a tag or a commit SHA and <strong>MUST NOT</strong> be a branch name, otherwise</li></ul>
+<p>  two installs of the same version could pick up different code, which destroys the receipt model.</p>
+<ul><li><strong>R-EXT-3</strong> Use <code>subdirectory</code> when the repository root is not the package root; <code>upmPackageName</code></li></ul>
+<p>  lets the importer detect conflicts with packages already installed in the project and defer to the   engine's own package resolution.</p>
+<ul><li><strong>R-EXT-4</strong> <code>unpack</code> <strong>SHOULD</strong> be <code>none</code> — there is no local container to open.</li><li><strong>R-EXT-5</strong> The point of this form is to cap the repository's storage. When a bundled tool's source</li></ul>
+<p>  grows large, or when upstream already publishes a usable package, prefer switching to it.</p>
+<pre class="code" data-lang-name="yaml"><code>targets:
+  unity:
+    requirements:
+      minEngineVersion: '2019.4'
+      minRuntimeVersion: '4.6'
+    artifact:
+      type: external
+      source: git
+      url: https://github.com/JokeVallen/gltf-importer-sample.git
+      ref: v2.3.1
+      subdirectory: Packages/com.devcat.gltf-importer
+      upmPackageName: com.devcat.gltf-importer
+      unpack: none
+      editorOnly: false</code></pre>
+<h3>6.5 Why loose files are still forbidden</h3>
+<ul><li><strong>R-ART-4</strong> A payload <strong>MUST NOT</strong> be imported as a loose tree of files: a payload directory may</li></ul>
+<p>  contain only <code>tool.yaml</code>, an optional <code>README.md</code> and <code>artifacts/</code>, and <strong>source files MUST NOT be   committed into a payload</strong> (R-LAYOUT-3). The reason is the one that already held in v1: loose <code>.cs</code>   files leave untracked assets in the project that can neither be hash-verified nor cleanly removed.   When a single file genuinely has to be delivered, use <code>type: file</code>: it carries <code>targetPath</code> and a   digest, which makes it a sealed single file rather than a loose source tree.</p>
+<h3>6.6 Where a payload lands, and moving it</h3>
+<ul><li><strong>R-SRC-6</strong> The manifest's destinations are the <strong>default</strong>, not the only possibility. Every</li></ul>
+<p>  installed path of one target lands under one directory - <code>contentRoot</code> plus the structure inside   the container for an unpacked artifact, <code>targetPath</code>'s directory for a sealed one - and a consumer   <strong>MAY</strong> install that whole directory somewhere else inside the project (<code>utool install --into</code>).</p>
+<ul><li><strong>R-SRC-7</strong> Relocation <strong>MUST</strong> preserve the structure below that directory and <strong>MUST NOT</strong> split</li></ul>
+<p>  a payload across two roots: the directory is the unit that a receipt records, and a tool spread   over two places cannot be uninstalled without guessing.</p>
+<ul><li><strong>R-SRC-8</strong> Relocation applies to the tool the caller <strong>asked for</strong>. A dependency keeps the layout</li></ul>
+<p>  its own manifest declares; two tools merged into one directory would make ownership ambiguous.</p>
+<ul><li><strong>R-SRC-9</strong> Because <code>targetPath</code> and <code>contentRoot</code> are defaults, they <strong>MUST</strong> name a directory</li></ul>
+<p>  that is the tool's own (<code>Assets/&lt;Tool&gt;/...</code>), never a shared one - a deployment that is moved is   still expected to be removable on its own.</p>
+<hr>
+<h2>7. Capabilities: <code>provides</code> and <code>injects</code></h2>
+<p><code>dependencies</code> pins an <strong>id</strong>: I want <code>core-editor-utils ^1.1.0</code> and nothing else will do. Many needs are not &quot;I want that tool&quot; but &quot;I want this capability, whoever provides it&quot; — argument guards, object pooling, JSON serialization. Written as a dependency, that need welds the consumer to one implementation; swapping the implementation would force every consumer to change.</p>
+<p>The format therefore uses namespaced <strong>capability names</strong>:</p>
+<pre class="code" data-lang-name="yaml"><code>provides:                       # capabilities this tool offers to others
+  - unity.window.selection-history
+injects:                        # capabilities this tool needs, satisfied by any provider
+  - script.api.argument-guards
+dependencies:                   # pins a specific tool and version
+  - id: core-editor-utils
+    version: ^1.1.0
+    reason: Uses Guard for argument validation.</code></pre>
+<ul><li><strong>R-CAP-1</strong> <code>provides</code> and <code>injects</code> <strong>MUST</strong> be arrays of strings, at most 32 entries each, with</li></ul>
+<p>  no duplicates.</p>
+<ul><li><strong>R-CAP-2</strong> A capability name <strong>MUST</strong> match</li></ul>
+<p>  <code>^[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+(-[a-z0-9]+)*)+$</code> and be at most 96 characters long — that is,   <strong>at least two</strong> dot-separated lowercase kebab-case segments. Two segments is deliberate: a   capability must state its namespace rather than being a bare word that collides   (<code>script.api.argument-guards</code>, not <code>guards</code>).</p>
+<ul><li><strong>R-CAP-3</strong> The same capability <strong>MAY</strong> be provided by several tools — they are alternatives, and</li></ul>
+<p>  that is precisely why <code>injects</code> exists: a user can choose between implementations that satisfy one   capability. Registry-level validation only raises a <strong>warning</strong> for that case   (<code>W-CAP-MULTIPLE</code>), because &quot;several providers&quot; is legal in a registry. What <strong>MUST</strong> be rejected is   a single <strong>install plan</strong> containing two providers of the same capability (<code>E-CAP-CONFLICT</code>,   decided by the import tool's resolver): that is what leaves a consumer unable to say which provider   it received. The unit of conflict is one install, not the whole registry.</p>
+<ul><li><strong>R-CAP-4</strong> Every inject <strong>MUST</strong> be satisfiable by some tool in the registry, otherwise validation</li></ul>
+<p>  fails (<code>E-CAP-UNSATISFIED</code>). What this repository publishes is a family of tools, not an arbitrary   single item.</p>
+<ul><li><strong>R-CAP-5</strong> <code>injects</code> is <strong>not</strong> a dependency: it names no id and is satisfied by <strong>any</strong> tool that</li></ul>
+<p>  provides the capability. That is exactly what lets a provider be replaced without touching its   consumers' declarations, and why the two are accounted for separately.</p>
+<ul><li><strong>R-CAP-6</strong> The former <code>type: shader-pack</code> is gone: a shader model is engine-specific, so it belongs in</li></ul>
+<p>  a target or in a <code>tag</code>, not in an engine-neutral enum. <code>type</code> is now only <code>editor-tool</code>,   <code>tool-library</code>, <code>framework</code>, <code>asset-pack</code>, <code>template</code>.</p>
+<hr>
+<h2>8. Field reference</h2>
+<h3>8.1 Top-level required (engine-neutral)</h3>
+<table class="doc"><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>kind</code></td><td>constant <code>tool</code></td><td>document discriminator</td></tr><tr><td><code>formatVersion</code></td><td>string <code>'3'</code></td><td>readers reject versions they do not recognise (R-FMT-4, R-FMT-5)</td></tr><tr><td><code>id</code></td><td>string</td><td>§3</td></tr><tr><td><code>displayName</code></td><td>string, 1–80</td><td>display name in the import tool's list</td></tr><tr><td><code>type</code></td><td>enum</td><td><code>editor-tool</code>, <code>tool-library</code>, <code>framework</code>, <code>asset-pack</code>, <code>template</code> (R-CAP-6)</td></tr><tr><td><code>description</code></td><td>string, 10–600</td><td>one paragraph saying what it does and what problem it solves</td></tr><tr><td><code>version</code></td><td>string</td><td>§4</td></tr><tr><td><code>targets</code></td><td>mapping</td><td>§5, at least one engine</td></tr></tbody></table>
+<h3>8.2 Top-level optional (engine-neutral)</h3>
+<table class="doc"><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>tags</code></td><td>array of strings</td><td>≤ 12, lowercase kebab-case</td></tr><tr><td><code>author</code></td><td>string</td><td>attribution</td></tr><tr><td><code>license</code></td><td>string</td><td>SPDX identifier, <strong>MAY</strong> differ from the repository's MIT</td></tr><tr><td><code>licenseUrl</code></td><td>URI</td><td>where the licence text lives, for a project that ships its own <code>LICENSE</code> or whose licence has no SPDX page. Optional: an identifier already resolves to spdx.org, so this exists to point somewhere <strong>else</strong>, and a consumer <strong>SHOULD</strong> prefer it</td></tr><tr><td><code>homepage</code></td><td>URI</td><td>upstream repository or project home</td></tr><tr><td><code>documentation</code></td><td>URI</td><td>documentation address; separate from <code>homepage</code>, because they are often different places</td></tr><tr><td><code>releaseNotes</code></td><td>URI</td><td>where the maintainer publishes release notes; a link, not the text</td></tr><tr><td><code>provides</code></td><td>array of strings</td><td>§7, ≤ 32</td></tr><tr><td><code>injects</code></td><td>array of strings</td><td>§7, ≤ 32</td></tr><tr><td><code>dependencies</code></td><td>array of mappings</td><td>§4.1</td></tr><tr><td><code>releasedAt</code></td><td><code>YYYY-MM-DD</code></td><td>release date</td></tr><tr><td><code>deprecated</code></td><td>boolean</td><td>the import tool <strong>SHOULD</strong> hide it or warn about it</td></tr></tbody></table>
+<h3>8.3 Target and artifact</h3>
+<table class="doc"><thead><tr><th>Field</th><th>Where</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>requirements</code></td><td>target, required</td><td>mapping</td><td><code>minEngineVersion</code> is mandatory, other keys are adapter-defined (§5)</td></tr><tr><td><code>artifact</code></td><td>target, required</td><td>mapping</td><td>exactly one (R-TGT-2)</td></tr><tr><td><code>artifact.type</code></td><td>artifact, required</td><td>enum</td><td><code>archive</code>, <code>package</code>, <code>file</code>, <code>external</code> (§6)</td></tr><tr><td><code>artifact.format</code></td><td>artifact</td><td>string</td><td>required unless external; container or file format (R-SRC-3, R-SRC-4)</td></tr><tr><td><code>artifact.path</code></td><td>artifact</td><td>string</td><td>required unless external, inside this payload's <code>artifacts/</code> (R-SRC-2)</td></tr><tr><td><code>artifact.size</code> / <code>sha256</code></td><td>artifact</td><td>integer / 64-char lowercase hex</td><td>required unless external (R-SRC-3)</td></tr><tr><td><code>artifact.source</code> / <code>url</code> / <code>ref</code></td><td>artifact</td><td>enum / string / string</td><td>required for external (R-EXT-1, R-EXT-2)</td></tr><tr><td><code>artifact.subdirectory</code> / <code>upmPackageName</code></td><td>artifact</td><td>string</td><td>subtree and package name for external (R-EXT-3)</td></tr><tr><td><code>artifact.unpack</code></td><td>artifact</td><td><code>none</code> / <code>auto</code></td><td>defaults to <code>auto</code>; <code>file</code> <strong>MUST</strong> be <code>none</code>, and any <code>none</code> needs <code>targetPath</code> (R-ART-3)</td></tr><tr><td><code>artifact.targetPath</code></td><td>artifact</td><td>string</td><td>required for <code>file</code>, and for any artifact with <code>unpack: none</code></td></tr><tr><td><code>artifact.contentRoot</code></td><td>artifact</td><td>string</td><td>extraction target for an unpacked archive, relative to the project root</td></tr><tr><td><code>artifact.files</code></td><td>artifact</td><td>array of strings</td><td>human-readable install inventory, shown before installation</td></tr><tr><td><code>artifact.editorOnly</code></td><td>artifact</td><td>boolean</td><td>the payload does not enter player builds</td></tr><tr><td><code>artifact.restartRequired</code></td><td>artifact</td><td>boolean</td><td>the host must reload before the tool takes effect</td></tr></tbody></table>
+<p>Every level sets <code>additionalProperties: false</code>: a misspelled field name is a validation failure, not something silently ignored.</p>
+<h3>8.4 A complete example</h3>
+<p>The following is byte-for-byte the content of <code>payloads/core-editor-utils/tool.yaml</code> (comments omitted), so the documentation cannot drift away from the real data:</p>
+<pre class="code" data-lang-name="yaml"><code>kind: tool
+formatVersion: '3'
+id: core-editor-utils
+displayName: Core Editor Utils
+type: tool-library
+description: &gt;-
+  Guard and PooledList, written in engine-neutral C# and shipped to both Unity and Godot from one source
+  tree. Import this before anything that depends on it.
+version: 1.1.0
+license: MIT
+author: DevCat
+homepage: https://github.com/JokeVallen/ToolRegistry.git
+tags:
+  - core
+  - runtime
+  - cross-engine
+provides:
+  - script.api.argument-guards
+  - script.api.object-pooling
+injects: []
+dependencies: []
+targets:
+  unity:
+    requirements:
+      minEngineVersion: '2019.4'
+      minRuntimeVersion: '4.6'
+    artifact:
+      type: package
+      format: unitypackage
+      path: payloads/core-editor-utils/artifacts/core-editor-utils-1.1.0-unity.unitypackage
+      size: 1876
+      sha256: 439362aa6c00b350ddad83180ac151de99ee0a6da2a35f6a7cd27c2cc09820a2
+      unpack: auto
+      files:
+        - Assets/CoreEditorUtils/Runtime/Core/Guard.cs
+        - Assets/CoreEditorUtils/Runtime/Core/PooledList.cs
+        - Assets/CoreEditorUtils/Editor/CoreEditorUtils.cs
+  godot:
+    requirements:
+      minEngineVersion: '4.2'
+    artifact:
+      type: archive
+      format: tgz
+      path: payloads/core-editor-utils/artifacts/core-editor-utils-1.1.0-godot.tgz
+      size: 1047
+      sha256: 06a6523ef5d8272f3373646f7cfa57795f4a1e5c4d74f8cf5ec9c61ade36419a
+      unpack: auto
+      contentRoot: addons/core_utils
+      files:
+        - plugin.cfg
+        - CoreUtilsPlugin.cs
+        - Runtime/Core/Guard.cs
+        - Runtime/Core/PooledList.cs
+releasedAt: '2026-01-10'</code></pre>
+<hr>
+<h2>9. <code>index.yaml</code></h2>
+<p>A generated flat catalog, so that the import tool does not have to walk the directory tree. <code>kind: index</code>.</p>
+<p>An index entry carries engine <strong>names only</strong>, never per-engine floors or artifact paths — those stay in each manifest, because the index is there to &quot;list everything in one request&quot;, not to install from. Entries also carry <code>provides</code> / <code>injects</code> / <code>dependencies</code> / <code>tags</code> / <code>manifestPath</code>, so a consumer can shortlist candidates without reading every manifest first.</p>
+<pre class="code" data-lang-name="yaml"><code>kind: index
+formatVersion: '3'
+repository: https://github.com/JokeVallen/ToolRegistry.git
+tools:
+  - id: core-editor-utils
+    displayName: Core Editor Utils
+    type: tool-library
+    description: &gt;-
+      Guard and PooledList, written in engine-neutral C# and shipped to both Unity and Godot from one
+      source tree. Import this before anything that depends on it.
+    version: 1.1.0
+    engines:
+      - godot
+      - unity
+    provides:
+      - script.api.argument-guards
+      - script.api.object-pooling
+    injects: []
+    dependencies: []
+    tags:
+      - core
+      - runtime
+      - cross-engine
+    manifestPath: payloads/core-editor-utils/tool.yaml</code></pre>
+<ul><li><strong>R-IDX-1</strong> <code>index.yaml</code> <strong>MUST</strong> be derived from the payloads; <strong>MUST NOT</strong> be edited by hand.</li><li><strong>R-IDX-2</strong> It <strong>MUST</strong> be regenerated in the same commit that adds or modifies a tool, otherwise</li></ul>
+<p>  validation fails.</p>
+<hr>
+<h2>10. Distribution channels</h2>
+<table class="doc"><thead><tr><th>Channel</th><th>Mechanism</th><th>Trade-off</th></tr></thead><tbody><tr><td>Import tool</td><td>reads <code>index.yaml</code>, selects the target named by <code>--engine</code>, fetches artifacts, resolves dependencies</td><td>pick on demand; writes a receipt; the only supported path</td></tr><tr><td>External source</td><td>an <code>artifact.type: external</code> target names an upstream repository instead of storing bytes</td><td>keeps this repository small; the payload is not hash-verified here, and the caller resolves it</td></tr></tbody></table>
+<ul><li><strong>R-CHAN-1</strong> An <code>Assets/</code> directory <strong>MUST NOT</strong> appear at the repository root, and this repository</li></ul>
+<p>  <strong>MUST NOT</strong> be installable as a whole. It stores data; tool selection belongs to the import tool.   A Git URL install therefore imports nothing by itself, which is the point rather than a limitation.</p>
+<ul><li><strong>R-CHAN-2</strong> An artifact's bytes <strong>MUST NOT</strong> be copied anywhere else in the repository. One</li></ul>
+<p>  artifact, one location under <code>payloads/&lt;id&gt;/artifacts/</code>, so a deletion removes exactly one   directory and leaves no stale duplicate behind.</p>
+<hr>
+<h2>11. Migration and evolution</h2>
+<ul><li><strong>R-MIG-1</strong> A breaking change to this specification <strong>MUST</strong> bump <code>formatVersion</code>; readers</li></ul>
+<p>  <strong>MUST</strong> reject versions they do not recognise.</p>
+<ul><li><strong>R-MIG-2</strong> Retiring a tool means first setting <code>deprecated: true</code> for at least one release cycle,</li></ul>
+<p>  then deleting the payload.</p>
+<ul><li><strong>R-MIG-3</strong> Deleting a payload <strong>MUST</strong> update <code>index.yaml</code> in the same commit.</li><li><strong>R-MIG-4</strong> Migrating from v1 to v2 <strong>MUST</strong>: raise <code>formatVersion</code> to <code>'2'</code>; move the top-level</li></ul>
+<p>  <code>minUnityVersion</code> / <code>minDotNetVersion</code> / <code>source</code> / <code>artifacts</code> / <code>files</code> / <code>install</code> /   <code>packageName</code> / <code>assemblyName</code> into the relevant engine's <code>targets.&lt;engine&gt;</code>; translate   <code>source.kind: bundled</code> into <code>artifact.type</code> (<code>unitypackage</code> → <code>package</code>, <code>zip</code> / <code>tgz</code> →   <code>archive</code>, a single file → <code>file</code>) and <code>source.kind: external</code> into <code>artifact.type: external</code>;   and rename the artifact files per R-LAYOUT-4. A migration <strong>MAY</strong> also take the opportunity to   rewrite &quot;I need that tool&quot; as an <code>injects</code> capability declaration.</p>
+<ul><li><strong>R-MIG-5</strong> Migrating from v2 to v3 <strong>MUST</strong>: raise <code>formatVersion</code> to <code>'3'</code>; move the top-level</li></ul>
+<p>  <code>version</code>, <code>targets</code>, <code>releasedAt</code> and <code>deprecated</code> into <code>versions[0]</code>; and add <code>latest</code>, whose   value <strong>MUST</strong> equal that version. Artifact bytes and file names are unaffected: v3 only moved   where version information sits within the document. <code>deprecated</code> is a per-version field after the   migration, so it belongs to one <code>versions[]</code> entry rather than to the document root.</p>
+<h3>Adding a tool — the exact steps</h3>
+<pre class="code" data-lang-name="pwsh"><code># 1. Create the directory and copy from the template (a two-engine example
+#    and filling instructions)
+New-Item -ItemType Directory -Force payloads/my-tool/artifacts
+Copy-Item template/tool.bundled.yaml payloads/my-tool/tool.yaml
+
+# 2. Produce one artifact per engine (Unity: Assets &gt; Export Package...; otherwise: Compress-Archive / tar -czf)
+
+# 3. One target: &lt;id&gt;-&lt;version&gt;.&lt;ext&gt;; several targets: &lt;id&gt;-&lt;version&gt;-&lt;engine&gt;.&lt;ext&gt;
+Copy-Item my-tool.unitypackage payloads/my-tool/artifacts/my-tool-1.0.0.unitypackage
+
+# 4. Edit tool.yaml and fill in size and sha256 for every target from the real bytes
+node ../ToolImport/apps/cli/bin/utool.js digest payloads/my-tool/artifacts/my-tool-1.0.0.unitypackage
+
+# 5. Rebuild the index and validate
+node tools/registry.mjs write-index
+node tools/registry.mjs validate</code></pre>
+<hr>
+<h2>12. Not yet defined</h2>
+<p>The following are <strong>not part of the format today</strong>; a reader must reject them as unknown fields. They are recorded here so that adding one later reads as a format revision rather than a quiet extension.</p>
+<table class="doc"><thead><tr><th>Not yet defined</th><th>What to do today</th></tr></thead><tbody><tr><td>a <code>channels</code> field (<code>stable</code> / <code>preview</code>)</td><td>express maturity and withdrawal with the per-version <code>deprecated</code> / <code>yanked</code></td></tr><tr><td>artifact signatures beyond <code>sha256</code></td><td><code>sha256</code> only; integrity rests on it and <code>size</code></td></tr><tr><td><strong>generic</strong> requirement keys beyond <code>minEngineVersion</code></td><td>every other key is defined by the engine's adapter (see R-PLAT-2); the core knows no specific name</td></tr><tr><td>engine adapters beyond Unity and Godot</td><td>an engine with no adapter is still <strong>valid data</strong>, it simply cannot be planned for installation (see R-ENG-2)</td></tr></tbody></table>
+<p>What has already shipped is deliberately <strong>not</strong> listed here: multi-version metadata (<code>versions[]</code> + <code>latest</code>, see R-VER-4), per-version <code>deprecated</code> and <code>yanked</code>, and the Godot adapter are all part of the current format.</p>
+    <p class="source">Generated from <code>docs/SPEC.en.md</code> · <a href="index.html">All docs</a></p>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>错误码参考</title>
+<!--
+  GENERATED PAGE - do not edit.
+  Source: docs/ERRORS.zh-CN.md · rebuild with: node tools/build-registry-template.mjs
+-->
+<style>:root {
+    --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
+    --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
+    --link: #9dbdd4; --link-hover: #c6dbe9;
+  }
+  /* Light is a second palette, not a filter: the accent and the two signal colours have to keep
+     their contrast against a light panel, so they are darkened rather than reused. */
+  :root[data-theme="light"] {
+    --bg: #f6f7f9; --panel: #ffffff; --panel-2: #eceff4; --line: #d6dbe3; --fg: #1b2027;
+    --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
+    --link: #2b5c83; --link-hover: #17405f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.75 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  main a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(127,166,196,.45); text-underline-offset: 2px; }
+  main a:hover { color: var(--link-hover); text-decoration-color: var(--link-hover); }
+  code {
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px;
+    font-variant-ligatures: none; background: var(--panel-2); padding: 1px 5px; border-radius: 4px;
+  }
+  .switches {
+    position: fixed; top: 12px; right: 14px; z-index: 50; display: flex; gap: 6px;
+  }
+  .switches button {
+    background: var(--panel); color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 9px; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
+  }
+  .switches button:hover { color: var(--fg); border-color: var(--accent); }
+  html[data-lang="zh"] [data-lang="en"], html[data-lang="en"] [data-lang="zh"] { display: none !important; }
+  .layout { display: flex; align-items: flex-start; max-width: 1180px; margin: 0 auto; }
+  nav.docs {
+    position: sticky; top: 0; flex: 0 0 232px; max-height: 100vh; overflow: auto;
+    padding: 26px 14px 30px 18px; border-right: 1px solid var(--line);
+  }
+  nav.docs .home { display: block; color: var(--dim); font-size: 12px; text-decoration: none; margin-bottom: 14px; }
+  nav.docs .home:hover { color: var(--link-hover); }
+  nav.docs a.topic {
+    display: block; padding: 5px 9px; border-radius: 5px; color: var(--dim);
+    text-decoration: none; font-size: 13.5px;
+  }
+  nav.docs a.topic:hover { background: var(--panel); color: var(--fg); }
+  nav.docs a.topic.current { background: var(--panel); color: var(--fg); font-weight: 600; }
+  main.doc { flex: 1 1 auto; min-width: 0; padding: 30px 30px 90px; max-width: 870px; }
+  main.doc > h1:first-child { margin-top: 0; }
+  main.doc h1 { font-size: 24px; margin: 26px 0 10px; }
+  main.doc h2 { font-size: 19px; margin: 30px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  main.doc h3 { font-size: 16px; margin: 22px 0 6px; }
+  main.doc h4 { font-size: 14.5px; margin: 18px 0 4px; color: var(--dim); }
+  main.doc p, main.doc li { font-size: 14.5px; }
+  main.doc ul, main.doc ol { padding-left: 22px; }
+  main.doc li { margin: 3px 0; }
+  main.doc pre.code {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 12px 14px;
+    overflow: auto; font-size: 12.5px; line-height: 1.55;
+  }
+  main.doc pre.code code {
+    background: none; padding: 0; font-size: 12.5px; white-space: pre; font-variant-ligatures: none;
+  }
+  main.doc table.doc { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+  main.doc table.doc th, main.doc table.doc td {
+    border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top;
+  }
+  main.doc table.doc th { background: var(--panel-2); font-weight: 600; }
+  main.doc blockquote {
+    margin: 12px 0; padding: 4px 0 4px 14px; border-left: 3px solid var(--line); color: var(--dim);
+  }
+  main.doc hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+  .langswitch { position: fixed; top: 14px; right: 96px; z-index: 50; font-size: 12px; color: var(--dim); }
+  .langswitch a { color: var(--dim); text-decoration: none; }
+  .langswitch a.current { color: var(--fg); font-weight: 600; }
+  .langswitch a:hover { color: var(--link-hover); }
+  .source { color: var(--dim); font-size: 12px; margin-top: 40px; border-top: 1px solid var(--line); padding-top: 10px; }
+  ul.topics { list-style: none; padding: 0; }
+  ul.topics li {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+    border-bottom: 1px solid var(--line); padding: 10px 2px;
+  }
+  ul.topics .pair a { margin-left: 14px; font-size: 12.5px; }
+</style>
+<script>(function () {
+  var META = {"languages":false};
+  var root = typeof document !== 'undefined' ? document.documentElement : null;
+
+  function stored(key, fallback) {
+    try {
+      var value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (error) { /* private mode */ }
+  }
+
+  function systemTheme() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark';
+    } catch (error) {
+      return 'dark';
+    }
+  }
+
+  var theme = stored('toolregistry-theme', systemTheme());
+  if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+  var lang = stored('toolregistry-lang', 'zh');
+  if (lang !== 'zh' && lang !== 'en') lang = 'zh';
+
+  function apply() {
+    // Defensive: this script is also loaded by the test harness, which has no documentElement.
+    if (!root || typeof root.setAttribute !== 'function') return;
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang === 'en' ? 'en' : 'zh-CN');
+  }
+
+  apply();
+
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', function () {
+    var themeButton = document.getElementById('theme-toggle');
+    if (themeButton) {
+      themeButton.textContent = theme === 'light' ? '☀' : '☾';
+      themeButton.addEventListener('click', function () {
+        theme = theme === 'light' ? 'dark' : 'light';
+        apply();
+        themeButton.textContent = theme === 'light' ? '☀' : '☾';
+        save('toolregistry-theme', theme);
+      });
+    }
+
+    var langButton = document.getElementById('lang-toggle');
+    if (langButton) {
+      // A page without the other language gets no switch: an inert button is worse than none.
+      var bilingual = document.querySelector('[data-lang]') !== null;
+      if (!bilingual) {
+        langButton.style.display = 'none';
+      } else {
+        langButton.textContent = lang === 'en' ? '中' : 'EN';
+        langButton.addEventListener('click', function () {
+          lang = lang === 'en' ? 'zh' : 'en';
+          apply();
+          langButton.textContent = lang === 'en' ? '中' : 'EN';
+          save('toolregistry-lang', lang);
+        });
+      }
+    }
+  });
+})();</script>
+</head>
+<body>
+<div class="switches">
+    <button id="theme-toggle" type="button" title="切换明暗 / Toggle theme">☾</button>
+  </div>
+<div class="langswitch">
+  <a href="ERRORS.en.html">EN</a> /
+  <a href="ERRORS.en.html" class="current">中文</a>
+</div>
+<div class="layout">
+    <nav class="docs">
+      <a class="home" href="../index.html">← 入口</a>
+      <a class="topic" href="SPEC.zh-CN.html">格式规范</a>
+      <a class="topic" href="ATTRIBUTES.zh-CN.html">属性速查</a>
+      <a class="topic" href="CONTRIBUTING.zh-CN.html">贡献指南</a>
+      <a class="topic current" href="ERRORS.zh-CN.html">错误码</a>
+      <a class="topic" href="GLOSSARY.zh-CN.html">术语表</a>
+      <a class="topic" href="FRONTEND-DESIGN.zh-CN.html">前端设计</a>
+      <a class="topic" href="FRONTEND-INTEGRATION.zh-CN.html">前端集成</a>
+      <a class="topic" href="index.html">全部文档</a>
+    </nav>
+  <main class="doc">
+<h1>错误码参考</h1>
+<p>工具链会发出的全部错误码，<strong>唯一出处</strong>。按「你会怎么遇到它」分组，而不是按代码模块分组。</p>
+<p>前缀：<code>E-</code> 是失败，<code>W-</code> 是警告（不阻断任何操作）。</p>
+<p><strong>语言</strong>：<a href="ERRORS.zh-CN.html">中文</a> · <a href="ERRORS.en.html">English</a> · <a href="../README.html">返回目录</a></p>
+<hr>
+<h2>你要提交工具，只关心这一节</h2>
+<p>跑 <code>node tools/registry.mjs validate</code> 时可能看到的码。左边是你看到的，右边是真正该改的地方。</p>
+<h3>元信息本身</h3>
+<table class="doc"><thead><tr><th>码</th><th>含义</th><th>怎么修</th></tr></thead><tbody><tr><td><code>E-LAYOUT</code></td><td>仓库根缺少 <code>payloads/</code></td><td>确认你在仓库根运行</td></tr><tr><td><code>E-MANIFEST-MISSING</code></td><td>payload 目录里没有 <code>tool.yaml</code></td><td>从 <code>template/</code> 复制一份</td></tr><tr><td><code>E-MANIFEST</code></td><td><code>tool.yaml</code> 读取失败——不是合法 YAML、含多个文档，或根不是映射</td><td>检查缩进；制表符不能用于缩进；一个文件只能有一个文档</td></tr><tr><td><code>E-UTOOL-BOM</code></td><td>文件以 UTF-8 BOM 开头</td><td>用「UTF-8 无 BOM」重新保存。BOM 会把第一个键名变成 <code>\uFEFFkind</code></td></tr><tr><td><code>E-SCHEMA</code></td><td>违反 schema：缺必需字段、未知字段、取值不符</td><td>按报出的字段路径改；能力名不合规也在这里报出</td></tr></tbody></table>
+<h3>身份与结构</h3>
+<table class="doc"><thead><tr><th>码</th><th>含义</th><th>怎么修</th></tr></thead><tbody><tr><td><code>E-ID-FORMAT</code></td><td><code>id</code> 不是小写 kebab-case</td><td>小写字母、数字、单个连字符；3–64 字符</td></tr><tr><td><code>E-ID-DIR</code></td><td>目录名与 <code>id</code> 不一致</td><td>让两者完全相同</td></tr><tr><td><code>E-PAYLOAD-EXTRA</code></td><td>payload 里有游离文件（源码、DLL、备份……）</td><td>见<a href="#允许放什么">允许放什么</a></td></tr><tr><td><code>E-TARGETS-MISSING</code></td><td><code>targets</code> 缺失或为空</td><td>至少声明一个引擎</td></tr><tr><td><code>E-TARGET-REQUIREMENTS</code></td><td>target 缺少 <code>requirements</code> 或 <code>minEngineVersion</code></td><td><code>minEngineVersion</code> 是必填，不要猜也不要省</td></tr></tbody></table>
+<h3>制品</h3>
+<table class="doc"><thead><tr><th>码</th><th>含义</th><th>怎么修</th></tr></thead><tbody><tr><td><code>E-ARTIFACT-TYPE</code></td><td><code>type</code> 不是四种之一，或 <code>file</code> 没有 <code>unpack: none</code></td><td>见<a href="ATTRIBUTES.zh-CN.html#artifact-type">属性速查</a></td></tr><tr><td><code>E-ARTIFACT-NAME</code></td><td>文件名或所在目录不符合约定：必须是 <code>payloads/&lt;id&gt;/artifacts/&lt;id&gt;-&lt;版本&gt;[-&lt;引擎&gt;].&lt;扩展名&gt;</code></td><td>一个 target 不带引擎段，多个 target 必须带；位置与文件名一起检查</td></tr><tr><td><code>E-ARTIFACT-MISSING</code></td><td>target 没有 <code>artifact</code>，或声明的制品不存在</td><td>每个 target 恰好一个制品，且文件要在磁盘上</td></tr><tr><td><code>E-ARTIFACT-PATHNAME</code></td><td>unitypackage 内的 <code>pathname</code> 不是相对工程根的路径</td><td>必须以 <code>Assets/</code> 开头</td></tr><tr><td><code>E-ARTIFACT-SIZE</code></td><td><code>size</code> 与实际字节数不符</td><td>跑 <code>utool digest</code> 重新填</td></tr><tr><td><code>E-ARTIFACT-HASH</code></td><td><code>sha256</code> 与实际摘要不符</td><td>跑 <code>utool digest</code> 重新填</td></tr><tr><td><code>E-ARTIFACT-TARGETPATH</code></td><td><code>type: file</code>，或任何 <code>unpack: none</code> 的制品，缺少 <code>targetPath</code></td><td>补上落点，或去掉 <code>unpack: none</code> 让处理器解包</td></tr><tr><td><code>E-ARTIFACT-FORMAT</code></td><td>字节与声明的 <code>format</code> 不符</td><td>扩展名改了但内容没变，是最常见的原因</td></tr><tr><td><code>E-ARTIFACT-FORMAT-UNSUPPORTED</code></td><td>没有该格式的处理器</td><td><code>unitypackage</code> 需要 Unity 适配器已加载</td></tr><tr><td><code>E-ARTIFACT-EMPTY</code></td><td>归档里一个条目都没有</td><td>重新打包</td></tr><tr><td><code>E-ARTIFACT-UNSAFE</code></td><td>条目名逃出目标根目录（tar-slip / zip-slip）</td><td>重新打包，不要用绝对路径或 <code>..</code></td></tr><tr><td><code>E-ARTIFACT-STRAY</code></td><td><code>artifacts/</code> 中有未声明的文件</td><td>删掉它，或在 <code>versions</code> 里声明它</td></tr><tr><td><code>E-EXTERNAL-INCOMPLETE</code></td><td><code>external</code> 缺 <code>source</code> / <code>url</code> / <code>ref</code></td><td>三者齐全，且<strong>禁止</strong> <code>path</code>/<code>size</code>/<code>sha256</code></td></tr></tbody></table>
+<h3>版本与依赖</h3>
+<table class="doc"><thead><tr><th>码</th><th>含义</th><th>怎么修</th></tr></thead><tbody><tr><td><code>E-VERSIONS-MISSING</code></td><td><code>versions</code> 缺失或为空</td><td>至少一个版本</td></tr><tr><td><code>E-LATEST-UNKNOWN</code></td><td><code>latest</code> 不指向 <code>versions</code> 里任何一项</td><td>让两者完全一致</td></tr><tr><td><code>E-VERSIONS-DUPLICATE</code></td><td>同一个版本号出现两次</td><td>合并或改名</td></tr><tr><td><code>E-YANKED-LATEST</code></td><td><code>latest</code> 指向一个被撤回的版本</td><td>把 <code>latest</code> 移到未撤回的版本</td></tr><tr><td><code>E-DEP-MISSING</code></td><td>依赖了不存在的 <code>id</code></td><td>检查拼写，或先提交被依赖的工具</td></tr><tr><td><code>E-DEP-VERSION</code></td><td>约束不被本库提供的版本满足</td><td>抬高依赖版本后忘了放宽约束，最常见</td></tr><tr><td><code>E-DEP-CONSTRAINT</code></td><td>约束表达式本身非法</td><td>见<a href="ATTRIBUTES.zh-CN.html#dependencies">属性速查</a></td></tr><tr><td><code>E-VERSION-NOT-FOUND</code></td><td>显式指定的版本没有发布</td><td>核对可用版本；<code>utool show &lt;id&gt;</code> 会列出它们</td></tr><tr><td><code>E-DEP-SELF</code></td><td>依赖自身</td><td>删掉</td></tr><tr><td><code>E-DEP-CYCLE</code></td><td>依赖成环</td><td>断开；<strong>禁止</strong>自动打破</td></tr><tr><td><code>E-CAP-FORMAT</code></td><td>能力名不合法</td><td>至少两段点分小写，如 <code>script.api.argument-guards</code></td></tr><tr><td><code>E-CAP-UNSATISFIED</code></td><td>注入的能力无人提供</td><td>先写提供者，或改为 <code>dependencies</code></td></tr><tr><td><code>W-CAP-MULTIPLE</code></td><td>同一能力有多个提供者</td><td><strong>合法</strong>，仅提示；它们互为替代品</td></tr></tbody></table>
+<h3>索引</h3>
+<table class="doc"><thead><tr><th>码</th><th>含义</th><th>怎么修</th></tr></thead><tbody><tr><td><code>E-INDEX-MISSING</code></td><td>缺少 <code>index.yaml</code></td><td>跑 <code>node tools/registry.mjs write-index</code></td></tr><tr><td><code>E-INDEX</code></td><td><code>index.yaml</code> 读取失败（不是合法 YAML、<code>kind</code> 不是 <code>index</code> 等）</td><td>它是生成物，重新生成而不是手改</td></tr><tr><td><code>E-INDEX-STALE</code></td><td>索引与 payloads 不一致</td><td>跑 <code>write-index</code> 并一起提交；装了本地钩子会提前拦住</td></tr></tbody></table>
+<h2>允许放什么</h2>
+<p><code>payloads/&lt;id&gt;/</code> 下<strong>只允许</strong>：</p>
+<pre class="code" data-lang-name="text"><code>payloads/&lt;id&gt;/
+├─ tool.yaml            必需
+├─ artifacts/           必需（external 类型可以没有）
+│  └─ &lt;id&gt;-&lt;版本&gt;[-&lt;引擎&gt;].&lt;扩展名&gt;
+└─ README.md            可选，仅用于 external 说明源码在哪</code></pre>
+<p>源文件、DLL、压缩包、备份文件一律不允许——它们会让「只导入封存制品」这条规则失效。 被 <code>artifacts/</code> 引用到的文件必须在 <code>versions</code> 里声明；反过来，<code>artifacts/</code> 里也不能有未声明的文件。</p>
+<h2>你实现导入工具时才会遇到的码</h2>
+<p>按阶段分组。这些不会在 <code>utool validate</code> 时出现。</p>
+<h3>文档加载</h3>
+<table class="doc"><thead><tr><th>码</th><th>含义</th></tr></thead><tbody><tr><td><code>E-UTOOL-READ</code></td><td>文件无法读取</td></tr><tr><td><code>E-UTOOL-YAML</code></td><td>不是合法 YAML，或含多个文档</td></tr><tr><td><code>E-UTOOL-EMPTY</code></td><td>文档为空</td></tr><tr><td><code>E-UTOOL-ROOT</code></td><td>根节点不是映射</td></tr><tr><td><code>E-UTOOL-KIND-MISSING</code></td><td>缺少 <code>kind</code> 判别器</td></tr><tr><td><code>E-UTOOL-KIND-UNKNOWN</code></td><td><code>kind</code> 不认识；读方<strong>必须</strong>拒绝而不是猜测</td></tr><tr><td><code>E-UTOOL-KIND-MISMATCH</code></td><td><code>kind</code> 与期望不符（期望 <code>tool</code> 却拿到 <code>index</code>）</td></tr><tr><td><code>E-UTOOL-VERSION-MISSING</code></td><td>缺少 <code>formatVersion</code></td></tr><tr><td><code>E-UTOOL-VERSION-UNSUPPORTED</code></td><td><code>formatVersion</code> 不是本实现支持的版本</td></tr><tr><td><code>E-ID-MISMATCH</code></td><td>请求的 id 与文档声明的 id 不一致</td></tr><tr><td><code>E-MANIFEST</code></td><td>清单读取失败，且底层没有给出更具体的码</td></tr></tbody></table>
+<h3>求解</h3>
+<table class="doc"><thead><tr><th>码</th><th>含义</th></tr></thead><tbody><tr><td><code>E-DEP-FETCH</code></td><td>依赖的清单无法取得</td></tr><tr><td><code>E-CAP-CONFLICT</code></td><td><strong>同一个安装计划内</strong>同一能力有多个提供者；消费者无法分辨拿到的是哪个</td></tr><tr><td><code>E-CAP-PROVIDER</code></td><td>选中的提供者清单无法加载</td></tr><tr><td><code>E-CAP-PROVIDER-ENGINE</code></td><td>唯一的提供者不支持所请求的引擎</td></tr><tr><td><code>E-CAP-PROVIDER-DEP</code></td><td>提供者自身的依赖不在计划内，拒绝半途加入</td></tr><tr><td><code>E-PLATFORM</code></td><td>宿主低于某个声明下限；错误里带上要求项与提出要求的工具</td></tr><tr><td><code>E-PLATFORM-PARSE</code></td><td>下限值无法比较（写法非法）</td></tr></tbody></table>
+<p>引擎适配器对<strong>自己不认识的</strong>需求键返回 <code>undefined</code> 而不是 <code>false</code>。核心把 <code>undefined</code> 读作 「该适配器无法判断」，于是<strong>报告</strong>该下限而不强制。若返回 <code>false</code>，一旦有人新增一个需求键， 安装就会被静默阻断——那正是适配器分离要避免的耦合。</p>
+<h3>制品与容器</h3>
+<table class="doc"><thead><tr><th>码</th><th>含义</th></tr></thead><tbody><tr><td><code>E-ARTIFACT</code></td><td>制品处理失败，且底层没有给出更具体的码</td></tr><tr><td><code>E-ARTIFACT-GZIP</code></td><td>不是可读的 gzip 数据</td></tr><tr><td><code>E-ARTIFACT-ZSTD</code></td><td>不是可读的 zstd 帧</td></tr><tr><td><code>E-ARTIFACT-CODEC</code></td><td>该 Node 构建缺少所需编解码器（zstd 需要 Node 22 以上）</td></tr><tr><td><code>E-ARTIFACT-ZIP</code></td><td>zip 中央目录损坏</td></tr><tr><td><code>E-ARTIFACT-ZIP-METHOD</code></td><td>zip 使用了受支持之外的压缩方法（仅 stored 与 deflate）</td></tr><tr><td><code>E-ARTIFACT-TAR</code></td><td>tar 头损坏</td></tr><tr><td><code>E-HANDLER-CONTRACT</code></td><td>容器处理器违反契约（返回既无字节、也无读取方式的条目）</td></tr><tr><td><code>E-INSTALL-INTO</code></td><td><code>--into</code> 给的目标不是可用的工程内相对目录（为空、绝对路径、带盘符、或含 <code>..</code>）</td></tr><tr><td><code>E-INSTALL-ROOT</code></td><td>某个计划落点不在该工具自己的安装目录内，无法整体迁移；此时不写入任何文件</td></tr></tbody></table>
+<h3>来源与网络</h3>
+<table class="doc"><thead><tr><th>码</th><th>含义</th></tr></thead><tbody><tr><td><code>E-SOURCE-GIT</code></td><td>传入了 git 远端；后端不 shell out 到 git，请先克隆再传目录</td></tr><tr><td><code>E-NETWORK</code></td><td>无法访问注册库地址。配置了镜像时，只有这个码会触发切换</td></tr><tr><td><code>E-HTTP</code></td><td>非 2xx 响应</td></tr><tr><td><code>E-NOT-FOUND</code></td><td>请求的文件在注册库中不存在。<strong>不会</strong>触发镜像切换：注册库已经答复了</td></tr><tr><td><code>E-NO-FETCH</code></td><td>该运行时没有可用的 fetch 实现</td></tr><tr><td><code>E-MIRROR-LOCAL</code></td><td>给本地目录注册库指定了镜像；本地目录不接受镜像</td></tr></tbody></table>
+<h3>回执</h3>
+<table class="doc"><thead><tr><th>码</th><th>含义</th></tr></thead><tbody><tr><td><code>E-RECEIPT-INVALID</code></td><td>回执无法读取，必须修复或删除</td></tr><tr><td><code>E-RECEIPT-MISSING</code></td><td>没有该工具的回执，因此没有可回滚的目标</td></tr></tbody></table>
+<h3>工具链自身</h3>
+<table class="doc"><thead><tr><th>码</th><th>含义</th></tr></thead><tbody><tr><td><code>E-UNINSTALL-FILE</code></td><td>卸载时某个文件无法删除（常见原因：被编辑器或版本控制占用）</td></tr><tr><td><code>E-DEP-REQUIRED</code></td><td>该工具仍被其他已安装的工具依赖；卸载被拒绝，除非加 <code>--force</code></td></tr><tr><td><code>E-DIGEST-READ</code></td><td><code>utool digest</code> 无法读取指定文件</td></tr><tr><td><code>E-UNEXPECTED</code></td><td>未预期的内部错误；属于缺陷，请报告</td></tr><tr><td><code>E-UNKNOWN</code></td><td>无法归类的失败</td></tr></tbody></table>
+    <p class="source">由 <code>docs/ERRORS.zh-CN.md</code> 生成 · <a href="index.html">全部文档</a></p>
+  </main>
+</div>
+</body>
+</html>

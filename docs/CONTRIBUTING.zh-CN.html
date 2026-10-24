@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>贡献指南</title>
+<!--
+  GENERATED PAGE - do not edit.
+  Source: docs/CONTRIBUTING.zh-CN.md · rebuild with: node tools/build-registry-template.mjs
+-->
+<style>:root {
+    --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
+    --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
+    --link: #9dbdd4; --link-hover: #c6dbe9;
+  }
+  /* Light is a second palette, not a filter: the accent and the two signal colours have to keep
+     their contrast against a light panel, so they are darkened rather than reused. */
+  :root[data-theme="light"] {
+    --bg: #f6f7f9; --panel: #ffffff; --panel-2: #eceff4; --line: #d6dbe3; --fg: #1b2027;
+    --dim: #5b6572; --ok: #1c7f3c; --bad: #b02f1c; --accent: #356a92; --warn: #8a5a10;
+    --link: #2b5c83; --link-hover: #17405f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.75 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  main a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(127,166,196,.45); text-underline-offset: 2px; }
+  main a:hover { color: var(--link-hover); text-decoration-color: var(--link-hover); }
+  code {
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px;
+    font-variant-ligatures: none; background: var(--panel-2); padding: 1px 5px; border-radius: 4px;
+  }
+  .switches {
+    position: fixed; top: 12px; right: 14px; z-index: 50; display: flex; gap: 6px;
+  }
+  .switches button {
+    background: var(--panel); color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 9px; cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
+  }
+  .switches button:hover { color: var(--fg); border-color: var(--accent); }
+  html[data-lang="zh"] [data-lang="en"], html[data-lang="en"] [data-lang="zh"] { display: none !important; }
+  .layout { display: flex; align-items: flex-start; max-width: 1180px; margin: 0 auto; }
+  nav.docs {
+    position: sticky; top: 0; flex: 0 0 232px; max-height: 100vh; overflow: auto;
+    padding: 26px 14px 30px 18px; border-right: 1px solid var(--line);
+  }
+  nav.docs .home { display: block; color: var(--dim); font-size: 12px; text-decoration: none; margin-bottom: 14px; }
+  nav.docs .home:hover { color: var(--link-hover); }
+  nav.docs a.topic {
+    display: block; padding: 5px 9px; border-radius: 5px; color: var(--dim);
+    text-decoration: none; font-size: 13.5px;
+  }
+  nav.docs a.topic:hover { background: var(--panel); color: var(--fg); }
+  nav.docs a.topic.current { background: var(--panel); color: var(--fg); font-weight: 600; }
+  main.doc { flex: 1 1 auto; min-width: 0; padding: 30px 30px 90px; max-width: 870px; }
+  main.doc > h1:first-child { margin-top: 0; }
+  main.doc h1 { font-size: 24px; margin: 26px 0 10px; }
+  main.doc h2 { font-size: 19px; margin: 30px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  main.doc h3 { font-size: 16px; margin: 22px 0 6px; }
+  main.doc h4 { font-size: 14.5px; margin: 18px 0 4px; color: var(--dim); }
+  main.doc p, main.doc li { font-size: 14.5px; }
+  main.doc ul, main.doc ol { padding-left: 22px; }
+  main.doc li { margin: 3px 0; }
+  main.doc pre.code {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 12px 14px;
+    overflow: auto; font-size: 12.5px; line-height: 1.55;
+  }
+  main.doc pre.code code {
+    background: none; padding: 0; font-size: 12.5px; white-space: pre; font-variant-ligatures: none;
+  }
+  main.doc table.doc { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+  main.doc table.doc th, main.doc table.doc td {
+    border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top;
+  }
+  main.doc table.doc th { background: var(--panel-2); font-weight: 600; }
+  main.doc blockquote {
+    margin: 12px 0; padding: 4px 0 4px 14px; border-left: 3px solid var(--line); color: var(--dim);
+  }
+  main.doc hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+  .langswitch { position: fixed; top: 14px; right: 96px; z-index: 50; font-size: 12px; color: var(--dim); }
+  .langswitch a { color: var(--dim); text-decoration: none; }
+  .langswitch a.current { color: var(--fg); font-weight: 600; }
+  .langswitch a:hover { color: var(--link-hover); }
+  .source { color: var(--dim); font-size: 12px; margin-top: 40px; border-top: 1px solid var(--line); padding-top: 10px; }
+  ul.topics { list-style: none; padding: 0; }
+  ul.topics li {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+    border-bottom: 1px solid var(--line); padding: 10px 2px;
+  }
+  ul.topics .pair a { margin-left: 14px; font-size: 12.5px; }
+</style>
+<script>(function () {
+  var META = {"languages":false};
+  var root = typeof document !== 'undefined' ? document.documentElement : null;
+
+  function stored(key, fallback) {
+    try {
+      var value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (error) { /* private mode */ }
+  }
+
+  function systemTheme() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark';
+    } catch (error) {
+      return 'dark';
+    }
+  }
+
+  var theme = stored('toolregistry-theme', systemTheme());
+  if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+  var lang = stored('toolregistry-lang', 'zh');
+  if (lang !== 'zh' && lang !== 'en') lang = 'zh';
+
+  function apply() {
+    // Defensive: this script is also loaded by the test harness, which has no documentElement.
+    if (!root || typeof root.setAttribute !== 'function') return;
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang === 'en' ? 'en' : 'zh-CN');
+  }
+
+  apply();
+
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', function () {
+    var themeButton = document.getElementById('theme-toggle');
+    if (themeButton) {
+      themeButton.textContent = theme === 'light' ? '☀' : '☾';
+      themeButton.addEventListener('click', function () {
+        theme = theme === 'light' ? 'dark' : 'light';
+        apply();
+        themeButton.textContent = theme === 'light' ? '☀' : '☾';
+        save('toolregistry-theme', theme);
+      });
+    }
+
+    var langButton = document.getElementById('lang-toggle');
+    if (langButton) {
+      // A page without the other language gets no switch: an inert button is worse than none.
+      var bilingual = document.querySelector('[data-lang]') !== null;
+      if (!bilingual) {
+        langButton.style.display = 'none';
+      } else {
+        langButton.textContent = lang === 'en' ? '中' : 'EN';
+        langButton.addEventListener('click', function () {
+          lang = lang === 'en' ? 'zh' : 'en';
+          apply();
+          langButton.textContent = lang === 'en' ? '中' : 'EN';
+          save('toolregistry-lang', lang);
+        });
+      }
+    }
+  });
+})();</script>
+</head>
+<body>
+<div class="switches">
+    <button id="theme-toggle" type="button" title="切换明暗 / Toggle theme">☾</button>
+  </div>
+<div class="langswitch">
+  <a href="CONTRIBUTING.en.html">EN</a> /
+  <a href="CONTRIBUTING.en.html" class="current">中文</a>
+</div>
+<div class="layout">
+    <nav class="docs">
+      <a class="home" href="../index.html">← 入口</a>
+      <a class="topic" href="SPEC.zh-CN.html">格式规范</a>
+      <a class="topic" href="ATTRIBUTES.zh-CN.html">属性速查</a>
+      <a class="topic current" href="CONTRIBUTING.zh-CN.html">贡献指南</a>
+      <a class="topic" href="ERRORS.zh-CN.html">错误码</a>
+      <a class="topic" href="GLOSSARY.zh-CN.html">术语表</a>
+      <a class="topic" href="FRONTEND-DESIGN.zh-CN.html">前端设计</a>
+      <a class="topic" href="FRONTEND-INTEGRATION.zh-CN.html">前端集成</a>
+      <a class="topic" href="index.html">全部文档</a>
+    </nav>
+  <main class="doc">
+<h1>贡献指南</h1>
+<p><strong>语言</strong>：<a href="CONTRIBUTING.zh-CN.html">中文</a> · <a href="CONTRIBUTING.en.html">English</a> · <a href="../README.html">返回目录</a></p>
+<p>本注册库刻意保持严格：导入工具信任它，所以被准入的东西必须可校验、可插拔、可移除。 好在新增一个工具只需要<strong>一个目录 + 每个引擎一个制品 + 一条命令</strong>。</p>
+<hr>
+<h2>你能贡献什么</h2>
+<table class="doc"><thead><tr><th>你想做的</th><th>需要动的</th><th>做什么</th></tr></thead><tbody><tr><td><strong>加一个新工具</strong></td><td><code>payloads/&lt;新 id&gt;/</code></td><td>从模板开始，填元信息、放制品。这是最常见的一种。</td></tr><tr><td><strong>发布已有工具的新版本</strong></td><td><code>payloads/&lt;已有 id&gt;/</code></td><td>产出新制品，加一个 <code>versions</code> 条目。</td></tr><tr><td><strong>只改元信息</strong></td><td><code>payloads/&lt;id&gt;/tool.yaml</code></td><td>改描述、标签、依赖、下限。制品字节不动。</td></tr><tr><td><strong>引用别处已有的包</strong></td><td><code>payloads/&lt;id&gt;/tool.yaml</code></td><td><code>type: external</code>，本仓库不存字节，只登记它在哪。</td></tr><tr><td><strong>改格式或工具链</strong></td><td><code>schema/</code>、<code>tools/</code></td><td>先读<a href="SPEC.zh-CN.html">格式规范</a>；这是破坏性变更，需要格式修订号。</td></tr></tbody></table>
+<p>只改文档、修错别字一样欢迎，直接提 PR 即可。</p>
+<p><strong>不确定某个字段填什么？</strong> 查 <a href="ATTRIBUTES.zh-CN.html">属性速查</a>：每个字段一节，含取值含义与可直接复制的示例。</p>
+<h2>流程</h2>
+<pre class="code" data-lang-name="text"><code>1. 建目录，从 template/ 复制骨架
+2. 填元信息，改 id 与目录名一致
+3. 每个引擎各产出一个制品
+4. 跑 utool digest，把 size 与 sha256 填回去
+5. 重建索引并校验
+6. 提交</code></pre>
+<p>每一步的细节见下文对应小节。<strong>第一次做</strong>建议按顺序读完；<strong>只是加个版本</strong>直接跳到 <a href="#发布已有工具的新版本">发布新版本</a>。</p>
+<blockquote><p><strong>不想读文档？</strong> 双击 <code>tools/guide.html</code>。它把上面这六步按顺序列出来，命令里已经代入你填的 id 与引擎，复制即可运行；每一步旁边有对应文档的入口，<strong>先做，卡住了再点进去</strong>。 这份文档是给想知道「为什么这么做」、或者卡在某个报错上的人看的。</p></blockquote>
+<p><strong>第一步先用 <code>tools/editor.html</code> 把元信息填出来。</strong> 双击打开即可，不用装 Node：按表填写， 把制品拖进去就自动算出 <code>size</code> 与 <code>sha256</code>，填写有前提的字段（<code>targetPath</code>、<code>contentRoot</code>） 只在前提成立时出现，生成时立刻用同一个校验器检查一遍。生成的 YAML 直接存成 <code>payloads/&lt;id&gt;/tool.yaml</code>。</p>
+<p>也可以用 <code>tools/validate.html</code> 随时复查一份已有元信息：把 <code>tool.yaml</code> 拖进去或点「选择文件」。它是<strong>自动生成</strong>的单文件页面（<code>npm run build:validator</code>），内嵌的是 <strong>同一个</strong>校验器与同一份 schema，所以结论与 CLI 一致；不联网、不上传。它只检查元信息本身的形状—— 哈希、依赖求解与安装需要整个注册库，那是 <code>utool validate</code> 的事。</p>
+<hr>
+<h2>新增一个打包型工具</h2>
+<h3>1. 从模板开始</h3>
+<pre class="code" data-lang-name="pwsh"><code>New-Item -ItemType Directory -Force payloads/my-tool/artifacts
+Copy-Item template/tool.bundled.yaml payloads/my-tool/tool.yaml</code></pre>
+<p>先把 <code>id</code> 与目录名改成一致（小写 kebab-case），然后决定要支持哪些引擎：<strong>用不到的 target 直接删掉</strong>。</p>
+<p>模板里每个字段上方都有注释说明填什么。<strong>某个字段具体该填什么值、取值有哪些</strong>，查 <a href="ATTRIBUTES.zh-CN.html"><code>ATTRIBUTES.zh-CN.md</code></a>——那份文件由 schema 自动生成，因此不会与校验器不一致。</p>
+<h3>2. 每个引擎各产出一个制品</h3>
+<p><strong>Unity 编辑器工具 / 脚本 / 资源 → <code>.unitypackage</code></strong>（保留 GUID 与导入设置）：</p>
+<pre class="code" data-lang-name="text"><code>Unity：选中资源 &gt; Assets &gt; Export Package... &gt; 取消勾选 &quot;Include dependencies&quot;
+       &gt; 保存为 &lt;id&gt;-&lt;version&gt;[-unity].unitypackage</code></pre>
+<p>只导出该工具真正需要的文件。<strong>如果它需要本库中另一个工具的文件，不要重复导出——声明依赖。</strong></p>
+<blockquote><p><strong>每个工具必须自成一个目录。</strong> 把 <code>Assets/&lt;Tool&gt;/...</code> 作为唯一落点，例如 <code>Assets/CoreEditorUtils/</code>。<strong>不要</strong>按用途分类散落（<code>Assets/Runtime/Core/</code>、<code>Assets/Editor/</code>）： 那样一个工具会铺进与整个工程共用的目录，&quot;这个工具拥有哪些文件&quot;就再也无法定义， 卸载也就失去了干净的边界。</p>
+<p>这不是 Unity 强加的路径依赖——unitypackage 的落点就是打包时写进去的，<strong>是打包选择</strong>。 <code>tools/check-payload-code.mjs</code> 会强制这条规则，散落会直接失败。</p></blockquote>
+<p><strong>与引擎无关的源码 / 文档 / Godot 插件 → 归档</strong>：构建时让条目就是它们应当出现在 <code>contentRoot</code> 下的样子：</p>
+<pre class="code" data-lang-name="pwsh"><code>Compress-Archive -Path .\MyTool\* -DestinationPath my-tool-1.0.0.zip
+tar -czf my-tool-1.0.0-godot.tgz -C MyTool .</code></pre>
+<p><strong>单个文件 → <code>type: file</code></strong>：不需要容器，但要声明 <code>targetPath</code> 并设 <code>unpack: none</code>。</p>
+<blockquote><p><strong>一个 <code>file</code> 制品只对应一个文件。</strong> 这一点常被误解，所以写清楚： <code>file</code> 是&quot;这一坨字节原样落到 <code>targetPath</code>&quot;，它没有条目概念，也不存在 &quot;一个制品带两个文件&quot;的写法。</p>
+<p><strong>dll + xml（类库 + XML 注释）必须打成归档</strong>，不能写成两个 <code>file</code> 制品—— 一个 target 下的 <code>artifact</code> 是单数，第二个文件没有地方可声明。 打包时让条目路径就是它们该出现的位置，两者自然并排落地：</p>
+<pre class="code" data-lang-name="pwsh"><code># 目录结构先摆成目标的样子，再整目录打包
+#   Assets/MyLib/MyLib.dll
+#   Assets/MyLib/MyLib.xml
+tar -czf my-lib-1.0.0-unity.tgz -C . Assets</code></pre>
+<pre class="code" data-lang-name="yaml"><code>artifact:
+  type: archive
+  format: tgz
+  path: payloads/my-lib/artifacts/my-lib-1.0.0-unity.tgz
+  size: 277
+  sha256: '8890b28a...'
+  unpack: extract
+  contentRoot: Assets        # 归档里的 Assets/ 铺到工程的 Assets/ 下</code></pre>
+<p><code>.xml</code> 注释文件与 <code>.dll</code> 放在一起，Unity 与 IDE 才会自动关联出文档提示； 分开落地（例如 dll 进 <code>Assets/</code>、xml 进别处）虽然能装上，但注释不会被识别。</p></blockquote>
+<h3>3. 按规则命名并放入指定位置</h3>
+<pre class="code" data-lang-name="pwsh"><code># 只有一个 target
+Copy-Item my-tool.unitypackage payloads/my-tool/artifacts/my-tool-1.0.0.unitypackage
+# 有多个 target 时必须带引擎段，否则两个引擎的制品会撞名
+Copy-Item my-tool.unitypackage payloads/my-tool/artifacts/my-tool-1.0.0-unity.unitypackage
+Copy-Item my-tool.tgz         payloads/my-tool/artifacts/my-tool-1.0.0-godot.tgz</code></pre>
+<p><strong>绝不要修改已经提交过的制品。</strong> 字节变了就意味着新 <code>version</code> 和新文件。</p>
+<h3>4. 用真实字节填入每个 target 的 <code>size</code> 与 <code>sha256</code></h3>
+<pre class="code" data-lang-name="pwsh"><code>node ../ToolImport/apps/cli/bin/utool.js digest payloads/my-tool/artifacts/my-tool-1.0.0-unity.unitypackage</code></pre>
+<p>对每个 target 各跑一次，并把结果写进该 target 的 <code>artifact</code>；<code>artifact.path</code> 必须指向同一个文件。</p>
+<h3>5. 声明能力</h3>
+<p><code>provides</code> 是本工具向别人提供的能力；<code>injects</code> 是它需要、由<strong>任意</strong>提供者满足的能力。 两者都是至少两段的点分小写名（<code>script.api.argument-guards</code>），不是裸词：</p>
+<pre class="code" data-lang-name="yaml"><code>provides:
+  - my-tool.window.main
+injects:
+  - script.api.argument-guards
+dependencies:
+  - id: core-editor-utils
+    version: ^1.1.0
+    reason: Uses Guard for argument validation.</code></pre>
+<p>先检查你要 <code>injects</code> 的能力是否已有工具提供，否则校验会以 <code>E-CAP-UNSATISFIED</code> 失败。 <code>provides</code> 一个别人已经提供的能力<strong>不是错误</strong>：多个提供者互为替代品，库级校验只发 <code>W-CAP-MULTIPLE</code> 警告；但一次安装里同时装进同一能力的两个提供者会被导入工具拒绝 （<code>E-CAP-CONFLICT</code>），所以别在同一份安装计划里依赖两个能力相同的工具。 真正需要某个具体工具（某个版本、某个 API）时才写 <code>dependencies</code>。</p>
+<blockquote><p><code>.unitypackage</code> 的手工打包陷阱：归档内每个 GUID 目录的 <code>pathname</code> 条目<strong>必须</strong>是<strong>相对工程根</strong>的 路径（以 <code>Assets/</code> 开头），不是相对仓库根的路径。写错会导致文件被放进错误的位置。</p></blockquote>
+<h3>6. 重建索引并校验</h3>
+<pre class="code" data-lang-name="pwsh"><code>node tools/registry.mjs write-index
+node tools/registry.mjs validate</code></pre>
+<p><code>--write-index</code> 会重写 <code>index.yaml</code>；<code>validate</code> 必须以 <code>PASSED</code> 结束。</p>
+<hr>
+<h2>新增一个外部引用型工具</h2>
+<p>当上游已发布可用包，或内置源码会让本仓库膨胀时使用。此时<strong>不存制品</strong>：<code>artifact.type</code> 是 <code>external</code>，且<strong>禁止</strong>出现 <code>path</code> / <code>size</code> / <code>sha256</code>。从 <code>template/tool.external.yaml</code> 复制。</p>
+<pre class="code" data-lang-name="yaml"><code>targets:
+  unity:
+    requirements:
+      minEngineVersion: '2019.4'
+      minRuntimeVersion: '4.6'
+    artifact:
+      type: external
+      source: git
+      url: https://github.com/owner/repo.git
+      ref: v2.3.1
+      subdirectory: Packages/com.owner.something
+      upmPackageName: com.owner.something
+      unpack: none</code></pre>
+<p><code>ref</code> <strong>必须</strong>是 tag 或 commit SHA。用分支头意味着相隔一周的两次导入可能在同一版本号下拿到不同代码， 这会摧毁回执模型。</p>
+<p>请在该 payload 目录下补一个 <code>README.md</code> 说明源码实际在哪——否则这个目录在 GitHub 上看起来是空的。</p>
+<p>注意：<strong>导入工具侧对 external 源的解析尚未实现</strong>。后端目前把它报告为「由调用方解析」， 并记录 <code>url</code> / <code>ref</code>；它不会自己去 clone 或浅取。因此这个形式今天只是可校验的元信息。</p>
+<hr>
+<h2>发布已有工具的新版本</h2>
+<ol><li>产出新制品，命名为 <code>&lt;id&gt;-&lt;新版本&gt;.&lt;ext&gt;</code>（多 target 时带引擎段）。</li><li>放进 <code>payloads/&lt;id&gt;/artifacts/</code>，仅在确认没有任何东西还需要钉住旧版时才删除旧文件。</li><li>更新 <code>version</code>、每个 target 的 <code>artifact</code>（path/format/size/sha256），以及在变化时的下限、</li></ol>
+<p>   能力声明与 <code>dependencies</code>。</p>
+<ol><li>重建索引、校验、提交。</li></ol>
+<p>如果希望旧版本仍可取用，旧文件可以保留；校验只要求<strong>声明的</strong>制品存在，且 <code>artifacts/</code> 中没有 <strong>未声明的</strong>文件。若保留旧文件，就必须让它被声明——否则请删除。</p>
+<p>注意：给已有工具新增一个引擎的 target，会改变制品文件名（从 <code>&lt;id&gt;-&lt;version&gt;.&lt;ext&gt;</code> 变成 <code>&lt;id&gt;-&lt;version&gt;-&lt;engine&gt;.&lt;ext&gt;</code>），因为规则只看 target 个数。这是一次版本升级。</p>
+<hr>
+<h2>版本号提升建议</h2>
+<table class="doc"><thead><tr><th>变更</th><th>提升</th></tr></thead><tbody><tr><td>修 bug，API 未变</td><td>patch</td></tr><tr><td>新增功能，向后兼容</td><td>minor</td></tr><tr><td>破坏性 API 变更，或抬高任一 target 的 <code>minEngineVersion</code> / 适配器要求键</td><td>major</td></tr><tr><td>新增一个引擎的 target（增加能力，不动已有引擎）</td><td>minor</td></tr><tr><td>纯元信息修正（<code>description</code> 打字错误）</td><td>patch，制品字节不变</td></tr></tbody></table>
+<p>只有在代码确实需要时才抬高下限：抬高 <code>minEngineVersion</code> 对任何低于新下限的人都是破坏性变更。 下限是<strong>逐 target</strong> 的，所以抬高 Unity 侧不影响 Godot 侧。</p>
+<hr>
+<h2>提交前检查清单</h2>
+<p>每一项都由 <code>tools/registry.mjs</code> 强制。推送前跑一遍；CI 也会跑。</p>
+<p><strong>先装一次本地钩子，省一轮往返：</strong></p>
+<pre class="code" data-lang-name="pwsh"><code>git config core.hooksPath .githooks</code></pre>
+<p>装好之后，如果提交内容涉及 <code>payloads/</code>、<code>schema/</code>、<code>tools/</code> 或 <code>index.yaml</code>，而 <code>index.yaml</code> 没跟上，提交会在本地被拦下并提示该跑哪条命令——而不是等你推送完、CI 失败、再回来补。 它<strong>只检查、不改写</strong>：提交时悄悄改动你已暂存的文件，比多一次提示更让人不信任钩子。 单次跳过用 <code>git commit --no-verify</code>。</p>
+<ul><li>[ ] <code>payloads/&lt;id&gt;/tool.yaml</code> 存在且满足 <code>schema/tool.schema.json</code></li><li>[ ] <code>&lt;id&gt;</code> 是小写 kebab-case，且等于目录名</li><li>[ ] <code>kind: tool</code> 与当前 <code>formatVersion</code> 都在（写法与取值见 <a href="ATTRIBUTES.zh-CN.html#formatversion">属性速查</a>；历史修订号的迁移见 <a href="SPEC.zh-CN.html"><code>SPEC.zh-CN.md</code></a> R-MIG-4）</li><li>[ ] <code>displayName</code>、<code>description</code>、<code>type</code>、<code>latest</code>、<code>versions</code> 已填</li><li>[ ] <code>versions</code> 非空，每个要支持的引擎在各版本里各有 target（见 <a href="SPEC.zh-CN.html"><code>SPEC.zh-CN.md</code></a> §5）</li><li>[ ] 每个 target 的 <code>requirements.minEngineVersion</code> 反映真实下限（不要猜，不要省）</li><li>[ ] 每个 target 的 <code>artifact.type</code> 是 <code>archive</code> / <code>package</code> / <code>file</code> / <code>external</code> 之一，</li></ul>
+<p>      且非 external 时 <code>format</code> / <code>path</code> / <code>size</code> / <code>sha256</code> 齐全、与磁盘字节一致</p>
+<ul><li>[ ] 制品文件名符合规则：一个 target 用 <code>&lt;id&gt;-&lt;version&gt;.&lt;ext&gt;</code>，多个 target 用</li></ul>
+<p>      <code>&lt;id&gt;-&lt;version&gt;-&lt;engine&gt;.&lt;ext&gt;</code></p>
+<ul><li>[ ] <code>latest</code> 指向 <code>versions</code> 里真实存在、且未被撤回的版本</li><li>[ ] 若为 <code>external</code>：<code>source</code> + <code>url</code> + <code>ref</code> 已固定（tag 或 commit，<strong>不是</strong>分支），</li></ul>
+<p>      且没有 <code>path</code> / <code>size</code> / <code>sha256</code></p>
+<ul><li>[ ] <code>provides</code> / <code>injects</code> 的能力名是至少两段的点分小写名；<code>injects</code> 里每一项都有库内工具提供</li><li>[ ] <code>dependencies</code> 引用的 <code>id</code> 都存在、约束可满足、无环</li><li>[ ] payload 目录内<strong>没有</strong>源文件、DLL 或游离制品</li><li>[ ] 已运行并提交 <code>node tools/registry.mjs write-index</code></li><li>[ ] <code>node tools/registry.mjs validate</code> 通过</li></ul>
+<p><code>template/</code> 放的是当前骨架：<code>tool.bundled.yaml</code>（含双引擎示例与逐步填写说明）、 <code>tool.external.yaml</code>、<code>index.yaml</code>、<code>receipt.yaml</code>。先读模板再读规范。</p>
+<h2>遇到错误码</h2>
+<p>全部错误码与各自的修法见 <a href="ERRORS.zh-CN.html"><code>ERRORS.zh-CN.md</code></a>（<strong>唯一出处</strong>）。</p>
+<p>提交一个工具时命中最多的是 <code>E-DEP-VERSION</code>：如果你抬高了某个依赖的主版本却忘了放宽约束， 它会立刻失败。其次是 <code>E-CAP-UNSATISFIED</code>，在「先写消费者、后写提供者」时最容易踩到。</p>
+<p>校验器只发一个警告、<strong>不会</strong>让构建失败的是 <code>W-CAP-MULTIPLE</code>：同一能力有多个提供者， 这是合法的，它们互为替代品。被拒绝的是<strong>一次安装计划</strong>里同时出现两个同一能力的提供者 （<code>E-CAP-CONFLICT</code>，由导入工具的求解器判定，不属于本校验器）。</p>
+<h2>风格</h2>
+<ul><li><code>description</code>：一段话、现在时、不要营销形容词。导入工具会原样展示。</li><li><code>displayName</code>：标题式大小写，短到能放进一行列表。</li><li><code>tags</code>：小写 kebab-case，≤ 12 个。</li><li>能力名：至少两段，命名空间在前（<code>script.api.argument-guards</code>、<code>unity.window.selection-history</code>），</li></ul>
+<p>  小写 kebab-case，≤ 96 字符。</p>
+<ul><li><code>displayName</code> / <code>description</code> 中出现非 ASCII 文本没问题；所有文件都是 <strong>UTF-8 且不带 BOM</strong>。</li><li>除非 payload 确实携带其他许可证，否则用 <code>&quot;license&quot;: &quot;MIT&quot;</code>——仓库的 LICENSE 不会覆盖 payload 自己的字段。</li><li>注释：<code>.yaml</code> 是 YAML，可以写注释。请用它解释<strong>为什么</strong>这个工具存在、有哪些坑，而不是复述字段名。</li></ul>
+<h2>提交信息</h2>
+<pre class="code" data-lang-name="text"><code>add: &lt;id&gt; &lt;version&gt;            新增工具
+update: &lt;id&gt; &lt;old&gt; -&gt; &lt;new&gt;    已有工具的新版本
+meta: &lt;id&gt; ...                 仅元信息变更，制品字节不变
+remove: &lt;id&gt;                   删除 payload（同一提交内更新索引）
+docs: ...                      仅文档或工具链</code></pre>
+    <p class="source">由 <code>docs/CONTRIBUTING.zh-CN.md</code> 生成 · <a href="index.html">全部文档</a></p>
+  </main>
+</div>
+</body>
+</html>
