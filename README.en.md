@@ -1,7 +1,7 @@
 # Registry starter
 
 The template repository for the [ToolRegistry](https://github.com/JokeVallen/ToolImport) data format: the smallest
-registry that already works, and that you are meant to edit. **Open `START-HERE.html` first** - it
+registry that already works, and that you are meant to edit. **Open `index.html` first** - it
 walks through the environment, the matching import tool, validation, and the first install.
 
 ## What is here
@@ -13,7 +13,8 @@ schema/                 the validation source
 tools/                  registry.mjs and four offline pages (validate / editor / guide / workbench)
 template/               yaml skeletons
 docs/                   format spec and friends
-START-HERE.html         the offline onboarding page - open this first
+index.html              the single entry: four doors (guide / validate / write / check)
+START-HERE.html         the offline onboarding page - seven steps in order
 ```
 
 ## Three commands

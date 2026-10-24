@@ -9,13 +9,11 @@
   Rebuild with: node tools/build-registry-template.mjs
   Pinned import tool: 1.2.2
 -->
-<style>
-  :root {
+<style>:root {
     --bg: #1b1d21; --panel: #24272c; --panel-2: #2a2e34; --line: #34383f; --fg: #e6e8ea;
     --dim: #9aa1ab; --ok: #4ec26a; --bad: #e2564a; --accent: #7fa6c4; --warn: #d8a657;
     --link: #9dbdd4; --link-hover: #c6dbe9;
   }
-  * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
     margin: 0; background: var(--bg); color: var(--fg);
@@ -27,6 +25,8 @@
     padding: 24px 14px 28px 20px; border-right: 1px solid var(--line);
   }
   nav .brand { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+  nav .brand a { color: var(--link); text-decoration: none; }
+  nav .brand a:hover { color: var(--link-hover); }
   .progress { height: 5px; background: var(--panel-2); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
   .progress > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
   .progress-text { font-size: 12px; color: var(--dim); margin-bottom: 18px; }
@@ -205,7 +205,7 @@
 <body>
 <div class="layout">
   <nav>
-    <div class="brand">Registry 起步包</div>
+    <div class="brand"><a href="index.html">← 入口</a> · Registry 起步包</div>
     <div class="progress"><i></i></div>
     <div class="progress-text"></div>
     <div class="track-title">我第一次接触这套东西</div>
@@ -774,12 +774,12 @@
   <li><a href="docs/ERRORS.zh-CN.md">错误码参考</a>：校验失败按码查改法。</li>
   <li><a href="docs/GLOSSARY.zh-CN.md">术语表</a>：容易混的几个词。</li>
   <li><a href="docs/FRONTEND-INTEGRATION.zh-CN.md">导入工具契约</a>：想自己写一个前端时读这个。</li>
-  <li><a href="CHANGELOG.zh-CN.md">变更记录</a> · <a href="README.md">README</a></li>
+  <li><a href="README.md">README</a>：这份注册库的结构与三条命令。</li>
 </ul>
 <h4>ToolImport 仓库</h4>
 <ul class="docs">
   <li>README：CLI 全部命令、输出模式、退出码。</li>
-  <li>CHANGELOG：每一次改动。</li>
+  <li>CHANGELOG：每一次改动（在那个仓库里，不在本仓库）。</li>
   <li><code>docs/release-notes-*.md</code>：每个发行版的说明。</li>
   <li>发布页：<a href="https://github.com/JokeVallen/ToolImport/releases">https://github.com/JokeVallen/ToolImport/releases</a></li>
 </ul>

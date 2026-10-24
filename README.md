@@ -1,19 +1,20 @@
 # Registry 起步包 / Registry starter
 
 这是 [ToolRegistry](https://github.com/JokeVallen/ToolImport) 数据格式的**模板仓库**：一份可以直接用、也可以直接改成你自己
-Registry 的最小集合。**先双击 `START-HERE.html`**，它按顺序带你走完环境、安装、校验、装第一个工具。
+Registry 的最小集合。**先双击 `index.html`**：它是唯一入口，按"你来做哪件事"分四扇门——
+第一次跟走、校验整库、写新清单、只验一份清单。
 
-A starter registry for the ToolRegistry format. **Open `START-HERE.html` first**: it walks you
-through setup, the matching import tool release, validation and the first install.
+A starter registry for the ToolRegistry format. **Open `index.html` first**: one entry point with
+four doors - start from zero, validate the registry, write a manifest, or check a single one.
 
 ## 开始用 / Start from this template
 
-- **在线看**：<https://jokevallen.github.io/ToolRegistry-Template/START-HERE.html>（不用下载）
+- **在线看**：<https://jokevallen.github.io/ToolRegistry-Template/>（不用下载）
 - **用模板建自己的仓库**：仓库页右上角 **Use this template → Create a new repository**
 - **只想本地跑一遍**：`git clone https://github.com/JokeVallen/ToolRegistry-Template.git my-registry`
 
 <!-- -->
-- **Read it online**: <https://jokevallen.github.io/ToolRegistry-Template/START-HERE.html>
+- **Read it online**: <https://jokevallen.github.io/ToolRegistry-Template/>
 - **Make it yours**: **Use this template → Create a new repository**
 - **Just try it locally**: `git clone https://github.com/JokeVallen/ToolRegistry-Template.git my-registry`
 
@@ -26,7 +27,8 @@ schema/                 校验依据
 tools/                  registry.mjs 与四个离线页面（validate / editor / guide / workbench）
 template/               骨架 yaml
 docs/                   格式规范等文档
-START-HERE.html         离线引导（第一个该打开的文件）
+index.html              唯一入口：四扇门（引导 / 整库校验 / 写清单 / 单份校验）
+START-HERE.html         七步引导（从入口页进入，或直接打开）
 ```
 
 ## 三条命令 / Three commands
