@@ -254,8 +254,8 @@
     <section class="step" id="s-quickstart-env" data-track="quickstart" data-step="env">
     <div class="stephead"><span class="badge">我第一次接触这套东西</span><span class="badge">1 / 7</span></div>
     <h2>先确认这台机器能跑</h2>
-    <p class="en">Two programs have to exist before anything else works: Node.js 20.11 or newer, and git. The import tool is a Node program even when you open it from an editor window, so an editor without Node cannot install anything.</p>
-    <div class="goal"><strong>这一步的目标：</strong>确认 Node.js ≥ 20.11 与 git 都在 PATH 上。</div>
+    <p class="en">Two programs have to exist before anything else works: Node.js 22.15 or newer, and git. The import tool is a Node program even when you open it from an editor window, so an editor without Node cannot install anything.</p>
+    <div class="goal"><strong>这一步的目标：</strong>确认 Node.js ≥ 22.15 与 git 都在 PATH 上。</div>
     
 <p>这套工具的后端是一个 Node 程序。<strong>即使你只在 Unity / Godot 的窗口里点按钮，窗口也是去调它</strong>——
 所以没有 Node 就没有安装能力。</p>
@@ -279,8 +279,8 @@
     <button type="button">检查</button>
     <div class="result"></div>
   </div>
-    <details class="faq"><summary>提示 node 不是内部或外部命令</summary><p>还没装，或者装了没勾选加入 PATH。装 <a href="https://nodejs.org/">Node.js LTS</a>（20.11 以上），装完<strong>重开终端</strong>再试。</p></details>
-      <details class="faq"><summary>版本是 18.x 可以吗</summary><p>不行。CLI 用了 20.11 起才稳定的能力，低于这个版本会在启动时直接报错，而不是降级运行。</p></details>
+    <details class="faq"><summary>提示 node 不是内部或外部命令</summary><p>还没装，或者装了没勾选加入 PATH。装 <a href="https://nodejs.org/">Node.js LTS</a>（22.15 以上），装完<strong>重开终端</strong>再试。</p></details>
+      <details class="faq"><summary>版本是 18.x 可以吗</summary><p>不行。CLI 用了 Node 22.15 起才有的 zstd 能力，低于这个版本会在启动时直接报错，而不是降级运行。</p></details>
       <details class="faq"><summary>我只用 Godot，没有 Unity，需要 Unity 吗</summary><p>不需要。两个前端各自独立，装哪个取决于你用什么引擎。</p></details>
     <div class="stepnav">
       <button type="button" data-go="prev">← 上一步</button>
@@ -1004,10 +1004,10 @@
           } else {
             var major = parseInt(match[1], 10);
             var minor = parseInt(match[2], 10);
-            ok = major > 20 || (major === 20 && minor >= 11);
+            ok = major > 22 || (major === 22 && minor >= 15);
             message = ok
               ? 'Node ' + major + '.' + minor + '，够用。'
-              : 'Node ' + major + '.' + minor + ' 低于 20.11，先升级。';
+              : 'Node ' + major + '.' + minor + ' 低于 22.15，先升级。';
           }
         } else {
           ok = text.toLowerCase().indexOf(expect) >= 0;

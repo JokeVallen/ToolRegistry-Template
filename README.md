@@ -26,9 +26,12 @@ node tools/registry.mjs write-index     # 改过 payload 之后重新生成 inde
 node tools/registry.mjs check-index     # CI：只检查目录是否过期
 ```
 
-校验器在导入工具里。两个仓库放成同级目录即可自动发现；否则设 `UTOOL_CORE`。
+需要 **Node.js 22.15 以上**（导入工具用了 22.15 才有的 zstd 解压）与 git。校验器在导入工具里。
+两个仓库放成同级目录即可自动发现；否则设 `UTOOL_CORE`。
 
-The validator lives in the import tool. Keep the two repositories side by side, or set `UTOOL_CORE`.
+Requires **Node.js 22.15 or newer** (the import tool uses the zstd support added in 22.15) and
+git. The validator lives in the import tool: keep the two repositories side by side, or set
+`UTOOL_CORE`.
 
 ## 配对的导入工具 / Matching import tool
 

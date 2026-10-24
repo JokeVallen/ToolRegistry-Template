@@ -16,7 +16,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Fetch the matching ToolImport
         run: git clone --depth 1 --branch v1.2.1 https://github.com/JokeVallen/ToolImport.git .toolimport
