@@ -1545,87 +1545,126 @@ const SCHEMA = {
 }
 ;
 
-// ---------------------------------------------------------------- validation
+// ---- manifest-rules.mjs (shared with tools/workbench.html) ----
+/**
+ * The cross-value rules a manifest has to satisfy, in one place.
+ *
+ * WHY A FACTORY AND NOT PLAIN FUNCTIONS
+ * -------------------------------------
+ * These rules are used by two pages that must agree with each other and with utool-core: the
+ * single-manifest checker (tools/validate.html) and the registry workbench (tools/workbench.html).
+ * They run in a browser, so the schema and the format vocabulary have to be handed in - the page
+ * embeds them, and passing them keeps this module free of imports that a browser build would have
+ * to strip.
+ *
+ * The rules themselves are worth stating: a JSON Schema can check shape, but not that `latest`
+ * names a published version, that a version is not published twice, that `latest` is not yanked,
+ * or that an artifact is named the way the format requires. Those are the mistakes people make,
+ * and they need the rest of the document to detect.
+ */
 
-function validateManifest(doc) {
-  const problems = [];
+function createManifestRules({ SchemaValidator, schema, expectedArtifactName, FORMAT_VERSION }) {
+  return function validateManifest(doc) {
+    const problems = [];
 
-  if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
-    return [{ code: 'E-UTOOL-ROOT', message: 'the document root must be a mapping' }];
-  }
+    if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
+      return [{ code: 'E-UTOOL-ROOT', message: 'the document root must be a mapping' }];
+    }
 
-  let validator;
-  try {
-    validator = new SchemaValidator(SCHEMA);
-  } catch (cause) {
-    return [{ code: 'E-SCHEMA', message: 'the embedded schema is unusable: ' + cause.message }];
-  }
+    let validator;
+    try {
+      validator = new SchemaValidator(schema);
+    } catch (cause) {
+      return [{ code: 'E-SCHEMA', message: 'the embedded schema is unusable: ' + cause.message }];
+    }
 
-  for (const problem of validator.errors(doc)) {
-    problems.push({ code: 'E-SCHEMA', message: problem });
-  }
+    for (const problem of validator.errors(doc)) {
+      problems.push({ code: 'E-SCHEMA', message: problem });
+    }
 
-  // Cross-value rules: each needs the rest of the document, so a JSON Schema cannot state
-  // them. These mirror what utool-core checks, so a manifest with no complaint here has no
-  // shape complaint there either.
-  const versions = Array.isArray(doc.versions) ? doc.versions : [];
-  const numbers = versions.map((entry) => String(entry && entry.version));
-
-  if (doc.latest !== undefined && numbers.length > 0 && !numbers.includes(String(doc.latest))) {
-    problems.push({
-      code: 'E-LATEST-UNKNOWN',
-      message: 'latest is ' + doc.latest + ', which is not one of the published versions (' +
-        numbers.join(', ') + ')',
-    });
-  }
-
-  if (new Set(numbers).size !== numbers.length) {
-    problems.push({
-      code: 'E-VERSIONS-DUPLICATE',
-      message: 'a version appears more than once in versions: ' + numbers.join(', '),
-    });
-  }
-
-  for (const entry of versions) {
-    if (!entry || typeof entry !== 'object') continue;
-    const where = String(entry.version);
-    if (entry.yanked === true && String(doc.latest) === where) {
+    if (String(doc.formatVersion) !== FORMAT_VERSION) {
       problems.push({
-        code: 'E-YANKED-LATEST',
-        message: 'latest names ' + where + ', which is yanked; point latest at a release that ' +
-          'is still installable',
+        code: 'E-FORMAT-VERSION',
+        message: "formatVersion is '" + doc.formatVersion + "'; this page reads '" + FORMAT_VERSION + "'",
       });
     }
 
-    const targets = entry.targets || {};
-    const engines = Object.keys(targets);
+    const versions = Array.isArray(doc.versions) ? doc.versions : [];
+    const numbers = versions.map((entry) => String(entry && entry.version));
 
-    for (const engine of engines) {
-      const artifact = (targets[engine] || {}).artifact || {};
-      if (artifact.type === 'external' || typeof artifact.path !== 'string') continue;
+    if (doc.latest !== undefined && numbers.length > 0 && !numbers.includes(String(doc.latest))) {
+      problems.push({
+        code: 'E-LATEST-UNKNOWN',
+        message:
+          'latest is ' + doc.latest + ', which is not one of the published versions (' +
+          numbers.join(', ') + ')',
+      });
+    }
 
-      const file = artifact.path.split('/').pop();
-      const expected = expectedArtifactName(
-        doc.id, where, engine, engines.length > 1, String(artifact.format),
-      );
-      if (file !== expected) {
+    if (new Set(numbers).size !== numbers.length) {
+      problems.push({
+        code: 'E-VERSIONS-DUPLICATE',
+        message: 'a version appears more than once in versions: ' + numbers.join(', '),
+      });
+    }
+
+    for (const entry of versions) {
+      if (!entry || typeof entry !== 'object') continue;
+      const where = String(entry.version);
+      if (entry.yanked === true && String(doc.latest) === where) {
         problems.push({
-          code: 'E-ARTIFACT-NAME',
-          message: where + '/' + engine + ": artifact must be named '" + expected +
-            "', got '" + file + "'",
+          code: 'E-YANKED-LATEST',
+          message:
+            'latest names ' + where + ', which is yanked; point latest at a release that ' +
+            'is still installable',
         });
       }
-      if (artifact.type === 'file' && !artifact.targetPath) {
-        problems.push({
-          code: 'E-ARTIFACT-TARGETPATH',
-          message: where + '/' + engine + ': type file needs targetPath',
-        });
+
+      const targets = entry.targets || {};
+      const engines = Object.keys(targets);
+
+      for (const engine of engines) {
+        const artifact = (targets[engine] || {}).artifact || {};
+        if (artifact.type === 'external' || typeof artifact.path !== 'string') continue;
+
+        const file = artifact.path.split('/').pop();
+        const expected = expectedArtifactName(
+          doc.id,
+          where,
+          engine,
+          engines.length > 1,
+          String(artifact.format),
+        );
+        if (file !== expected) {
+          problems.push({
+            code: 'E-ARTIFACT-NAME',
+            message:
+              where + '/' + engine + ": artifact must be named '" + expected +
+              "', got '" + file + "'",
+          });
+        }
+        if (artifact.type === 'file' && !artifact.targetPath) {
+          problems.push({
+            code: 'E-ARTIFACT-TARGETPATH',
+            message: where + '/' + engine + ': type file needs targetPath',
+          });
+        }
       }
     }
-  }
 
-  return problems;
+    return problems;
+  };
 }
+
+
+// The rules themselves live in tools/workbench/manifest-rules.mjs, shared with the registry
+// workbench: two pages enforcing the same rules in two copies is exactly how they drift.
+const validateManifest = createManifestRules({
+  SchemaValidator,
+  schema: SCHEMA,
+  expectedArtifactName,
+  FORMAT_VERSION,
+});
 
 // ---------------------------------------------------------------- interface
 
